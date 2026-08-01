@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=nd-trl-smoke
+#SBATCH --job-name=nd-train-smoke
 #SBATCH --account=priyesh.shukla
 #SBATCH --partition=u22
 #SBATCH --qos=high
@@ -21,7 +21,15 @@ repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/training"
-run_config="${RUN_CONFIG:-configs/training/sft_smoke.yaml}"
+training_backend="${TRAINING_BACKEND:-trl}"
+if [[ "${training_backend}" == "opsd" ]]; then
+  run_config="${RUN_CONFIG:-configs/training/opsd_smoke.yaml}"
+elif [[ "${training_backend}" == "trl" ]]; then
+  run_config="${RUN_CONFIG:-configs/training/sft_smoke.yaml}"
+else
+  echo "unsupported TRAINING_BACKEND=${training_backend}" >&2
+  exit 1
+fi
 config_path="${repo_dir}/${run_config}"
 monitor_file="${scratch_root}/logs/gpu-${SLURM_JOB_ID}.csv"
 monitor_pid=""
@@ -73,10 +81,19 @@ nvidia-smi --query-gpu=timestamp,index,name,utilization.gpu,memory.used,memory.t
   --format=csv -l 5 >"${monitor_file}" &
 monitor_pid="$!"
 
-"${venv_dir}/bin/python" "${repo_dir}/scripts/run_trl_baseline.py" \
-  --config "${config_path}" \
-  --scratch-root "${scratch_root}" \
-  --registry "${repo_dir}/configs/baselines.yaml"
+if [[ "${training_backend}" == "opsd" ]]; then
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/run_opsd_baseline.py" \
+    --config "${config_path}" \
+    --scratch-root "${scratch_root}" \
+    --registry "${repo_dir}/configs/baselines.yaml" \
+    --manifest "${repo_dir}/third_party/manifest.yaml" \
+    --official-root "${scratch_root}/official"
+else
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/run_trl_baseline.py" \
+    --config "${config_path}" \
+    --scratch-root "${scratch_root}" \
+    --registry "${repo_dir}/configs/baselines.yaml"
+fi
 
 metadata_path="$("${venv_dir}/bin/python" -c 'import sys, yaml; from pathlib import Path; payload=yaml.safe_load(Path(sys.argv[1]).read_text()); print(Path(sys.argv[2]) / payload["output_dir"] / "run_metadata.json")' "${config_path}" "${scratch_root}")"
 cat "${metadata_path}"
