@@ -46,7 +46,9 @@ else
   git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
 fi
 
-uv venv --python 3.12 "${venv_dir}"
+if [[ ! -x "${venv_dir}/bin/python" ]]; then
+  uv venv --python 3.12 "${venv_dir}"
+fi
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
