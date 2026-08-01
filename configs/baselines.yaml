@@ -1,0 +1,216 @@
+schema_version: 1
+baselines:
+  - id: A0
+    name: untouched-qwen3-4b
+    family: control
+    backend: evaluation
+    official_source: Qwen/Qwen3-4B
+  - id: A1
+    name: qwen3-14b-teacher
+    family: control
+    backend: evaluation
+    official_source: Qwen/Qwen3-14B
+  - id: A2
+    name: qwen3-4b-base
+    family: control
+    backend: evaluation
+    official_source: Qwen/Qwen3-4B-Base
+  - id: A3
+    name: historical-human-target
+    family: control
+    backend: evaluation
+    official_source: ZonglinY/TOMATO-Star
+    trajectory_source: human
+    target_view: human
+
+  - id: B1
+    name: human-target-sft
+    family: sft
+    backend: trl_sft
+    official_source: huggingface/trl
+    trajectory_source: human
+    target_view: human
+  - id: B2a
+    name: seqkd-random-1
+    family: sft
+    backend: trl_sft
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: random1
+  - id: B2b
+    name: seqkd-best-of-8
+    family: sft
+    backend: trl_sft
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: best1
+  - id: B2c
+    name: seqkd-common-mode-1
+    family: sft
+    backend: trl_sft
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: mode1
+  - id: B3
+    name: teacher-diverse-4-sft
+    family: sft
+    backend: trl_sft
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: diverse4
+  - id: B4
+    name: gem
+    family: sft
+    backend: gem
+    official_source: liziniu/GEM
+    trajectory_source: teacher
+    target_view: diverse4
+
+  - id: C1-human
+    name: off-policy-fkl-human
+    family: off_policy
+    backend: trl_gkd
+    official_source: huggingface/trl
+    trajectory_source: human
+    target_view: human
+    divergence: forward_kl
+    teacher_context: ordinary
+    lmbda: 0.0
+    beta: 0.0
+  - id: C1-best1
+    name: off-policy-fkl-best-1
+    family: off_policy
+    backend: trl_gkd
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: best1
+    divergence: forward_kl
+    teacher_context: ordinary
+    lmbda: 0.0
+    beta: 0.0
+  - id: C1-diverse4
+    name: off-policy-fkl-diverse-4
+    family: off_policy
+    backend: trl_gkd
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: diverse4
+    divergence: forward_kl
+    teacher_context: ordinary
+    lmbda: 0.0
+    beta: 0.0
+  - id: C2-human
+    name: off-policy-rkl-human
+    family: off_policy
+    backend: trl_gkd
+    official_source: huggingface/trl
+    trajectory_source: human
+    target_view: human
+    divergence: reverse_kl
+    teacher_context: ordinary
+    lmbda: 0.0
+    beta: 1.0
+  - id: C2-best1
+    name: off-policy-rkl-best-1
+    family: off_policy
+    backend: trl_gkd
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: best1
+    divergence: reverse_kl
+    teacher_context: ordinary
+    lmbda: 0.0
+    beta: 1.0
+  - id: C2-diverse4
+    name: off-policy-rkl-diverse-4
+    family: off_policy
+    backend: trl_gkd
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: diverse4
+    divergence: reverse_kl
+    teacher_context: ordinary
+    lmbda: 0.0
+    beta: 1.0
+  - id: C3
+    name: distillm
+    family: off_policy
+    backend: distillm
+    official_source: jongwooko/distillm
+    trajectory_source: static
+    target_view: best1
+    divergence: skew_kl
+    teacher_context: ordinary
+
+  - id: D1
+    name: on-policy-gkd-fkl
+    family: on_policy
+    backend: trl_gkd
+    official_source: huggingface/trl
+    trajectory_source: student
+    divergence: forward_kl
+    teacher_context: ordinary
+    lmbda: 1.0
+    beta: 0.0
+  - id: D2
+    name: on-policy-gkd-rkl
+    family: on_policy
+    backend: trl_gkd
+    official_source: huggingface/trl
+    trajectory_source: student
+    divergence: reverse_kl
+    teacher_context: ordinary
+    lmbda: 1.0
+    beta: 1.0
+  - id: D3
+    name: on-policy-gkd-jsd
+    family: on_policy
+    backend: trl_gkd
+    official_source: huggingface/trl
+    trajectory_source: student
+    divergence: generalized_jsd
+    teacher_context: ordinary
+    lmbda: 1.0
+    beta: 0.5
+
+  - id: E1
+    name: privileged-off-policy-self-kd
+    family: self_distillation
+    backend: opsd
+    official_source: siyan-zhao/OPSD
+    trajectory_source: static
+    target_view: human
+    divergence: forward_kl
+    teacher_context: privileged
+    lmbda: 0.0
+    beta: 0.0
+  - id: E2
+    name: privileged-opsd-fkl
+    family: self_distillation
+    backend: opsd
+    official_source: siyan-zhao/OPSD
+    trajectory_source: student
+    divergence: forward_kl
+    teacher_context: privileged
+    lmbda: 1.0
+    beta: 0.0
+  - id: E3
+    name: privileged-opsd-rkl
+    family: self_distillation
+    backend: opsd
+    official_source: siyan-zhao/OPSD
+    trajectory_source: student
+    divergence: reverse_kl
+    teacher_context: privileged
+    lmbda: 1.0
+    beta: 1.0
+  - id: E4
+    name: opsd-without-privilege
+    family: self_distillation
+    backend: opsd
+    official_source: siyan-zhao/OPSD
+    trajectory_source: student
+    divergence: forward_kl
+    teacher_context: ordinary
+    lmbda: 1.0
+    beta: 0.0

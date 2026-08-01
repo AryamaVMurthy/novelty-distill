@@ -1,0 +1,67 @@
+schema_version: 1
+verified_at: "2026-08-02"
+
+repositories:
+  trl:
+    url: https://github.com/huggingface/trl.git
+    commit: aa592026c7267a52a60ce751a28e90bc303531fe
+    license: Apache-2.0
+    use: SFT and GKD reference; OPSD-compatible runtime uses the author's pinned TRL 0.26.0
+  sglang:
+    url: https://github.com/sgl-project/sglang.git
+    release: v0.5.10
+    commit: 1519acf37c23f2189adb93f57ca9cd2db1bebf18
+    license: Apache-2.0
+    use: teacher generation, evaluation generation, and judge serving; last release line using Torch 2.9.1 rather than CUDA-13-only dependencies
+  opsd:
+    url: https://github.com/siyan-zhao/OPSD.git
+    commit: 7448751f307a9cdbcc1246dd1565a1a605b443df
+    license: no-license-file-observed
+    redistribution: reference-and-external-checkout-only
+    use: privileged on-policy self-distillation
+  gem:
+    url: https://github.com/liziniu/GEM.git
+    commit: e5b1430979fa12bf8ab7398b2ccc71dff795bbee
+    license: no-license-file-observed
+    redistribution: reference-and-external-checkout-only
+    use: diversity-preserving SFT
+  minillm:
+    url: https://github.com/microsoft/LMOps.git
+    subdirectory: minillm
+    commit: 4f2a9deb5f08e459fd44c2e4792344d78ca89fc3
+    license: MIT
+    use: reverse-KL reference
+  distillm:
+    url: https://github.com/jongwooko/distillm.git
+    commit: d47e77ff9d27721783b32213be38c1204230cc0a
+    license: no-license-file-observed
+    redistribution: reference-and-external-checkout-only
+    use: skew-KL and adaptive off-policy baseline
+  inspect_evals:
+    url: https://github.com/UKGovernmentBEIS/inspect_evals.git
+    commit: 6a35510e530f236fd1dbcd9df888f01937c8494a
+    license: verify-before-install
+    use: NoveltyBench evaluation
+  hypospace:
+    url: https://github.com/CTT-Pavilion/_HypoSpace.git
+    commit: c69e9318577b34b5b896996571aefd4ba6053f58
+    license: verify-before-install
+    use: exact hypothesis-space evaluation
+  wandb:
+    url: https://github.com/wandb/wandb.git
+    commit: bbf1544daa209c5cfc97d7527093cab670a35d4f
+    license: MIT
+    use: experiment tracking
+
+huggingface:
+  models:
+    Qwen/Qwen3-1.7B: 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+    Qwen/Qwen3-4B: 1cfa9a7208912126459214e8b04321603b3df60c
+    Qwen/Qwen3-4B-Base: 906bfd4b4dc7f14ee4320094d8b41684abff8539
+    Qwen/Qwen3-8B: b968826d9c46dd6066d109eabc6255188de91218
+    Qwen/Qwen3-14B: 40c069824f4251a91eefaf281ebe4c544efd3e18
+    Qwen/Qwen3-32B: 9216db5781bf21249d130ec9da846c4624c16137
+    Qwen/Qwen3-Embedding-4B: 5cf2132abc99cad020ac570b19d031efec650f2b
+  datasets:
+    openbmb/UltraFeedback: 40b436560ca83a8dba36114c22ab3c66e43f6d5e
+    ZonglinY/TOMATO-Star: fcd201d92758a642465a7653b8055f3a04d5f439

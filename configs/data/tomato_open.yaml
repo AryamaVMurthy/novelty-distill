@@ -1,0 +1,6 @@
+dataset: ZonglinY/TOMATO-Star
+revision: fcd201d92758a642465a7653b8055f3a04d5f439
+split: train
+task: open
+seed: 17
+sizes: [1000, 5000, 20000]

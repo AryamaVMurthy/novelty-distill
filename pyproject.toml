@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "novelty-distill"
+version = "0.1.0"
+description = "Scientific-idea novelty baselines for supervised and on-policy distillation"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+dependencies = [
+  "pydantic>=2.11,<3",
+  "pyyaml>=6.0.2,<7",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-cov>=6,<7",
+  "ruff>=0.11,<0.12",
+]
+
+[tool.pytest.ini_options]
+addopts = "-ra --strict-markers"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
