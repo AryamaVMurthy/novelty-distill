@@ -6,6 +6,8 @@ aiohttp==3.14.3
     # via fsspec
 aiosignal==1.4.0
     # via aiohttp
+annotated-types==0.8.0
+    # via pydantic
 anyio==4.14.2
     # via httpx
 attrs==26.1.0
@@ -75,10 +77,15 @@ propcache==0.5.2
     #   yarl
 pyarrow==25.0.0
     # via datasets
+pydantic==2.11.7
+    # via -r environments/data.in
+pydantic-core==2.33.2
+    # via pydantic
 python-dateutil==2.9.0.post0
     # via pandas
-pyyaml==6.0.3
+pyyaml==6.0.2
     # via
+    #   -r environments/data.in
     #   datasets
     #   huggingface-hub
 requests==2.34.2
@@ -95,6 +102,11 @@ typing-extensions==4.16.0
     #   aiosignal
     #   anyio
     #   huggingface-hub
+    #   pydantic
+    #   pydantic-core
+    #   typing-inspection
+typing-inspection==0.4.2
+    # via pydantic
 urllib3==2.7.0
     # via requests
 xxhash==3.8.1
