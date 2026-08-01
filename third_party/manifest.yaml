@@ -61,6 +61,7 @@ huggingface:
     Qwen/Qwen3-8B: b968826d9c46dd6066d109eabc6255188de91218
     Qwen/Qwen3-14B: 40c069824f4251a91eefaf281ebe4c544efd3e18
     Qwen/Qwen3-32B: 9216db5781bf21249d130ec9da846c4624c16137
+    Qwen/Qwen3-32B-FP8: aa55da1ecc13d006e8b8e4f54579b1ea8c3db2df
     Qwen/Qwen3-Embedding-4B: 5cf2132abc99cad020ac570b19d031efec650f2b
   datasets:
     openbmb/UltraFeedback: 40b436560ca83a8dba36114c22ab3c66e43f6d5e

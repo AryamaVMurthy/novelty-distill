@@ -5,6 +5,7 @@ from novelty_distill.data.tomato import prepare_tomato_record
 from novelty_distill.training.opsd import (
     build_opsd_rows,
     load_opsd_run_spec,
+    opsd_dataset_kwargs,
     render_matched_prompt_pairs,
 )
 
@@ -72,3 +73,7 @@ def test_matched_context_control_renders_identical_teacher_and_student_prompts()
     )
 
     assert pairs == (("rendered::ordinary prompt", "rendered::ordinary prompt"),)
+
+
+def test_official_opsd_receives_raw_problem_solution_rows() -> None:
+    assert opsd_dataset_kwargs() == {"skip_prepare_dataset": True}

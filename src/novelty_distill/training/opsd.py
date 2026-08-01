@@ -88,6 +88,12 @@ def render_matched_prompt_pairs(
     return tuple(pairs)
 
 
+def opsd_dataset_kwargs() -> dict[str, bool]:
+    """Keep the raw columns required by the official OPSD data collator."""
+
+    return {"skip_prepare_dataset": True}
+
+
 class MatchedContextCollator:
     """OPSD collator for the no-privilege control with identical contexts."""
 
@@ -215,6 +221,7 @@ def execute_opsd_training(
             "attn_implementation": spec.attention_implementation,
             "use_cache": not spec.gradient_checkpointing,
         },
+        dataset_kwargs=opsd_dataset_kwargs(),
     )
     peft_config = LoraConfig(
         task_type="CAUSAL_LM",
