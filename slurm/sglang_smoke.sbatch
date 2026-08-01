@@ -41,6 +41,15 @@ export TMPDIR="${scratch_root}/tmp"
 cleanup() {
   if [[ -n "${server_pid}" ]] && kill -0 "${server_pid}" 2>/dev/null; then
     kill "${server_pid}"
+    for _attempt in $(seq 1 10); do
+      if ! kill -0 "${server_pid}" 2>/dev/null; then
+        break
+      fi
+      sleep 1
+    done
+    if kill -0 "${server_pid}" 2>/dev/null; then
+      kill -KILL "${server_pid}"
+    fi
     wait "${server_pid}" || true
   fi
 }
@@ -98,7 +107,7 @@ if [[ "${ready}" != 1 ]]; then
 fi
 
 input="${scratch_root}/data/tomato-open-train-1000.jsonl"
-output_dir="${scratch_root}/generations/sglang-smoke"
+output_dir="${scratch_root}/generations/sglang-smoke/${SLURM_JOB_ID}"
 if [[ ! -f "${input}" ]]; then
   echo "missing prepared smoke data: ${input}" >&2
   exit 1
