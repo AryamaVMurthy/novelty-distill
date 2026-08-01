@@ -17,22 +17,21 @@ uv run pytest -q
 ## Turing smoke path
 
 ```bash
-ssh turing 'mkdir -p "$HOME/logs"'
-ssh turing 'cd "$HOME" && sbatch' < slurm/prepare_data.sbatch
-ssh turing 'cd "$HOME" && sbatch' < slurm/sglang_smoke.sbatch
-ssh turing 'cd "$HOME" && sbatch' < slurm/bootstrap_official.sbatch
-ssh turing 'cd "$HOME" && sbatch' < slurm/train_smoke.sbatch
-ssh turing 'cd "$HOME" && sbatch --export=ALL,TRAINING_BACKEND=trl,RUN_CONFIG=configs/training/gkd_smoke.yaml' < slurm/train_smoke.sbatch
-ssh turing 'cd "$HOME" && sbatch --export=ALL,TRAINING_BACKEND=opsd' < slurm/train_smoke.sbatch
-ssh turing 'cd "$HOME" && sbatch --array=0-15 --export=ALL,BASELINE_MATRIX=1' < slurm/train_smoke.sbatch
-ssh turing 'cd "$HOME" && sbatch --export=ALL,OFFICIAL_REPOS="inspect_evals hypospace"' < slurm/bootstrap_official.sbatch
-ssh turing 'cd "$HOME" && sbatch' < slurm/prepare_hypospace.sbatch
-ssh turing 'cd "$HOME" && sbatch --export=ALL,EVAL_SUITE=noveltybench' < slurm/evaluate_official.sbatch
-ssh turing 'cd "$HOME" && sbatch --export=ALL,EVAL_SUITE=hypospace,HYPOSPACE_DOMAIN=causal' < slurm/evaluate_official.sbatch
+scripts/turing_submit.sh slurm/prepare_data.sbatch
+scripts/turing_submit.sh slurm/sglang_smoke.sbatch
+scripts/turing_submit.sh slurm/bootstrap_official.sbatch
+scripts/turing_submit.sh slurm/train_smoke.sbatch
+scripts/turing_submit.sh slurm/train_smoke.sbatch --export=ALL,TRAINING_BACKEND=trl,RUN_CONFIG=configs/training/gkd_smoke.yaml
+scripts/turing_submit.sh slurm/train_smoke.sbatch --export=ALL,TRAINING_BACKEND=opsd
+scripts/turing_submit.sh slurm/train_smoke.sbatch --array=0-15 --export=ALL,BASELINE_MATRIX=1
+scripts/turing_submit.sh slurm/prepare_hypospace.sbatch
+scripts/turing_submit.sh slurm/evaluate_official.sbatch --export=ALL,EVAL_SUITE=noveltybench
+scripts/turing_submit.sh slurm/evaluate_official.sbatch --export=ALL,EVAL_SUITE=hypospace,HYPOSPACE_DOMAIN=causal
 ```
 
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
-`/scratch/$USER/novelty-distill`. Only small Slurm logs go to home.
+`/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
+submission helper briefly allocates node01 before calling `sbatch`.
 
 GEM and DistiLLM additionally require the versioned teacher-target artifact produced from the
 permanent eight-sample teacher generation set; their launchers intentionally fail rather than
@@ -45,3 +44,6 @@ official memory-feasible form of the planned 32B judge for Turing's 48 GB GPU.
 NoveltyBench runs directly from its pinned official isolated package and uses Inspect's native
 SGLang provider. HypoSpace data and metrics run from the pinned official repository; the only
 adapter points its existing OpenRouter-compatible client at the local SGLang URL.
+
+The verified Turing smoke results and their limitations are recorded in
+[`reports/TURING_SMOKE_FINDINGS.md`](reports/TURING_SMOKE_FINDINGS.md).

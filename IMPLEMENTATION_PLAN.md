@@ -210,7 +210,7 @@ Use three training seeds for the main baselines. Run reverse-KL/JSD and optional
 
 ## Turing execution order
 
-1. **Fix storage:** Turing home is currently full (50 GB used, about 14 MB free). Free 5–10 GB or increase quota before setup. Do not delete anything automatically.
+1. **Route storage:** keep all project artifacts and logs in node01-local `/scratch/$USER`; submit with `scripts/turing_submit.sh`. Do not place experiment outputs in the full home filesystem.
 2. **Bootstrap:** clone this repo; install pinned packages; fetch only pinned official repositories.
 3. **Probe:** submit a short Slurm job to record GPU model, VRAM, CUDA, and which model combinations fit.
 4. **Pilot:** run untouched evaluation and 1k UltraFeedback SFT/SeqKD/GKD.
