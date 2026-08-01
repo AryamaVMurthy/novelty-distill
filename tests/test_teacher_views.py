@@ -1,4 +1,8 @@
-from novelty_distill.data.teacher_views import TeacherGeneration, derive_teacher_view
+from novelty_distill.data.teacher_views import (
+    TeacherGeneration,
+    build_teacher_target_artifact,
+    derive_teacher_view,
+)
 
 
 def _generations() -> tuple[TeacherGeneration, ...]:
@@ -32,3 +36,13 @@ def test_teacher_views_are_deterministic_and_follow_declared_selection() -> None
     assert len(diverse) == 4
     assert len({generation.cluster_id for generation in diverse}) == 4
     assert diverse[0].sample_index == 1
+
+
+def test_teacher_target_artifact_derives_every_training_view_once() -> None:
+    artifact = build_teacher_target_artifact(_generations(), seed=17)
+
+    assert artifact["schema_version"] == 1
+    views = artifact["targets"]["paper-1"]
+    assert set(views) == {"random1", "best1", "mode1", "diverse4"}
+    assert len(views["random1"]) == len(views["best1"]) == len(views["mode1"]) == 1
+    assert len(views["diverse4"]) == 4

@@ -1,7 +1,7 @@
 """Deterministic views derived from one permanent teacher-generation set."""
 
 import hashlib
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from typing import Literal
 
@@ -21,6 +21,36 @@ class TeacherGeneration(BaseModel):
 
 
 TeacherView = Literal["random1", "best1", "mode1", "diverse4", "all8"]
+
+
+def build_teacher_target_artifact(
+    generations: Iterable[TeacherGeneration], *, seed: int
+) -> dict[str, object]:
+    """Build the single versioned target artifact consumed by all teacher baselines."""
+
+    grouped: defaultdict[str, list[TeacherGeneration]] = defaultdict(list)
+    for generation in generations:
+        grouped[generation.prompt_id].append(generation)
+    if not grouped:
+        raise ValueError("teacher target artifact requires generations")
+
+    targets: dict[str, dict[str, list[str]]] = {}
+    for prompt_id in sorted(grouped):
+        prompt_generations = tuple(grouped[prompt_id])
+        if len(prompt_generations) != 8:
+            raise ValueError(f"prompt {prompt_id} requires exactly eight permanent samples")
+        targets[prompt_id] = {
+            view: [
+                generation.text
+                for generation in derive_teacher_view(
+                    prompt_generations,
+                    view=view,
+                    seed=seed,
+                )
+            ]
+            for view in ("random1", "best1", "mode1", "diverse4")
+        }
+    return {"schema_version": 1, "targets": targets}
 
 
 def derive_teacher_view(

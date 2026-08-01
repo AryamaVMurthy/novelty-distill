@@ -20,8 +20,17 @@ repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
-server_log="${scratch_root}/sglang-smoke-server.log"
+model_path="${MODEL_PATH:-Qwen/Qwen3-1.7B}"
+model_revision="${MODEL_REVISION:-70d244cc86ccca08cf5af4e1e306ecf908b1ad5e}"
+generation_config="${GENERATION_CONFIG:-configs/generation/smoke.yaml}"
+input_limit="${INPUT_LIMIT:-1}"
+output_name="${OUTPUT_NAME:-sglang-smoke}"
+server_log="${scratch_root}/logs/sglang-${SLURM_JOB_ID}.log"
 server_pid=""
+if ! [[ "${input_limit}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "INPUT_LIMIT must be a positive integer" >&2
+  exit 1
+fi
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
@@ -62,6 +71,7 @@ mkdir -p \
   "${scratch_root}/cache/triton" \
   "${scratch_root}/cache/cuda" \
   "${scratch_root}/cache/xdg" \
+  "${scratch_root}/logs" \
   "${scratch_root}/tmp"
 if [[ ! -d "${repo_dir}/.git" ]]; then
   git clone --branch "${repo_ref}" --single-branch "${repo_url}" "${repo_dir}"
@@ -80,9 +90,9 @@ uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inferenc
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
 "${venv_dir}/bin/python" -m sglang.launch_server \
-  --model-path Qwen/Qwen3-1.7B \
-  --revision 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e \
-  --served-model-name Qwen/Qwen3-1.7B \
+  --model-path "${model_path}" \
+  --revision "${model_revision}" \
+  --served-model-name "${model_path}" \
   --host 127.0.0.1 \
   --port 30000 \
   --mem-fraction-static 0.75 \
@@ -107,21 +117,21 @@ if [[ "${ready}" != 1 ]]; then
 fi
 
 input="${scratch_root}/data/tomato-open-train-1000.jsonl"
-output_dir="${scratch_root}/generations/sglang-smoke/${SLURM_JOB_ID}"
+output_dir="${scratch_root}/generations/${output_name}/${SLURM_JOB_ID}"
 if [[ ! -f "${input}" ]]; then
   echo "missing prepared smoke data: ${input}" >&2
   exit 1
 fi
 mkdir -p "${output_dir}"
 "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
-  --input <(head -n 1 "${input}") \
+  --input <(head -n "${input_limit}" "${input}") \
   --output-dir "${output_dir}" \
-  --config "${repo_dir}/configs/generation/smoke.yaml" \
+  --config "${repo_dir}/${generation_config}" \
   --concurrency 1
 "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
-  --input <(head -n 1 "${input}") \
+  --input <(head -n "${input_limit}" "${input}") \
   --output-dir "${output_dir}" \
-  --config "${repo_dir}/configs/generation/smoke.yaml" \
+  --config "${repo_dir}/${generation_config}" \
   --concurrency 1
 find "${output_dir}" -maxdepth 1 -type f -name '*.json' -print
 

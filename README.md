@@ -20,7 +20,15 @@ uv run pytest -q
 ssh turing 'mkdir -p "$HOME/logs"'
 ssh turing 'cd "$HOME" && sbatch' < slurm/prepare_data.sbatch
 ssh turing 'cd "$HOME" && sbatch' < slurm/sglang_smoke.sbatch
+ssh turing 'cd "$HOME" && sbatch' < slurm/bootstrap_official.sbatch
+ssh turing 'cd "$HOME" && sbatch' < slurm/train_smoke.sbatch
+ssh turing 'cd "$HOME" && sbatch --export=ALL,TRAINING_BACKEND=trl,RUN_CONFIG=configs/training/gkd_smoke.yaml' < slurm/train_smoke.sbatch
+ssh turing 'cd "$HOME" && sbatch --export=ALL,TRAINING_BACKEND=opsd' < slurm/train_smoke.sbatch
 ```
 
-Both jobs keep environments, Hugging Face caches, data, and generations under
+All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`. Only small Slurm logs go to home.
+
+GEM and DistiLLM additionally require the versioned teacher-target artifact produced from the
+permanent eight-sample teacher generation set; their launchers intentionally fail rather than
+substitute human targets.
