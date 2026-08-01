@@ -20,12 +20,19 @@ module load u22/cuda/12.4
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
-venv_dir="${scratch_root}/venvs/training"
 training_backend="${TRAINING_BACKEND:-trl}"
 if [[ "${training_backend}" == "opsd" ]]; then
   run_config="${RUN_CONFIG:-configs/training/opsd_smoke.yaml}"
+  venv_dir="${scratch_root}/venvs/training"
+  environment_lock="${repo_dir}/environments/training.lock"
 elif [[ "${training_backend}" == "trl" ]]; then
   run_config="${RUN_CONFIG:-configs/training/sft_smoke.yaml}"
+  venv_dir="${scratch_root}/venvs/training"
+  environment_lock="${repo_dir}/environments/training.lock"
+elif [[ "${training_backend}" == "gem" ]]; then
+  run_config="${RUN_CONFIG:-configs/training/gem_smoke.yaml}"
+  venv_dir="${scratch_root}/venvs/gem"
+  environment_lock="${repo_dir}/environments/gem.lock"
 else
   echo "unsupported TRAINING_BACKEND=${training_backend}" >&2
   exit 1
@@ -76,7 +83,7 @@ if [[ ! -x "${venv_dir}/bin/python" ]]; then
   uv venv --python 3.10 "${venv_dir}"
 fi
 "${venv_dir}/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 10), sys.version'
-uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/training.lock"
+uv pip sync --python "${venv_dir}/bin/python" "${environment_lock}"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
 echo "job_id=${SLURM_JOB_ID}"
@@ -85,7 +92,11 @@ echo "git_commit=${NOVELTY_GIT_COMMIT}"
 echo "cuda_visible_devices=${CUDA_VISIBLE_DEVICES:-unset}"
 echo "start_time=$(date --iso-8601=seconds)"
 nvidia-smi
-"${venv_dir}/bin/python" -c 'import torch, transformers, trl, peft; print({"torch": torch.__version__, "cuda": torch.version.cuda, "transformers": transformers.__version__, "trl": trl.__version__, "peft": peft.__version__, "cuda_available": torch.cuda.is_available(), "gpu": torch.cuda.get_device_name(0)})'
+if [[ "${training_backend}" == "gem" ]]; then
+  "${venv_dir}/bin/python" -c 'import datasets, deepspeed, torch, transformers; print({"torch": torch.__version__, "cuda": torch.version.cuda, "transformers": transformers.__version__, "datasets": datasets.__version__, "deepspeed": deepspeed.__version__, "cuda_available": torch.cuda.is_available(), "gpu": torch.cuda.get_device_name(0)})'
+else
+  "${venv_dir}/bin/python" -c 'import torch, transformers, trl, peft; print({"torch": torch.__version__, "cuda": torch.version.cuda, "transformers": transformers.__version__, "trl": trl.__version__, "peft": peft.__version__, "cuda_available": torch.cuda.is_available(), "gpu": torch.cuda.get_device_name(0)})'
+fi
 
 nvidia-smi --query-gpu=timestamp,index,name,utilization.gpu,memory.used,memory.total,power.draw,temperature.gpu \
   --format=csv -l 5 >"${monitor_file}" &
@@ -98,11 +109,18 @@ if [[ "${training_backend}" == "opsd" ]]; then
     --registry "${repo_dir}/configs/baselines.yaml" \
     --manifest "${repo_dir}/third_party/manifest.yaml" \
     --official-root "${scratch_root}/official"
-else
+elif [[ "${training_backend}" == "trl" ]]; then
   "${venv_dir}/bin/python" "${repo_dir}/scripts/run_trl_baseline.py" \
     --config "${config_path}" \
     --scratch-root "${scratch_root}" \
     --registry "${repo_dir}/configs/baselines.yaml"
+else
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/run_gem_baseline.py" \
+    --config "${config_path}" \
+    --scratch-root "${scratch_root}" \
+    --registry "${repo_dir}/configs/baselines.yaml" \
+    --manifest "${repo_dir}/third_party/manifest.yaml" \
+    --official-root "${scratch_root}/official"
 fi
 
 metadata_path="$("${venv_dir}/bin/python" -c 'import sys, yaml; from pathlib import Path; payload=yaml.safe_load(Path(sys.argv[1]).read_text()); print(Path(sys.argv[2]) / payload["output_dir"] / "run_metadata.json")' "${config_path}" "${scratch_root}")"

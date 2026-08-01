@@ -2,10 +2,15 @@
 
 import json
 import os
+import subprocess
+import sys
 import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any, TypedDict
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field
 
 from novelty_distill.config import BaselineConfig
 from novelty_distill.data.tomato import CanonicalExample
@@ -18,6 +23,182 @@ class GEMTokenizedRow(TypedDict):
 
 
 TeacherTargets = Mapping[str, Mapping[str, Sequence[str]]]
+
+
+class GEMRunSpec(BaseModel):
+    """A bounded run delegated to the pinned official GEM entrypoint."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    baseline_id: str
+    model: str
+    revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    input: Path
+    teacher_targets: Path
+    tokenized_output: Path
+    output_dir: Path
+    max_examples: int = Field(gt=0)
+    max_steps: int = Field(gt=0)
+    per_device_train_batch_size: int = Field(gt=0)
+    gradient_accumulation_steps: int = Field(gt=0)
+    learning_rate: float = Field(gt=0)
+    max_length: int = Field(gt=0)
+    gem_beta: float = Field(gt=0, lt=1)
+    seed: int = Field(ge=0)
+
+
+def build_official_gem_command(
+    spec: GEMRunSpec,
+    *,
+    python_executable: Path,
+    official_checkout: Path,
+    model_path: Path,
+    tokenized_path: Path,
+    output_dir: Path,
+) -> tuple[str, ...]:
+    """Build a one-process distributed command required by official GEM `train.py`."""
+
+    return (
+        str(python_executable),
+        "-m",
+        "torch.distributed.run",
+        "--standalone",
+        "--nnodes=1",
+        "--nproc_per_node=1",
+        str(official_checkout / "train.py"),
+        "--model_name_or_path",
+        str(model_path),
+        "--train_tokenized_file",
+        str(tokenized_path),
+        "--output_dir",
+        str(output_dir),
+        "--loss",
+        "gem",
+        "--gem_beta",
+        str(spec.gem_beta),
+        "--gem_h",
+        "linear",
+        "--use_flash_attn",
+        "False",
+        "--bf16",
+        "True",
+        "--gradient_checkpointing",
+        "True",
+        "--max_steps",
+        str(spec.max_steps),
+        "--per_device_train_batch_size",
+        str(spec.per_device_train_batch_size),
+        "--gradient_accumulation_steps",
+        str(spec.gradient_accumulation_steps),
+        "--learning_rate",
+        str(spec.learning_rate),
+        "--max_seq_length",
+        str(spec.max_length),
+        "--logging_steps",
+        "1",
+        "--save_strategy",
+        "steps",
+        "--save_steps",
+        str(spec.max_steps),
+        "--save_total_limit",
+        "2",
+        "--report_to",
+        "none",
+        "--seed",
+        str(spec.seed),
+        "--data_seed",
+        str(spec.seed),
+    )
+
+
+def load_gem_run_spec(path: Path) -> GEMRunSpec:
+    with path.open(encoding="utf-8") as handle:
+        return GEMRunSpec.model_validate(yaml.safe_load(handle))
+
+
+def execute_gem_training(
+    spec: GEMRunSpec,
+    *,
+    scratch_root: Path,
+    registry_path: Path,
+    manifest_path: Path,
+    official_root: Path,
+) -> dict[str, object]:
+    """Prepare B4 data and delegate optimization to the untouched official GEM trainer."""
+
+    from huggingface_hub import snapshot_download
+    from transformers import AutoTokenizer
+    from transformers.trainer_utils import get_last_checkpoint
+
+    from novelty_distill.config import load_baseline_registry
+    from novelty_distill.official import (
+        checkout_official_repository,
+        load_official_repositories,
+    )
+    from novelty_distill.training.trl import load_canonical_examples
+
+    registry = load_baseline_registry(registry_path)
+    matches = [baseline for baseline in registry.baselines if baseline.id == spec.baseline_id]
+    if len(matches) != 1 or matches[0].backend != "gem":
+        raise ValueError(f"baseline {spec.baseline_id} is not a unique GEM baseline")
+    baseline = matches[0]
+
+    repositories = load_official_repositories(manifest_path)
+    official_checkout = checkout_official_repository(repositories["gem"], official_root)
+    input_path = _resolve_under(scratch_root, spec.input)
+    targets_path = _resolve_under(scratch_root, spec.teacher_targets)
+    tokenized_path = _resolve_under(scratch_root, spec.tokenized_output)
+    output_dir = _resolve_under(scratch_root, spec.output_dir)
+    examples = load_canonical_examples(input_path, limit=spec.max_examples)
+
+    model_path = Path(snapshot_download(repo_id=spec.model, revision=spec.revision))
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    rows = build_gem_rows(
+        baseline,
+        examples,
+        teacher_targets=load_teacher_targets(targets_path),
+        tokenizer=tokenizer,
+        max_length=spec.max_length,
+    )
+    write_gem_jsonl(rows, tokenized_path)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    command = build_official_gem_command(
+        spec,
+        python_executable=Path(sys.executable),
+        official_checkout=official_checkout,
+        model_path=model_path,
+        tokenized_path=tokenized_path,
+        output_dir=output_dir,
+    )
+    if checkpoint := get_last_checkpoint(str(output_dir)):
+        command += ("--resume_from_checkpoint", checkpoint)
+    subprocess.run(command, check=True)
+
+    metrics_path = output_dir / "train_results.json"
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8")) if metrics_path.exists() else {}
+    metadata: dict[str, object] = {
+        "baseline_id": baseline.id,
+        "backend": baseline.backend,
+        "official_commit": repositories["gem"].commit,
+        "model": spec.model,
+        "revision": spec.revision,
+        "trajectory_source": baseline.trajectory_source,
+        "target_view": baseline.target_view,
+        "gem_beta": spec.gem_beta,
+        "dataset_revision": examples[0].dataset_revision,
+        "example_ids": [example.id for example in examples],
+        "training_rows": len(rows),
+        "max_steps": spec.max_steps,
+        "seed": spec.seed,
+        "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
+        "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
+        "metrics": metrics,
+        "output_dir": str(output_dir),
+    }
+    with (output_dir / "run_metadata.json").open("w", encoding="utf-8") as handle:
+        json.dump(metadata, handle, indent=2, sort_keys=True)
+    return metadata
 
 
 def load_teacher_targets(path: Path) -> dict[str, dict[str, tuple[str, ...]]]:
@@ -155,3 +336,11 @@ def tokenize_gem_example(
         "attention_mask": [1] * len(input_ids),
         "labels": [-100] * len(prompt_ids) + input_ids[len(prompt_ids) :],
     }
+
+
+def _resolve_under(root: Path, path: Path) -> Path:
+    root = root.resolve()
+    candidate = (root / path).resolve() if not path.is_absolute() else path.resolve()
+    if candidate != root and root not in candidate.parents:
+        raise ValueError(f"path must remain under scratch root {root}: {path}")
+    return candidate

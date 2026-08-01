@@ -6,7 +6,9 @@ import pytest
 from novelty_distill.config import load_baseline_registry
 from novelty_distill.data.tomato import prepare_tomato_record
 from novelty_distill.training.gem import (
+    GEMRunSpec,
     build_gem_rows,
+    build_official_gem_command,
     load_teacher_targets,
     tokenize_gem_example,
     write_gem_jsonl,
@@ -137,3 +139,45 @@ def test_teacher_target_artifact_and_gem_jsonl_are_plain_official_inputs(tmp_pat
     assert [json.loads(line) for line in output.read_text(encoding="utf-8").splitlines()] == list(
         rows
     )
+
+
+def test_gem_command_invokes_pinned_official_entrypoint() -> None:
+    spec = GEMRunSpec(
+        baseline_id="B4",
+        model="Qwen/Qwen3-1.7B",
+        revision="70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+        input=Path("data/input.jsonl"),
+        teacher_targets=Path("data/teacher-targets.json"),
+        tokenized_output=Path("data/gem.jsonl"),
+        output_dir=Path("checkpoints/B4-gem-smoke"),
+        max_examples=1,
+        max_steps=1,
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=1,
+        learning_rate=2e-5,
+        max_length=768,
+        gem_beta=0.7,
+        seed=17,
+    )
+
+    command = build_official_gem_command(
+        spec,
+        python_executable=Path("/env/bin/python"),
+        official_checkout=Path("/official/gem"),
+        model_path=Path("/models/qwen"),
+        tokenized_path=Path("/data/gem.jsonl"),
+        output_dir=Path("/output"),
+    )
+
+    assert command[:7] == (
+        "/env/bin/python",
+        "-m",
+        "torch.distributed.run",
+        "--standalone",
+        "--nnodes=1",
+        "--nproc_per_node=1",
+        "/official/gem/train.py",
+    )
+    assert command[command.index("--loss") + 1] == "gem"
+    assert command[command.index("--gem_beta") + 1] == "0.7"
+    assert command[command.index("--model_name_or_path") + 1] == "/models/qwen"
