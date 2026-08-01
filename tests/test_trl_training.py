@@ -110,6 +110,8 @@ def test_on_policy_gkd_keeps_only_ordinary_prompt_in_seed_row() -> None:
 
     assert rows[0]["messages"][0]["content"] == example.student_prompt
     assert "privileged direction" not in rows[0]["messages"][0]["content"].lower()
+    assert rows[0]["messages"][1] == {"role": "assistant", "content": ""}
+    assert example.human_target not in str(rows[0])
 
 
 def test_gkd_smoke_run_pins_both_shared_tokenizer_models() -> None:

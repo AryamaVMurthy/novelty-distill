@@ -96,7 +96,18 @@ def build_trl_rows(
 
     rows: list[TRLTrainingRow] = []
     for example in examples:
-        if baseline.trajectory_source in {"human", "student"}:
+        if baseline.trajectory_source == "student":
+            rows.append(
+                {
+                    "id": example.id,
+                    "messages": [
+                        {"role": "user", "content": example.student_prompt},
+                        {"role": "assistant", "content": ""},
+                    ],
+                }
+            )
+            continue
+        if baseline.trajectory_source == "human":
             targets = (example.human_target,)
         else:
             try:
