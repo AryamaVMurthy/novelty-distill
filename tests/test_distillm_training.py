@@ -7,6 +7,7 @@ from novelty_distill.training.distillm import (
     build_distillm_preprocess_command,
     build_distillm_raw_rows,
     build_distillm_training_command,
+    normalize_distillm_qwen_sentinels,
 )
 
 
@@ -16,6 +17,21 @@ def test_distillm_environment_pins_deepspeed_runtime_build_dependency() -> None:
     ).splitlines()
 
     assert "setuptools==83.0.0" in requirements
+
+
+def test_qwen_uint32_separator_is_normalized_for_official_loader(tmp_path: Path) -> None:
+    data_path = tmp_path / "train_0.bin"
+    data_path.write_bytes(
+        b"".join(value.to_bytes(4, "little") for value in (1, 2**32 - 1, 2))
+    )
+
+    assert normalize_distillm_qwen_sentinels(tmp_path) == 1
+    payload = data_path.read_bytes()
+    assert [
+        int.from_bytes(payload[offset : offset + 4], "little")
+        for offset in range(0, len(payload), 4)
+    ] == [1, 65535, 2]
+    assert normalize_distillm_qwen_sentinels(tmp_path) == 0
 
 
 def _spec() -> DistiLLMRunSpec:

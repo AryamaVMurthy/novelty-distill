@@ -237,6 +237,28 @@ def load_distillm_run_spec(path: Path) -> DistiLLMRunSpec:
         return DistiLLMRunSpec.model_validate(yaml.safe_load(handle))
 
 
+def normalize_distillm_qwen_sentinels(processed_dir: Path) -> int:
+    """Map Qwen's uint32 -1 separator to the value expected by its loader."""
+
+    replacements = 0
+    source = (2**32 - 1).to_bytes(4, "little")
+    target = (2**16 - 1).to_bytes(4, "little")
+    for data_path in sorted(processed_dir.glob("*_*.bin")):
+        payload = data_path.read_bytes()
+        if len(payload) % 4:
+            raise ValueError(f"DistiLLM uint32 data is misaligned: {data_path}")
+        count = payload.count(source)
+        if not count:
+            continue
+        updated = payload.replace(source, target)
+        with data_path.open("r+b") as handle:
+            handle.write(updated)
+            handle.flush()
+            os.fsync(handle.fileno())
+        replacements += count
+    return replacements
+
+
 def execute_distillm_training(
     spec: DistiLLMRunSpec,
     *,
@@ -303,6 +325,12 @@ def execute_distillm_training(
         cwd=checkout,
         env=environment,
     )
+    sentinel_replacements = normalize_distillm_qwen_sentinels(processed_dir / "qwen")
+    if sentinel_replacements != len(rows):
+        raise ValueError(
+            "expected one DistiLLM Qwen separator per row; "
+            f"normalized {sentinel_replacements} for {len(rows)} rows"
+        )
     output_dir.mkdir(parents=True, exist_ok=True)
     subprocess.run(
         build_distillm_training_command(
@@ -333,6 +361,7 @@ def execute_distillm_training(
         "skew_alpha": spec.skew_alpha,
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
+        "normalized_qwen_separators": sentinel_replacements,
         "max_steps": spec.max_steps,
         "seed": spec.seed,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
