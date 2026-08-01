@@ -21,6 +21,37 @@ repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 training_backend="${TRAINING_BACKEND:-trl}"
+if [[ "${BASELINE_MATRIX:-0}" == 1 ]]; then
+  matrix_ids=(
+    B2a B2b B2c B3
+    C1-human C1-best1 C1-diverse4 C2-human C2-best1 C2-diverse4 D2 D3
+    E3 E4 B4 C3
+  )
+  matrix_backends=(
+    trl trl trl trl
+    trl trl trl trl trl trl trl trl
+    opsd opsd gem distillm
+  )
+  matrix_configs=(
+    configs/training/sft_smoke.yaml configs/training/sft_smoke.yaml
+    configs/training/sft_smoke.yaml configs/training/sft_smoke.yaml
+    configs/training/gkd_smoke.yaml configs/training/gkd_smoke.yaml
+    configs/training/gkd_smoke.yaml configs/training/gkd_smoke.yaml
+    configs/training/gkd_smoke.yaml configs/training/gkd_smoke.yaml
+    configs/training/gkd_smoke.yaml configs/training/gkd_smoke.yaml
+    configs/training/opsd_smoke.yaml configs/training/opsd_smoke.yaml
+    configs/training/gem_smoke.yaml configs/training/distillm_smoke.yaml
+  )
+  matrix_index="${SLURM_ARRAY_TASK_ID:?BASELINE_MATRIX requires a Slurm array task}"
+  if ((matrix_index < 0 || matrix_index >= ${#matrix_ids[@]})); then
+    echo "SLURM_ARRAY_TASK_ID must be between 0 and $((${#matrix_ids[@]} - 1))" >&2
+    exit 1
+  fi
+  BASELINE_ID="${matrix_ids[$matrix_index]}"
+  training_backend="${matrix_backends[$matrix_index]}"
+  RUN_CONFIG="${matrix_configs[$matrix_index]}"
+  echo "matrix_index=${matrix_index} baseline_id=${BASELINE_ID} backend=${training_backend}"
+fi
 if [[ "${training_backend}" == "opsd" ]]; then
   run_config="${RUN_CONFIG:-configs/training/opsd_smoke.yaml}"
   venv_dir="${scratch_root}/venvs/training"

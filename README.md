@@ -24,6 +24,7 @@ ssh turing 'cd "$HOME" && sbatch' < slurm/bootstrap_official.sbatch
 ssh turing 'cd "$HOME" && sbatch' < slurm/train_smoke.sbatch
 ssh turing 'cd "$HOME" && sbatch --export=ALL,TRAINING_BACKEND=trl,RUN_CONFIG=configs/training/gkd_smoke.yaml' < slurm/train_smoke.sbatch
 ssh turing 'cd "$HOME" && sbatch --export=ALL,TRAINING_BACKEND=opsd' < slurm/train_smoke.sbatch
+ssh turing 'cd "$HOME" && sbatch --array=0-15 --export=ALL,BASELINE_MATRIX=1' < slurm/train_smoke.sbatch
 ```
 
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
