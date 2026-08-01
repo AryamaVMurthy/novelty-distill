@@ -1,6 +1,7 @@
 """Adapter for the official ZonglinY/TOMATO-Star schema."""
 
 import hashlib
+import json
 from collections.abc import Iterable, Mapping
 from typing import Any, Literal
 
@@ -44,9 +45,20 @@ def prepare_tomato_record(
     background = str(raw["background_survey"]).strip()
     target = str(raw["fine_grained_hypothesis"]).strip()
     source_id = str(raw["source_id"]).strip()
+    raw_inspirations = raw.get("inspiration", ())
+    if isinstance(raw_inspirations, str):
+        try:
+            raw_inspirations = json.loads(raw_inspirations)
+        except json.JSONDecodeError as error:
+            raise ValueError("inspiration is not valid serialized JSON") from error
+    if not isinstance(raw_inspirations, list | tuple) or any(
+        not isinstance(item, Mapping) for item in raw_inspirations
+    ):
+        raise ValueError("inspiration must contain a list of objects")
+
     inspirations = tuple(
         text
-        for item in raw.get("inspiration", ())
+        for item in raw_inspirations
         if (text := str(item.get("insp", "")).strip())
     )
     if task == "composition" and not inspirations:

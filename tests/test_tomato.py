@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from novelty_distill.data.tomato import prepare_tomato_record, select_deterministic_subset
@@ -61,6 +63,22 @@ def test_composition_task_exposes_inspiration_text_without_source_identity() -> 
     assert "Another revealing title" not in example.student_prompt
     assert "10.1000" not in example.student_prompt
     assert example.task == "composition"
+
+
+def test_official_parquet_serialized_inspiration_is_normalized() -> None:
+    raw = {
+        "source_id": "2025_12345678",
+        "research_question": "How can catalyst stability be improved?",
+        "background_survey": "Existing catalysts deactivate under humid conditions.",
+        "fine_grained_hypothesis": "A hydrophobic shell will slow catalyst deactivation.",
+        "inspiration": json.dumps([{"insp": "Hydrophobic confinement protects sites."}]),
+    }
+
+    example = prepare_tomato_record(raw, split="train", task="composition")
+
+    assert example.privileged_context.inspirations == (
+        "Hydrophobic confinement protects sites.",
+    )
 
 
 def test_composition_task_requires_at_least_one_inspiration() -> None:
