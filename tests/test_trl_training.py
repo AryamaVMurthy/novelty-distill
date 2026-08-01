@@ -89,3 +89,35 @@ def test_canonical_loader_honors_smoke_limit(tmp_path: Path) -> None:
     loaded = load_canonical_examples(path, limit=1)
 
     assert loaded == (records[0],)
+
+
+def test_on_policy_gkd_keeps_only_ordinary_prompt_in_seed_row() -> None:
+    registry = load_baseline_registry(Path("configs/baselines.yaml"))
+    baseline = next(item for item in registry.baselines if item.id == "D1")
+    example = prepare_tomato_record(
+        {
+            "source_id": "paper-1",
+            "research_question": "Can a coating improve stability?",
+            "background_survey": "Humidity damages the catalyst.",
+            "fine_grained_hypothesis": "A hydrophobic coating will help.",
+            "inspiration": [{"insp": "A privileged direction."}],
+        },
+        split="train",
+        task="open",
+    )
+
+    rows = build_trl_rows(baseline, (example,), teacher_targets={})
+
+    assert rows[0]["messages"][0]["content"] == example.student_prompt
+    assert "privileged direction" not in rows[0]["messages"][0]["content"].lower()
+
+
+def test_gkd_smoke_run_pins_both_shared_tokenizer_models() -> None:
+    spec = load_trl_run_spec(Path("configs/training/gkd_smoke.yaml"))
+
+    assert spec.baseline_id == "D1"
+    assert spec.model == "Qwen/Qwen3-1.7B"
+    assert spec.teacher_model == "Qwen/Qwen3-8B"
+    assert spec.teacher_revision == "b968826d9c46dd6066d109eabc6255188de91218"
+    assert spec.max_new_tokens == 64
+    assert spec.temperature == 0.8

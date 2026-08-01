@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from novelty_distill.config import BaselineConfig
 from novelty_distill.data.tomato import CanonicalExample
@@ -30,6 +30,8 @@ class TRLRunSpec(BaseModel):
     baseline_id: str
     model: str
     revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    teacher_model: str | None = None
+    teacher_revision: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
     input: Path
     output_dir: Path
     max_examples: int = Field(gt=0)
@@ -38,12 +40,20 @@ class TRLRunSpec(BaseModel):
     gradient_accumulation_steps: int = Field(gt=0)
     learning_rate: float = Field(gt=0)
     max_length: int = Field(gt=0)
+    max_new_tokens: int = Field(default=64, gt=0)
+    temperature: float = Field(default=0.8, gt=0)
     attention_implementation: Literal["sdpa", "flash_attention_2"]
     gradient_checkpointing: bool
     use_peft: bool
     lora_r: int = Field(gt=0)
     lora_alpha: int = Field(gt=0)
     seed: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def teacher_fields_are_paired(self) -> "TRLRunSpec":
+        if (self.teacher_model is None) != (self.teacher_revision is None):
+            raise ValueError("teacher_model and teacher_revision must be set together")
+        return self
 
 
 def load_trl_run_spec(path: Path) -> TRLRunSpec:
@@ -79,14 +89,14 @@ def build_trl_rows(
 
     if baseline.backend not in {"trl_sft", "trl_gkd"}:
         raise ValueError(f"baseline {baseline.id} does not use TRL")
-    if baseline.trajectory_source not in {"human", "teacher"}:
+    if baseline.trajectory_source not in {"human", "teacher", "student"}:
         raise NotImplementedError(
             f"target source {baseline.trajectory_source} is not yet wired for {baseline.id}"
         )
 
     rows: list[TRLTrainingRow] = []
     for example in examples:
-        if baseline.trajectory_source == "human":
+        if baseline.trajectory_source in {"human", "student"}:
             targets = (example.human_target,)
         else:
             try:
@@ -119,9 +129,8 @@ def execute_trl_training(
 
     from datasets import Dataset
     from peft import LoraConfig
-    from transformers import AutoTokenizer
+    from transformers import AutoModelForCausalLM, AutoTokenizer
     from transformers.trainer_utils import get_last_checkpoint
-    from trl import SFTConfig, SFTTrainer
 
     from novelty_distill.config import load_baseline_registry
 
@@ -130,10 +139,14 @@ def execute_trl_training(
     if len(matches) != 1:
         raise ValueError(f"baseline {spec.baseline_id} is not uniquely defined")
     baseline = matches[0]
-    if baseline.backend != "trl_sft":
+    if baseline.backend not in {"trl_sft", "trl_gkd"}:
         raise NotImplementedError(
             f"executable support for official backend {baseline.backend} is not ready"
         )
+    if baseline.backend == "trl_gkd" and (
+        spec.teacher_model is None or spec.teacher_revision is None
+    ):
+        raise ValueError(f"baseline {baseline.id} requires a pinned teacher model")
 
     input_path = _resolve_under(scratch_root, spec.input)
     output_dir = _resolve_under(scratch_root, spec.output_dir)
@@ -154,30 +167,6 @@ def execute_trl_training(
         tokenizer.pad_token = tokenizer.eos_token
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    training_args = SFTConfig(
-        output_dir=str(output_dir),
-        max_steps=spec.max_steps,
-        per_device_train_batch_size=spec.per_device_train_batch_size,
-        gradient_accumulation_steps=spec.gradient_accumulation_steps,
-        learning_rate=spec.learning_rate,
-        max_length=spec.max_length,
-        gradient_checkpointing=spec.gradient_checkpointing,
-        bf16=True,
-        completion_only_loss=True,
-        logging_steps=1,
-        save_strategy="steps",
-        save_steps=spec.max_steps,
-        save_total_limit=2,
-        report_to="none",
-        seed=spec.seed,
-        data_seed=spec.seed,
-        model_init_kwargs={
-            "revision": spec.revision,
-            "torch_dtype": "bfloat16",
-            "attn_implementation": spec.attention_implementation,
-            "use_cache": not spec.gradient_checkpointing,
-        },
-    )
     peft_config = None
     if spec.use_peft:
         peft_config = LoraConfig(
@@ -187,13 +176,79 @@ def execute_trl_training(
             lora_dropout=0.0,
             target_modules="all-linear",
         )
-    trainer = SFTTrainer(
-        model=spec.model,
-        args=training_args,
-        train_dataset=train_dataset,
-        processing_class=tokenizer,
-        peft_config=peft_config,
-    )
+    common_training_args = {
+        "output_dir": str(output_dir),
+        "max_steps": spec.max_steps,
+        "per_device_train_batch_size": spec.per_device_train_batch_size,
+        "gradient_accumulation_steps": spec.gradient_accumulation_steps,
+        "learning_rate": spec.learning_rate,
+        "max_length": spec.max_length,
+        "gradient_checkpointing": spec.gradient_checkpointing,
+        "bf16": True,
+        "logging_steps": 1,
+        "save_strategy": "steps",
+        "save_steps": spec.max_steps,
+        "save_total_limit": 2,
+        "report_to": "none",
+        "seed": spec.seed,
+        "data_seed": spec.seed,
+    }
+    if baseline.backend == "trl_sft":
+        from trl import SFTConfig, SFTTrainer
+
+        training_args = SFTConfig(
+            **common_training_args,
+            completion_only_loss=True,
+            model_init_kwargs={
+                "revision": spec.revision,
+                "torch_dtype": "bfloat16",
+                "attn_implementation": spec.attention_implementation,
+                "use_cache": not spec.gradient_checkpointing,
+            },
+        )
+        trainer = SFTTrainer(
+            model=spec.model,
+            args=training_args,
+            train_dataset=train_dataset,
+            processing_class=tokenizer,
+            peft_config=peft_config,
+        )
+    else:
+        import torch
+        from trl.experimental.gkd import GKDConfig, GKDTrainer
+
+        model_kwargs = {
+            "torch_dtype": torch.bfloat16,
+            "attn_implementation": spec.attention_implementation,
+            "use_cache": not spec.gradient_checkpointing,
+            "low_cpu_mem_usage": True,
+        }
+        student_model = AutoModelForCausalLM.from_pretrained(
+            spec.model,
+            revision=spec.revision,
+            **model_kwargs,
+        )
+        teacher_model = AutoModelForCausalLM.from_pretrained(
+            spec.teacher_model,
+            revision=spec.teacher_revision,
+            **model_kwargs,
+        )
+        training_args = GKDConfig(
+            **common_training_args,
+            lmbda=baseline.lmbda,
+            beta=baseline.beta,
+            temperature=spec.temperature,
+            max_new_tokens=spec.max_new_tokens,
+            seq_kd=False,
+        )
+        trainer = GKDTrainer(
+            model=student_model,
+            teacher_model=teacher_model,
+            args=training_args,
+            train_dataset=train_dataset,
+            processing_class=tokenizer,
+            peft_config=peft_config,
+        )
     last_checkpoint = get_last_checkpoint(str(output_dir))
     train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
     final_dir = output_dir / "final"
@@ -205,6 +260,12 @@ def execute_trl_training(
         "backend": baseline.backend,
         "model": spec.model,
         "revision": spec.revision,
+        "teacher_model": spec.teacher_model,
+        "teacher_revision": spec.teacher_revision,
+        "lmbda": baseline.lmbda,
+        "beta": baseline.beta,
+        "trajectory_source": baseline.trajectory_source,
+        "target_view": baseline.target_view,
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
         "max_steps": spec.max_steps,
