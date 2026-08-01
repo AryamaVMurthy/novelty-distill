@@ -114,6 +114,7 @@ case "${eval_suite}" in
         -M api_key=local \
         -T dataset_split="${NOVELTY_SPLIT:-curated}" \
         -T num_generations="${NUM_GENERATIONS:-2}" \
+        -T shuffle=false \
         -T quality_model=small \
         -T quality_model_device=cuda \
         -T partition_model_device=cuda \
