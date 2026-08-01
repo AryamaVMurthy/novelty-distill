@@ -68,6 +68,7 @@ server_args=(
   --port "${port}"
   --mem-fraction-static 0.55
   --disable-piecewise-cuda-graph
+  --enable-deterministic-inference
 )
 if [[ -n "${model_revision}" ]]; then
   server_args+=(--revision "${model_revision}")

@@ -99,6 +99,7 @@ uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
   --port "${port}" \
   --mem-fraction-static 0.75 \
   --disable-piecewise-cuda-graph \
+  --enable-deterministic-inference \
   >"${server_log}" 2>&1 &
 server_pid="$!"
 
