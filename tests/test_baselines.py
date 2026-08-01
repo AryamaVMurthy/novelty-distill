@@ -1,6 +1,9 @@
 from pathlib import Path
 
-from novelty_distill.config import load_baseline_registry
+import pytest
+from pydantic import ValidationError
+
+from novelty_distill.config import BaselineConfig, load_baseline_registry
 
 
 def test_registry_contains_every_planned_baseline_once() -> None:
@@ -36,3 +39,17 @@ def test_registry_contains_every_planned_baseline_once() -> None:
     assert {baseline.id for baseline in registry.baselines} == expected
     assert len(registry.baselines) == len(expected)
     assert all(baseline.official_source for baseline in registry.baselines)
+
+
+def test_soft_distillation_config_cannot_omit_official_loss_controls() -> None:
+    with pytest.raises(ValidationError, match="requires lmbda and beta"):
+        BaselineConfig.model_validate(
+            {
+                "id": "broken",
+                "name": "broken-gkd",
+                "family": "on_policy",
+                "backend": "trl_gkd",
+                "official_source": "huggingface/trl",
+                "trajectory_source": "student",
+            }
+        )

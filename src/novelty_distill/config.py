@@ -26,6 +26,16 @@ class BaselineConfig(BaseModel):
     lmbda: float | None = None
     beta: float | None = None
 
+    @model_validator(mode="after")
+    def official_soft_loss_controls_are_complete(self) -> "BaselineConfig":
+        if self.backend in {"trl_gkd", "opsd"} and (
+            self.lmbda is None or self.beta is None
+        ):
+            raise ValueError(f"{self.backend} requires lmbda and beta")
+        if self.trajectory_source == "student" and self.lmbda != 1.0:
+            raise ValueError("student trajectories require fully on-policy lmbda=1")
+        return self
+
 
 class BaselineRegistry(BaseModel):
     """Complete baseline registry."""
