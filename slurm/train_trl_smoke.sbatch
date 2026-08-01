@@ -55,8 +55,9 @@ export NOVELTY_GIT_COMMIT
 NOVELTY_GIT_COMMIT="$(git -C "${repo_dir}" rev-parse HEAD)"
 
 if [[ ! -x "${venv_dir}/bin/python" ]]; then
-  uv venv --python 3.12 "${venv_dir}"
+  uv venv --python 3.10 "${venv_dir}"
 fi
+"${venv_dir}/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 10), sys.version'
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/training.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
