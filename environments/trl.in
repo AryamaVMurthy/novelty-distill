@@ -1,0 +1,10 @@
+# Minimal imports used by the official TRL SFT and GKD adapters.
+torch==2.8.0
+accelerate==1.11.0
+transformers==4.57.1
+trl==0.26.0
+datasets==3.6.0
+peft==0.17.1
+pydantic==2.13.4
+pyyaml==6.0.3
+sentencepiece==0.1.99

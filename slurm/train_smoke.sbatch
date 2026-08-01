@@ -27,8 +27,8 @@ if [[ "${training_backend}" == "opsd" ]]; then
   environment_lock="${repo_dir}/environments/training.lock"
 elif [[ "${training_backend}" == "trl" ]]; then
   run_config="${RUN_CONFIG:-configs/training/sft_smoke.yaml}"
-  venv_dir="${scratch_root}/venvs/training"
-  environment_lock="${repo_dir}/environments/training.lock"
+  venv_dir="${scratch_root}/venvs/trl"
+  environment_lock="${repo_dir}/environments/trl.lock"
 elif [[ "${training_backend}" == "gem" ]]; then
   run_config="${RUN_CONFIG:-configs/training/gem_smoke.yaml}"
   venv_dir="${scratch_root}/venvs/gem"
