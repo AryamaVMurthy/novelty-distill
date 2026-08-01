@@ -15,6 +15,12 @@ from novelty_distill.training.gem import (
 )
 
 
+def test_gem_environment_pins_deepspeed_runtime_build_dependency() -> None:
+    requirements = Path("environments/gem.in").read_text(encoding="utf-8").splitlines()
+
+    assert "setuptools==83.0.0" in requirements
+
+
 def test_gem_tokenization_masks_prompt_and_trains_only_on_completion() -> None:
     example = prepare_tomato_record(
         {
