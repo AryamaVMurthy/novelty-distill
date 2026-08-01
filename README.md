@@ -25,6 +25,10 @@ ssh turing 'cd "$HOME" && sbatch' < slurm/train_smoke.sbatch
 ssh turing 'cd "$HOME" && sbatch --export=ALL,TRAINING_BACKEND=trl,RUN_CONFIG=configs/training/gkd_smoke.yaml' < slurm/train_smoke.sbatch
 ssh turing 'cd "$HOME" && sbatch --export=ALL,TRAINING_BACKEND=opsd' < slurm/train_smoke.sbatch
 ssh turing 'cd "$HOME" && sbatch --array=0-15 --export=ALL,BASELINE_MATRIX=1' < slurm/train_smoke.sbatch
+ssh turing 'cd "$HOME" && sbatch --export=ALL,OFFICIAL_REPOS="inspect_evals hypospace"' < slurm/bootstrap_official.sbatch
+ssh turing 'cd "$HOME" && sbatch' < slurm/prepare_hypospace.sbatch
+ssh turing 'cd "$HOME" && sbatch --export=ALL,EVAL_SUITE=noveltybench' < slurm/evaluate_official.sbatch
+ssh turing 'cd "$HOME" && sbatch --export=ALL,EVAL_SUITE=hypospace,HYPOSPACE_DOMAIN=causal' < slurm/evaluate_official.sbatch
 ```
 
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
@@ -37,3 +41,7 @@ substitute human targets.
 Teacher samples are scored by the official `Qwen/Qwen3-32B-FP8` checkpoint served with SGLang,
 then clustered with the official `Qwen/Qwen3-Embedding-4B` checkpoint. The FP8 judge is Qwen's
 official memory-feasible form of the planned 32B judge for Turing's 48 GB GPU.
+
+NoveltyBench runs directly from its pinned official isolated package and uses Inspect's native
+SGLang provider. HypoSpace data and metrics run from the pinned official repository; the only
+adapter points its existing OpenRouter-compatible client at the local SGLang URL.

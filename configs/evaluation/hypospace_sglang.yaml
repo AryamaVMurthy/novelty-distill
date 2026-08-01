@@ -1,0 +1,12 @@
+llm:
+  type: openrouter
+  models:
+    openrouter: novelty-model
+  api_keys:
+    openrouter: local
+  temperature: 0.7
+
+benchmark:
+  checkpoint: checkpoints
+  verbose: true
+  output_pattern: results/{dataset_name}_{model}.json

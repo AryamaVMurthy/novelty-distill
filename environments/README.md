@@ -8,6 +8,8 @@ The official projects do not share one compatible dependency stack, so the proje
 - `training.in`: the exact package versions declared by the official OPSD repository.
 - `gem.in`: the minimal imports used by the pinned official GEM training entrypoint.
 - `distillm.in`: the minimal imports used by the pinned official DistiLLM preprocessor and trainer.
+- `hypospace.in`: the small numerical/runtime stack imported by the pinned official HypoSpace
+  generators and benchmark entrypoints (upstream does not publish a requirements file).
 - MiniLLM runs from its pinned official external checkout. Any compatibility patch is stored as a small, reviewable patch without copying the upstream repository.
 
 Compiled lock files are generated with `uv pip compile` after resolution is verified on Turing.
