@@ -13,6 +13,27 @@ DOMAIN_ENTRYPOINTS = {
 }
 
 
+def official_artifact_args(
+    domain: str,
+    checkpoint_dir: Path,
+    output: Path,
+) -> list[str]:
+    """Return artifact flags supported by the pinned official domain CLI."""
+    if domain not in DOMAIN_ENTRYPOINTS:
+        supported = ", ".join(DOMAIN_ENTRYPOINTS)
+        raise ValueError(
+            f"unsupported HypoSpace domain {domain!r}; expected one of {supported}"
+        )
+    if domain == "boolean":
+        return []
+    return [
+        "--checkpoint-dir",
+        str(checkpoint_dir),
+        "--output",
+        str(output),
+    ]
+
+
 def _load_entrypoint(repository: Path, domain: str) -> tuple[ModuleType, Path]:
     try:
         filename = DOMAIN_ENTRYPOINTS[domain]

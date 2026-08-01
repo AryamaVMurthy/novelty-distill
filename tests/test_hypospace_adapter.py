@@ -3,7 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from novelty_distill.evaluation.hypospace_adapter import run_official_hypospace
+from novelty_distill.evaluation.hypospace_adapter import (
+    official_artifact_args,
+    run_official_hypospace,
+)
 
 FAKE_BENCHMARK = """
 import sys
@@ -52,6 +55,21 @@ def test_runs_official_entrypoint_with_local_sglang_provider(tmp_path: Path) -> 
 def test_rejects_unknown_domain(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="unsupported HypoSpace domain"):
         run_official_hypospace(tmp_path, "unknown", "http://localhost/v1", [])
+
+
+def test_official_artifact_args_match_domain_clis(tmp_path: Path) -> None:
+    checkpoint_dir = tmp_path / "checkpoints"
+    output = tmp_path / "result.json"
+
+    expected = [
+        "--checkpoint-dir",
+        str(checkpoint_dir),
+        "--output",
+        str(output),
+    ]
+    assert official_artifact_args("causal", checkpoint_dir, output) == expected
+    assert official_artifact_args("3d", checkpoint_dir, output) == expected
+    assert official_artifact_args("boolean", checkpoint_dir, output) == []
 
 
 def test_restores_process_arguments_after_upstream_main(tmp_path: Path) -> None:

@@ -127,6 +127,7 @@ case "${eval_suite}" in
     domain="${HYPOSPACE_DOMAIN:-causal}"
     official_root="${scratch_root}/official/hypospace"
     hypospace_venv="${scratch_root}/venvs/hypospace"
+    evaluation_dir="${scratch_root}/evaluations/hypospace/${domain}"
     test "$(git -C "${official_root}" rev-parse HEAD)" = \
       "c69e9318577b34b5b896996571aefd4ba6053f58"
     uv pip sync --python "${hypospace_venv}/bin/python" \
@@ -138,19 +139,23 @@ case "${eval_suite}" in
       boolean) dataset="${official_root}/boolean/datasets/boolean_2var.json" ;;
       *) echo "unsupported HYPOSPACE_DOMAIN=${domain}" >&2; exit 2 ;;
     esac
-    "${hypospace_venv}/bin/python" "${repo_dir}/scripts/run_hypospace_official.py" \
-      --repository "${official_root}" \
-      --domain "${domain}" \
-      --base-url "http://127.0.0.1:${port}/v1" \
-      -- \
-      --dataset "${dataset}" \
-      --config "${repo_dir}/configs/evaluation/hypospace_sglang.yaml" \
-      --n-samples "${EVAL_LIMIT:-1}" \
-      --n-queries "${NUM_GENERATIONS:-2}" \
-      --query-multiplier 1.0 \
-      --seed 33550336 \
-      --checkpoint-dir "${scratch_root}/evaluations/hypospace/${domain}/checkpoints" \
-      --output "${scratch_root}/evaluations/hypospace/${domain}/${SLURM_JOB_ID}.json"
+    mkdir -p "${evaluation_dir}"
+    (
+      cd "${evaluation_dir}"
+      "${hypospace_venv}/bin/python" "${repo_dir}/scripts/run_hypospace_official.py" \
+        --repository "${official_root}" \
+        --domain "${domain}" \
+        --checkpoint-dir "${evaluation_dir}/checkpoints" \
+        --output "${evaluation_dir}/${SLURM_JOB_ID}.json" \
+        --base-url "http://127.0.0.1:${port}/v1" \
+        -- \
+        --dataset "${dataset}" \
+        --config "${repo_dir}/configs/evaluation/hypospace_sglang.yaml" \
+        --n-samples "${EVAL_LIMIT:-1}" \
+        --n-queries "${NUM_GENERATIONS:-2}" \
+        --query-multiplier 1.0 \
+        --seed 33550336
+    )
     ;;
   *)
     echo "unsupported EVAL_SUITE=${eval_suite}" >&2
