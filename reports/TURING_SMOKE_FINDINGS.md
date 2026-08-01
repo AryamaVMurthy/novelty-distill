@@ -29,12 +29,16 @@ off-policy mode, and this project does not invent an unofficial substitute.
 
 ## Official evaluation evidence
 
-NoveltyBench job 17871 used pinned Inspect Evals commit
-`6a35510e530f236fd1dbcd9df888f01937c8494a` and Qwen3-4B served by SGLang. Across two prompts and
-two generations per prompt, all four completions were non-empty, none began with `<think>`, and
-the official smoke scores were `distinct_k=2.0` and `utility_k=8.9444`. The artifact is:
+NoveltyBench jobs 17906 and 17908 used pinned Inspect Evals commit
+`6a35510e530f236fd1dbcd9df888f01937c8494a` and Qwen3-4B served by SGLang. Across the same two
+prompts and two generations per prompt, all four completions were non-empty, none began with
+`<think>`, and the official smoke scores were `distinct_k=1.0` and `utility_k=5.0`. Prompt IDs,
+completion bytes, per-prompt scores, and aggregate scores were identical between runs. The
+canonical completion SHA-256 is
+`b0bd715292216604d7c07f179216ea12818abfea29e8f28f34804ed8fe2c2de1`. The artifacts are:
 
-`evaluations/noveltybench/2026-08-01T23-27-15-00-00_novelty-bench_EZYGMi2jPohBD77jeUThUh.eval`
+- `evaluations/noveltybench/2026-08-01T23-41-54-00-00_novelty-bench_hWqi5QnUNLXP2dwEg9SPe3.eval`
+- `evaluations/noveltybench/2026-08-01T23-43-04-00-00_novelty-bench_cYWPyunqzfTH7HMXtHcLV9.eval`
 
 Pinned official HypoSpace smoke results with Qwen3-4B were:
 
@@ -59,6 +63,10 @@ small for model comparisons.
    PyTorch 2.9.1 CUDA 12.8 wheel is pinned as a supplemental runtime dependency.
 4. Turing scratch is node-local and home is full. Submissions and logs must be routed through
    node01 scratch; `scripts/turing_submit.sh` makes that path reproducible.
+5. Inspect's seed does not freeze a task's pre-evaluation random shuffle, and request seeds alone do
+   not make dynamic batches invariant. NoveltyBench now uses the official `shuffle=false` task
+   option, and every SGLang server uses `--enable-deterministic-inference`. SGLang ports are derived
+   from the Slurm job ID so concurrent jobs cannot connect to one another's server.
 
 ## Next research-scale gate
 
