@@ -31,6 +31,11 @@ export UV_CONCURRENT_INSTALLS=1
 export UV_LINK_MODE=copy
 export HF_HOME="${scratch_root}/cache/huggingface"
 export TORCH_HOME="${scratch_root}/cache/torch"
+export FLASHINFER_WORKSPACE_BASE="${scratch_root}/cache/flashinfer-workspace"
+export XDG_CACHE_HOME="${scratch_root}/cache/xdg"
+export TORCH_EXTENSIONS_DIR="${scratch_root}/cache/torch-extensions"
+export TRITON_CACHE_DIR="${scratch_root}/cache/triton"
+export CUDA_CACHE_PATH="${scratch_root}/cache/cuda"
 export TMPDIR="${scratch_root}/tmp"
 
 cleanup() {
@@ -41,7 +46,14 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "${scratch_root}" "${scratch_root}/cache" "${scratch_root}/tmp"
+mkdir -p \
+  "${scratch_root}" \
+  "${scratch_root}/cache/flashinfer-workspace" \
+  "${scratch_root}/cache/torch-extensions" \
+  "${scratch_root}/cache/triton" \
+  "${scratch_root}/cache/cuda" \
+  "${scratch_root}/cache/xdg" \
+  "${scratch_root}/tmp"
 if [[ ! -d "${repo_dir}/.git" ]]; then
   git clone --branch "${repo_ref}" --single-branch "${repo_url}" "${repo_dir}"
 else

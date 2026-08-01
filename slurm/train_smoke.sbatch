@@ -43,6 +43,10 @@ export UV_CONCURRENT_INSTALLS=1
 export UV_LINK_MODE=copy
 export HF_HOME="${scratch_root}/cache/huggingface"
 export TORCH_HOME="${scratch_root}/cache/torch"
+export XDG_CACHE_HOME="${scratch_root}/cache/xdg"
+export TORCH_EXTENSIONS_DIR="${scratch_root}/cache/torch-extensions"
+export TRITON_CACHE_DIR="${scratch_root}/cache/triton"
+export CUDA_CACHE_PATH="${scratch_root}/cache/cuda"
 export TMPDIR="${scratch_root}/tmp"
 export TOKENIZERS_PARALLELISM=false
 
@@ -54,7 +58,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "${scratch_root}/logs" "${scratch_root}/tmp"
+mkdir -p \
+  "${scratch_root}/logs" \
+  "${scratch_root}/cache/torch-extensions" \
+  "${scratch_root}/cache/triton" \
+  "${scratch_root}/cache/cuda" \
+  "${scratch_root}/cache/xdg" \
+  "${scratch_root}/tmp"
 git -C "${repo_dir}" diff --quiet
 git -C "${repo_dir}" fetch origin "${repo_ref}"
 git -C "${repo_dir}" switch "${repo_ref}"
