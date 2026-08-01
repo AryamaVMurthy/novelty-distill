@@ -122,6 +122,9 @@ def test_gkd_smoke_run_pins_both_shared_tokenizer_models() -> None:
     assert spec.model == "Qwen/Qwen3-1.7B"
     assert spec.teacher_model == "Qwen/Qwen3-8B"
     assert spec.teacher_revision == "b968826d9c46dd6066d109eabc6255188de91218"
+    # TRL's official ChatML collator drops the prompt when a completion alone
+    # reaches max_length; the first canonical human target is 804 tokens.
+    assert spec.max_length == 1024
     assert spec.max_new_tokens == 64
     assert spec.temperature == 0.8
 
