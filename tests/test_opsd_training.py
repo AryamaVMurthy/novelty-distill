@@ -6,6 +6,7 @@ from novelty_distill.training.opsd import (
     build_opsd_rows,
     load_opsd_run_spec,
     opsd_dataset_kwargs,
+    override_opsd_baseline,
     render_matched_prompt_pairs,
 )
 
@@ -77,3 +78,10 @@ def test_matched_context_control_renders_identical_teacher_and_student_prompts()
 
 def test_official_opsd_receives_raw_problem_solution_rows() -> None:
     assert opsd_dataset_kwargs() == {"skip_prepare_dataset": True}
+
+
+def test_opsd_smoke_config_can_select_each_supported_ablation() -> None:
+    base = load_opsd_run_spec(Path("configs/training/opsd_smoke.yaml"))
+
+    assert override_opsd_baseline(base, "E3").output_dir == Path("checkpoints/E3-smoke")
+    assert override_opsd_baseline(base, "E4").baseline_id == "E4"

@@ -6,6 +6,7 @@ from novelty_distill.training.trl import (
     build_trl_rows,
     load_canonical_examples,
     load_trl_run_spec,
+    override_trl_baseline,
 )
 
 
@@ -123,3 +124,13 @@ def test_gkd_smoke_run_pins_both_shared_tokenizer_models() -> None:
     assert spec.teacher_revision == "b968826d9c46dd6066d109eabc6255188de91218"
     assert spec.max_new_tokens == 64
     assert spec.temperature == 0.8
+
+
+def test_teacher_seqkd_config_requires_the_versioned_target_artifact() -> None:
+    spec = override_trl_baseline(
+        load_trl_run_spec(Path("configs/training/sft_smoke.yaml")), "B2b"
+    )
+
+    assert spec.baseline_id == "B2b"
+    assert spec.teacher_targets == Path("data/teacher-targets.json")
+    assert spec.output_dir == Path("checkpoints/B2b-smoke")

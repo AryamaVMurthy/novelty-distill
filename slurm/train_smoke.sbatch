@@ -109,17 +109,27 @@ nvidia-smi --query-gpu=timestamp,index,name,utilization.gpu,memory.used,memory.t
 monitor_pid="$!"
 
 if [[ "${training_backend}" == "opsd" ]]; then
-  "${venv_dir}/bin/python" "${repo_dir}/scripts/run_opsd_baseline.py" \
-    --config "${config_path}" \
-    --scratch-root "${scratch_root}" \
-    --registry "${repo_dir}/configs/baselines.yaml" \
-    --manifest "${repo_dir}/third_party/manifest.yaml" \
-    --official-root "${scratch_root}/official"
-elif [[ "${training_backend}" == "trl" ]]; then
-  "${venv_dir}/bin/python" "${repo_dir}/scripts/run_trl_baseline.py" \
-    --config "${config_path}" \
-    --scratch-root "${scratch_root}" \
+  opsd_args=(
+    --config "${config_path}"
+    --scratch-root "${scratch_root}"
     --registry "${repo_dir}/configs/baselines.yaml"
+    --manifest "${repo_dir}/third_party/manifest.yaml"
+    --official-root "${scratch_root}/official"
+  )
+  if [[ -n "${BASELINE_ID:-}" ]]; then
+    opsd_args+=(--baseline-id "${BASELINE_ID}")
+  fi
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/run_opsd_baseline.py" "${opsd_args[@]}"
+elif [[ "${training_backend}" == "trl" ]]; then
+  trl_args=(
+    --config "${config_path}"
+    --scratch-root "${scratch_root}"
+    --registry "${repo_dir}/configs/baselines.yaml"
+  )
+  if [[ -n "${BASELINE_ID:-}" ]]; then
+    trl_args+=(--baseline-id "${BASELINE_ID}")
+  fi
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/run_trl_baseline.py" "${trl_args[@]}"
 elif [[ "${training_backend}" == "gem" ]]; then
   "${venv_dir}/bin/python" "${repo_dir}/scripts/run_gem_baseline.py" \
     --config "${config_path}" \
@@ -137,5 +147,8 @@ else
 fi
 
 metadata_path="$("${venv_dir}/bin/python" -c 'import sys, yaml; from pathlib import Path; payload=yaml.safe_load(Path(sys.argv[1]).read_text()); print(Path(sys.argv[2]) / payload["output_dir"] / "run_metadata.json")' "${config_path}" "${scratch_root}")"
+if [[ -n "${BASELINE_ID:-}" ]] && [[ "${training_backend}" == "trl" || "${training_backend}" == "opsd" ]]; then
+  metadata_path="${scratch_root}/checkpoints/${BASELINE_ID}-smoke/run_metadata.json"
+fi
 cat "${metadata_path}"
 echo "end_time=$(date --iso-8601=seconds)"

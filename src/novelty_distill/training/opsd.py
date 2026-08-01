@@ -52,6 +52,22 @@ def load_opsd_run_spec(path: Path) -> OPSDRunSpec:
         return OPSDRunSpec.model_validate(yaml.safe_load(handle))
 
 
+def override_opsd_baseline(spec: OPSDRunSpec, baseline_id: str | None) -> OPSDRunSpec:
+    """Reuse the OPSD runtime controls for E2/E3/E4 smoke baselines."""
+
+    if baseline_id is None:
+        return spec
+    cleaned = baseline_id.strip()
+    if cleaned not in {"E2", "E3", "E4"}:
+        raise ValueError("OPSD smoke override must be E2, E3, or E4")
+    return spec.model_copy(
+        update={
+            "baseline_id": cleaned,
+            "output_dir": Path("checkpoints") / f"{cleaned}-smoke",
+        }
+    )
+
+
 def build_opsd_rows(
     baseline: BaselineConfig, examples: Sequence[CanonicalExample]
 ) -> tuple[OPSDTrainingRow, ...]:

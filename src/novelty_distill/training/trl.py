@@ -32,6 +32,7 @@ class TRLRunSpec(BaseModel):
     revision: str = Field(pattern=r"^[0-9a-f]{40}$")
     teacher_model: str | None = None
     teacher_revision: str | None = Field(default=None, pattern=r"^[0-9a-f]{40}$")
+    teacher_targets: Path | None = None
     input: Path
     output_dir: Path
     max_examples: int = Field(gt=0)
@@ -59,6 +60,22 @@ class TRLRunSpec(BaseModel):
 def load_trl_run_spec(path: Path) -> TRLRunSpec:
     with path.open(encoding="utf-8") as handle:
         return TRLRunSpec.model_validate(yaml.safe_load(handle))
+
+
+def override_trl_baseline(spec: TRLRunSpec, baseline_id: str | None) -> TRLRunSpec:
+    """Reuse one backend config while keeping each smoke output isolated by baseline ID."""
+
+    if baseline_id is None:
+        return spec
+    cleaned = baseline_id.strip()
+    if not cleaned or "/" in cleaned or ".." in cleaned:
+        raise ValueError("baseline override must be a safe non-empty ID")
+    return spec.model_copy(
+        update={
+            "baseline_id": cleaned,
+            "output_dir": Path("checkpoints") / f"{cleaned}-smoke",
+        }
+    )
 
 
 def load_canonical_examples(path: Path, *, limit: int) -> tuple[CanonicalExample, ...]:
@@ -165,7 +182,15 @@ def execute_trl_training(
     rows = build_trl_rows(
         baseline,
         examples,
-        teacher_targets=teacher_targets or {},
+        teacher_targets=(
+            teacher_targets
+            if teacher_targets is not None
+            else _load_configured_teacher_targets(
+                spec,
+                scratch_root,
+                required=baseline.trajectory_source == "teacher",
+            )
+        ),
     )
     train_dataset = Dataset.from_list(list(rows))
 
@@ -315,3 +340,15 @@ def _resolve_under(root: Path, path: Path) -> Path:
     if not resolved.is_relative_to(root):
         raise ValueError(f"path must stay under scratch root {root}: {path}")
     return resolved
+
+
+def _load_configured_teacher_targets(
+    spec: TRLRunSpec, scratch_root: Path, *, required: bool
+) -> TeacherTargets:
+    if not required:
+        return {}
+    if spec.teacher_targets is None:
+        raise ValueError(f"baseline {spec.baseline_id} requires a teacher-target artifact")
+    from novelty_distill.training.gem import load_teacher_targets
+
+    return load_teacher_targets(_resolve_under(scratch_root, spec.teacher_targets))
