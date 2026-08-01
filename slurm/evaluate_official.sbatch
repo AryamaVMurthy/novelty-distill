@@ -119,6 +119,7 @@ case "${eval_suite}" in
         -T partition_model_device=cuda \
         --limit "${EVAL_LIMIT:-2}" \
         --max-connections "${MAX_CONNECTIONS:-2}" \
+        --seed "${SEED:-17}" \
         --temperature "${TEMPERATURE:-0.7}" \
         --reasoning-effort none \
         --top-p "${TOP_P:-0.9}" \
