@@ -249,6 +249,22 @@ def execute_trl_training(
             processing_class=tokenizer,
             peft_config=peft_config,
         )
+        if os.environ.get("NOVELTY_GKD_DIAGNOSTIC") == "1":
+            probe = trainer.data_collator([rows[0]])
+            print(
+                json.dumps(
+                    {
+                        "gkd_probe_shapes": {
+                            key: list(value.shape)
+                            for key, value in probe.items()
+                            if hasattr(value, "shape")
+                        },
+                        "prompt_active_tokens": int(probe["prompt_attention_mask"].sum()),
+                        "completion_active_tokens": int((probe["labels"] != -100).sum()),
+                    },
+                    sort_keys=True,
+                )
+            )
     last_checkpoint = get_last_checkpoint(str(output_dir))
     train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
     final_dir = output_dir / "final"
