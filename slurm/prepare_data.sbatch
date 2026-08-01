@@ -22,6 +22,10 @@ venv_dir="${scratch_root}/venvs/data"
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
+export UV_CONCURRENT_DOWNLOADS=1
+export UV_CONCURRENT_BUILDS=1
+export UV_CONCURRENT_INSTALLS=1
+export UV_LINK_MODE=copy
 export HF_HOME="${scratch_root}/cache/huggingface"
 
 mkdir -p "${scratch_root}" "${scratch_root}/data" "${scratch_root}/cache"
@@ -37,6 +41,7 @@ fi
 if [[ ! -x "${venv_dir}/bin/python" ]]; then
   uv venv --python 3.12 "${venv_dir}"
 fi
+"${venv_dir}/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version'
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/data.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 

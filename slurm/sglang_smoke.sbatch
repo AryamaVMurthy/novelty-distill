@@ -25,8 +25,13 @@ server_pid=""
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
+export UV_CONCURRENT_DOWNLOADS=1
+export UV_CONCURRENT_BUILDS=1
+export UV_CONCURRENT_INSTALLS=1
+export UV_LINK_MODE=copy
 export HF_HOME="${scratch_root}/cache/huggingface"
 export TORCH_HOME="${scratch_root}/cache/torch"
+export TMPDIR="${scratch_root}/tmp"
 
 cleanup() {
   if [[ -n "${server_pid}" ]] && kill -0 "${server_pid}" 2>/dev/null; then
@@ -36,7 +41,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "${scratch_root}" "${scratch_root}/cache"
+mkdir -p "${scratch_root}" "${scratch_root}/cache" "${scratch_root}/tmp"
 if [[ ! -d "${repo_dir}/.git" ]]; then
   git clone --branch "${repo_ref}" --single-branch "${repo_url}" "${repo_dir}"
 else
@@ -49,6 +54,7 @@ fi
 if [[ ! -x "${venv_dir}/bin/python" ]]; then
   uv venv --python 3.12 "${venv_dir}"
 fi
+"${venv_dir}/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version'
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
