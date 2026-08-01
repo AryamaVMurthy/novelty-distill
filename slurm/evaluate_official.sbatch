@@ -112,7 +112,6 @@ case "${eval_suite}" in
         --model "sglang/${served_model}" \
         --model-base-url "${SGLANG_BASE_URL}" \
         -M api_key=local \
-        -M 'extra_body={"chat_template_kwargs":{"enable_thinking":false}}' \
         -T dataset_split="${NOVELTY_SPLIT:-curated}" \
         -T num_generations="${NUM_GENERATIONS:-2}" \
         -T quality_model=small \
@@ -121,6 +120,7 @@ case "${eval_suite}" in
         --limit "${EVAL_LIMIT:-2}" \
         --max-connections "${MAX_CONNECTIONS:-2}" \
         --temperature "${TEMPERATURE:-0.7}" \
+        --reasoning-effort none \
         --top-p "${TOP_P:-0.9}" \
         --max-tokens "${MAX_TOKENS:-512}" \
         --log-dir "${scratch_root}/evaluations/noveltybench"
