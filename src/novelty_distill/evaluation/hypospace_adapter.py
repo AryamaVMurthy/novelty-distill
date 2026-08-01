@@ -14,6 +14,24 @@ DOMAIN_ENTRYPOINTS = {
 }
 
 
+class _SGLangRequestsProxy:
+    """Add Qwen's documented non-thinking template option to official requests."""
+
+    def __init__(self, requests_module: Any) -> None:
+        self._requests = requests_module
+
+    def post(self, url: str, **kwargs: Any):
+        payload = dict(kwargs.get("json", {}))
+        template_kwargs = dict(payload.get("chat_template_kwargs", {}))
+        template_kwargs["enable_thinking"] = False
+        payload["chat_template_kwargs"] = template_kwargs
+        kwargs["json"] = payload
+        return self._requests.post(url, **kwargs)
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._requests, name)
+
+
 def validate_hypospace_result(path: Path) -> None:
     """Fail when the official benchmark reports swallowed provider errors."""
     with path.open(encoding="utf-8") as handle:
@@ -98,9 +116,15 @@ def run_official_hypospace(
     try:
         module, entrypoint = _load_entrypoint(repository, domain)
         module.setup_llm = _local_sglang_factory(module, base_url, max_tokens)
-        sys.argv = [str(entrypoint), *official_args]
-        module.main()
-        return module
+        provider_globals = module.OpenRouterLLM.query_with_usage.__globals__
+        upstream_requests = provider_globals["requests"]
+        provider_globals["requests"] = _SGLangRequestsProxy(upstream_requests)
+        try:
+            sys.argv = [str(entrypoint), *official_args]
+            module.main()
+            return module
+        finally:
+            provider_globals["requests"] = upstream_requests
     finally:
         sys.argv = original_argv
         sys.path.remove(str(domain_dir))

@@ -15,6 +15,17 @@ import sys
 CAPTURED = {}
 
 
+class FakeRequests:
+    def __init__(self):
+        self.payload = None
+
+    def post(self, url, **kwargs):
+        self.payload = kwargs["json"]
+
+
+requests = FakeRequests()
+
+
 class OpenRouterLLM:
     def __init__(self, model, api_key, temperature, max_tokens, base_url):
         self.model = model
@@ -22,6 +33,12 @@ class OpenRouterLLM:
         self.temperature = temperature
         self.max_tokens = max_tokens
         self.base_url = base_url
+
+    def query_with_usage(self, prompt):
+        requests.post(
+            f"{self.base_url}/chat/completions",
+            json={"model": self.model, "messages": [{"content": prompt}]},
+        )
 
 
 def setup_llm(llm_type, **kwargs):
@@ -32,9 +49,11 @@ def main():
     llm = setup_llm(
         "openrouter", model="novelty-model", api_key="local", temperature=0.7
     )
+    llm.query_with_usage("test prompt")
     CAPTURED.update(
         base_url=llm.base_url,
         max_tokens=llm.max_tokens,
+        request_payload=requests.payload,
         argv=sys.argv.copy(),
     )
 """
@@ -56,6 +75,11 @@ def test_runs_official_entrypoint_with_local_sglang_provider(tmp_path: Path) -> 
     assert module.CAPTURED == {
         "base_url": "http://127.0.0.1:30000/v1",
         "max_tokens": 512,
+        "request_payload": {
+            "model": "novelty-model",
+            "messages": [{"content": "test prompt"}],
+            "chat_template_kwargs": {"enable_thinking": False},
+        },
         "argv": [str(domain_dir / "run_causal_benchmark.py"), "--dataset", "smoke.json"],
     }
 
