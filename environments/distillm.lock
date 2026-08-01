@@ -153,6 +153,8 @@ safetensors==0.8.0
     #   transformers
 sentencepiece==0.1.99
     # via -r environments/distillm.in
+setuptools==83.0.0
+    # via -r environments/distillm.in
 six==1.17.0
     # via rouge-score
 sympy==1.14.0

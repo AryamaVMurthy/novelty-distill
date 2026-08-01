@@ -10,6 +10,14 @@ from novelty_distill.training.distillm import (
 )
 
 
+def test_distillm_environment_pins_deepspeed_runtime_build_dependency() -> None:
+    requirements = Path("environments/distillm.in").read_text(
+        encoding="utf-8"
+    ).splitlines()
+
+    assert "setuptools==83.0.0" in requirements
+
+
 def _spec() -> DistiLLMRunSpec:
     return DistiLLMRunSpec(
         baseline_id="C3",
