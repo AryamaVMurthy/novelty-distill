@@ -26,6 +26,7 @@ generation_config="${GENERATION_CONFIG:-configs/generation/smoke.yaml}"
 input_limit="${INPUT_LIMIT:-1}"
 output_name="${OUTPUT_NAME:-sglang-smoke}"
 server_log="${scratch_root}/logs/sglang-${SLURM_JOB_ID}.log"
+input_slice="${scratch_root}/tmp/generation-input-${SLURM_JOB_ID}.jsonl"
 server_pid=""
 if ! [[ "${input_limit}" =~ ^[1-9][0-9]*$ ]]; then
   echo "INPUT_LIMIT must be a positive integer" >&2
@@ -100,6 +101,7 @@ uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
   >"${server_log}" 2>&1 &
 server_pid="$!"
 
+echo "stage=wait_for_server"
 ready=0
 for _attempt in $(seq 1 120); do
   if curl --fail --silent http://127.0.0.1:30000/health >/dev/null; then
@@ -124,13 +126,15 @@ if [[ ! -f "${input}" ]]; then
   exit 1
 fi
 mkdir -p "${output_dir}"
+head -n "${input_limit}" "${input}" >"${input_slice}"
+echo "stage=generate input=${input_slice} output=${output_dir}"
 "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
-  --input <(head -n "${input_limit}" "${input}") \
+  --input "${input_slice}" \
   --output-dir "${output_dir}" \
   --config "${repo_dir}/${generation_config}" \
   --concurrency 1
 "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
-  --input <(head -n "${input_limit}" "${input}") \
+  --input "${input_slice}" \
   --output-dir "${output_dir}" \
   --config "${repo_dir}/${generation_config}" \
   --concurrency 1
