@@ -10,6 +10,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+SAMPLING_STRATEGY = "single-request-per-sample-v1"
+
 
 class GenerationSpec(BaseModel):
     """Sampling controls that must be identical across comparable models."""
@@ -51,8 +53,13 @@ class GenerationRecord(BaseModel):
     completion_tokens: int | None = Field(default=None, ge=0)
 
 
-def build_chat_completion_payload(prompt: str, spec: GenerationSpec) -> dict[str, Any]:
-    """Build one SGLang `/v1/chat/completions` request."""
+def build_chat_completion_payload(
+    prompt: str, spec: GenerationSpec, *, sample_index: int
+) -> dict[str, Any]:
+    """Build one deterministic single-sample SGLang request."""
+
+    if not 0 <= sample_index < spec.samples_per_prompt:
+        raise ValueError("sample index is outside the generation specification")
 
     return {
         "model": spec.model,
@@ -60,8 +67,8 @@ def build_chat_completion_payload(prompt: str, spec: GenerationSpec) -> dict[str
         "temperature": spec.temperature,
         "top_p": spec.top_p,
         "max_tokens": spec.max_new_tokens,
-        "n": spec.samples_per_prompt,
-        "seed": spec.seed,
+        "n": 1,
+        "seed": spec.seed + sample_index,
         "chat_template_kwargs": {"enable_thinking": spec.enable_thinking},
     }
 
@@ -69,21 +76,30 @@ def build_chat_completion_payload(prompt: str, spec: GenerationSpec) -> dict[str
 def generation_fingerprint(spec: GenerationSpec) -> str:
     """Return a stable hash of every generation control."""
 
-    encoded = json.dumps(
-        spec.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
-    ).encode()
+    controls = {
+        "sampling_strategy": SAMPLING_STRATEGY,
+        "spec": spec.model_dump(mode="json"),
+    }
+    encoded = json.dumps(controls, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
 
 
 def parse_chat_completion_response(
-    prompt_id: str, spec: GenerationSpec, response: Mapping[str, Any]
+    prompt_id: str,
+    spec: GenerationSpec,
+    response: Mapping[str, Any],
+    *,
+    sample_index: int,
 ) -> tuple[GenerationRecord, ...]:
-    """Validate and normalize one OpenAI-compatible SGLang response."""
+    """Validate and normalize one single-sample SGLang response."""
+
+    if not 0 <= sample_index < spec.samples_per_prompt:
+        raise ValueError("sample index is outside the generation specification")
 
     choices = response.get("choices")
-    if not isinstance(choices, list) or len(choices) != spec.samples_per_prompt:
+    if not isinstance(choices, list) or len(choices) != 1:
         raise ValueError(
-            f"expected {spec.samples_per_prompt} choices, received "
+            "expected one choice, received "
             f"{len(choices) if isinstance(choices, list) else 'an invalid value'}"
         )
 
@@ -95,36 +111,31 @@ def parse_chat_completion_response(
     if not isinstance(usage, Mapping):
         usage = {}
 
-    records: list[GenerationRecord] = []
-    for choice in choices:
-        if not isinstance(choice, Mapping):
-            raise ValueError("SGLang response contains a non-object choice")
-        message = choice.get("message")
-        if not isinstance(message, Mapping) or not isinstance(message.get("content"), str):
-            raise ValueError("SGLang response choice has no text content")
-        records.append(
-            GenerationRecord(
-                prompt_id=prompt_id,
-                sample_index=int(choice["index"]),
-                text=message["content"],
-                finish_reason=(
-                    str(choice["finish_reason"])
-                    if choice.get("finish_reason") is not None
-                    else None
-                ),
-                model=response_model,
-                request_id=request_id,
-                config_hash=generation_fingerprint(spec),
-                prompt_tokens=_optional_int(usage.get("prompt_tokens")),
-                completion_tokens=_optional_int(usage.get("completion_tokens")),
-            )
-        )
-
-    records.sort(key=lambda record: record.sample_index)
-    expected_indices = list(range(spec.samples_per_prompt))
-    if [record.sample_index for record in records] != expected_indices:
-        raise ValueError(f"choice indices must be exactly {expected_indices}")
-    return tuple(records)
+    choice = choices[0]
+    if not isinstance(choice, Mapping):
+        raise ValueError("SGLang response contains a non-object choice")
+    if int(choice.get("index", -1)) != 0:
+        raise ValueError("single-sample SGLang choice index must be zero")
+    message = choice.get("message")
+    if not isinstance(message, Mapping) or not isinstance(message.get("content"), str):
+        raise ValueError("SGLang response choice has no text content")
+    return (
+        GenerationRecord(
+            prompt_id=prompt_id,
+            sample_index=sample_index,
+            text=message["content"],
+            finish_reason=(
+                str(choice["finish_reason"])
+                if choice.get("finish_reason") is not None
+                else None
+            ),
+            model=response_model,
+            request_id=request_id,
+            config_hash=generation_fingerprint(spec),
+            prompt_tokens=_optional_int(usage.get("prompt_tokens")),
+            completion_tokens=_optional_int(usage.get("completion_tokens")),
+        ),
+    )
 
 
 def prompt_shard_path(output_dir: Path, prompt_id: str) -> Path:
@@ -235,8 +246,19 @@ def generate_prompt(
 
     post_json = post or _httpx_post
     endpoint = f"{base_url.rstrip('/')}/v1/chat/completions"
-    response = post_json(endpoint, build_chat_completion_payload(prompt.text, spec), timeout)
-    records = parse_chat_completion_response(prompt.id, spec, response)
+    records = tuple(
+        parse_chat_completion_response(
+            prompt.id,
+            spec,
+            post_json(
+                endpoint,
+                build_chat_completion_payload(prompt.text, spec, sample_index=sample_index),
+                timeout,
+            ),
+            sample_index=sample_index,
+        )[0]
+        for sample_index in range(spec.samples_per_prompt)
+    )
     write_prompt_shard(output_dir, records, spec)
     return records
 

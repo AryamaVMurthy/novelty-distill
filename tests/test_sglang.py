@@ -25,7 +25,7 @@ def test_qwen_payload_disables_thinking_and_fixes_sampling_controls() -> None:
         seed=17,
     )
 
-    payload = build_chat_completion_payload("Propose a hypothesis.", spec)
+    payload = build_chat_completion_payload("Propose a hypothesis.", spec, sample_index=3)
 
     assert payload == {
         "model": "Qwen/Qwen3-14B",
@@ -33,8 +33,8 @@ def test_qwen_payload_disables_thinking_and_fixes_sampling_controls() -> None:
         "temperature": 0.8,
         "top_p": 0.95,
         "max_tokens": 512,
-        "n": 8,
-        "seed": 17,
+        "n": 1,
+        "seed": 20,
         "chat_template_kwargs": {"enable_thinking": False},
     }
 
@@ -53,17 +53,16 @@ def test_response_is_parsed_into_auditable_sample_records() -> None:
         "id": "chatcmpl-123",
         "model": "Qwen/Qwen3-14B",
         "choices": [
-            {"index": 1, "message": {"content": "second"}, "finish_reason": "stop"},
-            {"index": 0, "message": {"content": "first"}, "finish_reason": "length"},
+            {"index": 0, "message": {"content": "second"}, "finish_reason": "stop"},
         ],
         "usage": {"prompt_tokens": 11, "completion_tokens": 7},
     }
 
-    records = parse_chat_completion_response("tomato-7", spec, response)
+    records = parse_chat_completion_response("tomato-7", spec, response, sample_index=1)
 
-    assert [record.sample_index for record in records] == [0, 1]
-    assert [record.text for record in records] == ["first", "second"]
-    assert records[0].finish_reason == "length"
+    assert [record.sample_index for record in records] == [1]
+    assert [record.text for record in records] == ["second"]
+    assert records[0].finish_reason == "stop"
     assert records[0].request_id == "chatcmpl-123"
     assert records[0].config_hash == generation_fingerprint(spec)
     assert records[0].prompt_tokens == 11
@@ -102,7 +101,7 @@ def test_atomic_prompt_shards_make_generation_resumable(tmp_path: Path) -> None:
     assert pending_prompts(prompts, tmp_path, spec) == (prompts[1],)
 
 
-def test_generate_prompt_calls_openai_endpoint_once_then_resumes(tmp_path: Path) -> None:
+def test_generate_prompt_calls_one_seeded_request_per_sample_then_resumes(tmp_path: Path) -> None:
     spec = GenerationSpec(
         model="Qwen/Qwen3-14B",
         revision="40c069824f4251a91eefaf281ebe4c544efd3e18",
@@ -117,12 +116,16 @@ def test_generate_prompt_calls_openai_endpoint_once_then_resumes(tmp_path: Path)
 
     def post(url: str, payload: dict[str, object], timeout: float) -> dict[str, object]:
         calls.append((url, payload, timeout))
+        seed = int(payload["seed"])
         return {
-            "id": "chatcmpl-123",
+            "id": f"chatcmpl-{seed}",
             "model": spec.model,
             "choices": [
-                {"index": 0, "message": {"content": "first"}, "finish_reason": "stop"},
-                {"index": 1, "message": {"content": "second"}, "finish_reason": "stop"},
+                {
+                    "index": 0,
+                    "message": {"content": f"sample-{seed}"},
+                    "finish_reason": "stop",
+                },
             ],
         }
 
@@ -134,7 +137,9 @@ def test_generate_prompt_calls_openai_endpoint_once_then_resumes(tmp_path: Path)
     )
 
     assert first == second
-    assert len(calls) == 1
+    assert [record.text for record in first] == ["sample-17", "sample-18"]
+    assert len(calls) == 2
     assert calls[0][0] == "http://127.0.0.1:30000/v1/chat/completions"
-    assert calls[0][1] == build_chat_completion_payload(prompt.text, spec)
+    assert calls[0][1] == build_chat_completion_payload(prompt.text, spec, sample_index=0)
+    assert calls[1][1] == build_chat_completion_payload(prompt.text, spec, sample_index=1)
     assert calls[0][2] == 120
