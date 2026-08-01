@@ -106,7 +106,9 @@ case "${eval_suite}" in
     (
       cd "${package_dir}"
       uv sync --frozen
-      uv run --frozen inspect eval inspect_evals/novelty_bench \
+      uv pip install --python "${scratch_root}/venvs/noveltybench/bin/python" \
+        openai==2.6.1 distro==1.9.0 jiter==0.13.0
+      uv run --frozen --no-sync inspect eval inspect_evals/novelty_bench \
         --model "sglang/${served_model}" \
         --model-base-url "${SGLANG_BASE_URL}" \
         -M api_key=local \
