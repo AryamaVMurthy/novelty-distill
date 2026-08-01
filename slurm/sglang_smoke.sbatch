@@ -103,7 +103,8 @@ server_pid="$!"
 
 echo "stage=wait_for_server"
 ready=0
-for _attempt in $(seq 1 120); do
+server_ready_attempts="${SERVER_READY_ATTEMPTS:-360}"
+for _attempt in $(seq 1 "${server_ready_attempts}"); do
   if curl --fail --silent http://127.0.0.1:30000/health >/dev/null; then
     ready=1
     break
