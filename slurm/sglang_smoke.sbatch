@@ -28,6 +28,7 @@ output_name="${OUTPUT_NAME:-sglang-smoke}"
 server_log="${scratch_root}/logs/sglang-${SLURM_JOB_ID}.log"
 input_slice="${scratch_root}/tmp/generation-input-${SLURM_JOB_ID}.jsonl"
 server_pid=""
+port="${PORT:-$((20000 + SLURM_JOB_ID % 20000))}"
 if ! [[ "${input_limit}" =~ ^[1-9][0-9]*$ ]]; then
   echo "INPUT_LIMIT must be a positive integer" >&2
   exit 1
@@ -95,7 +96,7 @@ uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
   --revision "${model_revision}" \
   --served-model-name "${model_path}" \
   --host 127.0.0.1 \
-  --port 30000 \
+  --port "${port}" \
   --mem-fraction-static 0.75 \
   --disable-piecewise-cuda-graph \
   >"${server_log}" 2>&1 &
@@ -105,7 +106,7 @@ echo "stage=wait_for_server"
 ready=0
 server_ready_attempts="${SERVER_READY_ATTEMPTS:-360}"
 for _attempt in $(seq 1 "${server_ready_attempts}"); do
-  if curl --fail --silent http://127.0.0.1:30000/health >/dev/null; then
+  if curl --fail --silent "http://127.0.0.1:${port}/health" >/dev/null; then
     ready=1
     break
   fi
@@ -133,11 +134,13 @@ echo "stage=generate input=${input_slice} output=${output_dir}"
   --input "${input_slice}" \
   --output-dir "${output_dir}" \
   --config "${repo_dir}/${generation_config}" \
+  --base-url "http://127.0.0.1:${port}" \
   --concurrency 1
 "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
   --input "${input_slice}" \
   --output-dir "${output_dir}" \
   --config "${repo_dir}/${generation_config}" \
+  --base-url "http://127.0.0.1:${port}" \
   --concurrency 1
 find "${output_dir}" -maxdepth 1 -type f -name '*.json' -print
 

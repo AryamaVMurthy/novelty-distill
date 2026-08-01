@@ -26,6 +26,7 @@ judge_model="Qwen/Qwen3-32B-FP8"
 judge_revision="aa55da1ecc13d006e8b8e4f54579b1ea8c3db2df"
 server_log="${scratch_root}/logs/judge-${SLURM_JOB_ID}.log"
 server_pid=""
+port="${PORT:-$((20000 + SLURM_JOB_ID % 20000))}"
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
@@ -65,7 +66,7 @@ uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
   --revision "${judge_revision}" \
   --served-model-name "${judge_model}" \
   --host 127.0.0.1 \
-  --port 30000 \
+  --port "${port}" \
   --mem-fraction-static 0.90 \
   --disable-piecewise-cuda-graph \
   >"${server_log}" 2>&1 &
@@ -74,7 +75,7 @@ server_pid="$!"
 ready=0
 server_ready_attempts="${SERVER_READY_ATTEMPTS:-360}"
 for _attempt in $(seq 1 "${server_ready_attempts}"); do
-  if curl --fail --silent http://127.0.0.1:30000/health >/dev/null; then
+  if curl --fail --silent "http://127.0.0.1:${port}/health" >/dev/null; then
     ready=1
     break
   fi
@@ -94,4 +95,5 @@ fi
   --generation-config "${repo_dir}/configs/generation/teacher.yaml" \
   --prompts "${scratch_root}/data/tomato-open-train-1000.jsonl" \
   --output-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
-  --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
+  --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+  --base-url "http://127.0.0.1:${port}"

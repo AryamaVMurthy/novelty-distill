@@ -27,7 +27,7 @@ repo_dir="${scratch_root}/repo"
 inference_venv="${scratch_root}/venvs/inference"
 server_log="${scratch_root}/logs/eval-sglang-${SLURM_JOB_ID}.log"
 server_pid=""
-port=30000
+port="${PORT:-$((20000 + SLURM_JOB_ID % 20000))}"
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
