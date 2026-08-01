@@ -67,6 +67,7 @@ uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
   --host 127.0.0.1 \
   --port 30000 \
   --mem-fraction-static 0.90 \
+  --disable-piecewise-cuda-graph \
   >"${server_log}" 2>&1 &
 server_pid="$!"
 
