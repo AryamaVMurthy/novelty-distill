@@ -17,6 +17,7 @@ class OfficialRepository(BaseModel):
     url: str = Field(pattern=r"^https://github\.com/")
     commit: str = Field(pattern=r"^[0-9a-f]{40}$")
     subdirectory: str | None = None
+    sparse_paths: tuple[str, ...] = ()
 
 
 def load_official_repositories(path: Path) -> dict[str, OfficialRepository]:
@@ -38,7 +39,7 @@ def build_checkout_commands(
 
     checkout = destination / repository.name
     checkout_text = str(checkout)
-    return (
+    commands = [
         (
             "git",
             "clone",
@@ -48,8 +49,21 @@ def build_checkout_commands(
             checkout_text,
         ),
         ("git", "-C", checkout_text, "fetch", "--depth", "1", "origin", repository.commit),
-        ("git", "-C", checkout_text, "checkout", "--detach", repository.commit),
-    )
+    ]
+    if repository.sparse_paths:
+        commands.append(
+            (
+                "git",
+                "-C",
+                checkout_text,
+                "sparse-checkout",
+                "set",
+                "--cone",
+                *repository.sparse_paths,
+            )
+        )
+    commands.append(("git", "-C", checkout_text, "checkout", "--detach", repository.commit))
+    return tuple(commands)
 
 
 def checkout_official_repository(repository: OfficialRepository, destination: Path) -> Path:

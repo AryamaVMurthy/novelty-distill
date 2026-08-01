@@ -40,6 +40,9 @@ repositories:
   inspect_evals:
     url: https://github.com/UKGovernmentBEIS/inspect_evals.git
     commit: 6a35510e530f236fd1dbcd9df888f01937c8494a
+    sparse_paths:
+      - packages/novelty_bench
+      - src
     license: verify-before-install
     use: NoveltyBench evaluation
   hypospace:
