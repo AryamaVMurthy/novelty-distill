@@ -1,2 +1,8 @@
-sglang[all]==0.5.10
+sglang==0.5.10
+flash-attn-4==4.0.0b19
 httpx==0.28.1
+compressed-tensors==0.15.0
+grpcio-health-checking==1.83.0
+grpcio-reflection==1.83.0
+lxml==6.1.1
+pydantic==2.13.4
