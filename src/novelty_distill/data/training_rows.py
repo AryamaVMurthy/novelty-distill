@@ -15,6 +15,12 @@ class ChatTrainingRow(TypedDict):
     messages: list[ChatMessage]
 
 
+class PromptCompletionRow(TypedDict):
+    id: str
+    prompt: list[ChatMessage]
+    completion: list[ChatMessage]
+
+
 class OPSDTrainingRow(TypedDict):
     id: str
     problem: str
@@ -33,6 +39,21 @@ def to_chat_row(example: CanonicalExample, *, target: str) -> ChatTrainingRow:
             {"role": "user", "content": example.student_prompt},
             {"role": "assistant", "content": stripped_target},
         ],
+    }
+
+
+def to_prompt_completion_row(
+    example: CanonicalExample, *, target: str
+) -> PromptCompletionRow:
+    """Build TRL's prompt-completion form so it masks prompt tokens by default."""
+
+    stripped_target = target.strip()
+    if not stripped_target:
+        raise ValueError("training target cannot be empty")
+    return {
+        "id": example.id,
+        "prompt": [{"role": "user", "content": example.student_prompt}],
+        "completion": [{"role": "assistant", "content": stripped_target}],
     }
 
 

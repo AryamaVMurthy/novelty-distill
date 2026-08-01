@@ -1,0 +1,17 @@
+baseline_id: B1
+model: Qwen/Qwen3-1.7B
+revision: 70d244cc86ccca08cf5af4e1e306ecf908b1ad5e
+input: data/tomato-open-train-1000.jsonl
+output_dir: checkpoints/B1-sft-smoke
+max_examples: 1
+max_steps: 1
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 1
+learning_rate: 0.00002
+max_length: 768
+attention_implementation: sdpa
+gradient_checkpointing: true
+use_peft: true
+lora_r: 16
+lora_alpha: 32
+seed: 17
