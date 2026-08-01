@@ -1,5 +1,6 @@
 """Tokenized-data adapter for the pinned official GEM trainer."""
 
+import inspect
 import json
 import os
 import subprocess
@@ -47,6 +48,40 @@ class GEMRunSpec(BaseModel):
     seed: int = Field(ge=0)
 
 
+def install_gem_trainer_compat(trainer_class: type[Any]) -> bool:
+    """Accept Transformers' new duplicate LR argument in official GEM's override."""
+
+    original = trainer_class._maybe_log_save_evaluate
+    if "learning_rate" in inspect.signature(original).parameters:
+        return False
+
+    def compatible(
+        self: Any,
+        tr_loss: Any,
+        grad_norm: Any,
+        model: Any,
+        trial: Any,
+        epoch: Any,
+        ignore_keys_for_eval: Any,
+        start_time: Any,
+        learning_rate: Any = None,
+    ) -> Any:
+        del learning_rate
+        return original(
+            self,
+            tr_loss,
+            grad_norm,
+            model,
+            trial,
+            epoch,
+            ignore_keys_for_eval,
+            start_time,
+        )
+
+    trainer_class._maybe_log_save_evaluate = compatible
+    return True
+
+
 def build_official_gem_command(
     spec: GEMRunSpec,
     *,
@@ -65,6 +100,9 @@ def build_official_gem_command(
         "--standalone",
         "--nnodes=1",
         "--nproc_per_node=1",
+        "--module",
+        "novelty_distill.training.gem_compat",
+        "--official-train",
         str(official_checkout / "train.py"),
         "--model_name_or_path",
         str(model_path),

@@ -9,6 +9,7 @@ from novelty_distill.training.gem import (
     GEMRunSpec,
     build_gem_rows,
     build_official_gem_command,
+    install_gem_trainer_compat,
     load_teacher_targets,
     tokenize_gem_example,
     write_gem_jsonl,
@@ -19,6 +20,29 @@ def test_gem_environment_pins_deepspeed_runtime_build_dependency() -> None:
     requirements = Path("environments/gem.in").read_text(encoding="utf-8").splitlines()
 
     assert "setuptools==83.0.0" in requirements
+
+
+def test_gem_compat_accepts_new_transformers_learning_rate_argument() -> None:
+    class OfficialTrainer:
+        def _maybe_log_save_evaluate(
+            self,
+            tr_loss,
+            grad_norm,
+            model,
+            trial,
+            epoch,
+            ignore_keys_for_eval,
+            start_time,
+        ):
+            return (tr_loss, grad_norm, model, trial, epoch, ignore_keys_for_eval, start_time)
+
+    assert install_gem_trainer_compat(OfficialTrainer) is True
+    result = OfficialTrainer()._maybe_log_save_evaluate(
+        1, 2, 3, 4, 5, 6, 7, learning_rate=8
+    )
+
+    assert result == (1, 2, 3, 4, 5, 6, 7)
+    assert install_gem_trainer_compat(OfficialTrainer) is False
 
 
 def test_gem_tokenization_masks_prompt_and_trains_only_on_completion() -> None:
@@ -175,15 +199,18 @@ def test_gem_command_invokes_pinned_official_entrypoint() -> None:
         output_dir=Path("/output"),
     )
 
-    assert command[:7] == (
+    assert command[:9] == (
         "/env/bin/python",
         "-m",
         "torch.distributed.run",
         "--standalone",
         "--nnodes=1",
         "--nproc_per_node=1",
-        "/official/gem/train.py",
+        "--module",
+        "novelty_distill.training.gem_compat",
+        "--official-train",
     )
+    assert command[9] == "/official/gem/train.py"
     assert command[command.index("--loss") + 1] == "gem"
     assert command[command.index("--gem_beta") + 1] == "0.7"
     assert command[command.index("--model_name_or_path") + 1] == "/models/qwen"
