@@ -1,6 +1,7 @@
 """Thin adapter from HypoSpace's official OpenRouter client to local SGLang."""
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -11,6 +12,19 @@ DOMAIN_ENTRYPOINTS = {
     "3d": "run_3d_benchmark.py",
     "boolean": "boolean_benchmark.py",
 }
+
+
+def validate_hypospace_result(path: Path) -> None:
+    """Fail when the official benchmark reports swallowed provider errors."""
+    with path.open(encoding="utf-8") as handle:
+        result = json.load(handle)
+    summary = result.get("error_summary", {})
+    total_errors = int(summary.get("total_errors", 0))
+    if total_errors:
+        error_types = ", ".join(sorted(summary.get("error_types", {}))) or "unknown"
+        raise RuntimeError(
+            f"official HypoSpace result has {total_errors} failed samples ({error_types}): {path}"
+        )
 
 
 def official_artifact_args(
@@ -55,7 +69,7 @@ def _load_entrypoint(repository: Path, domain: str) -> tuple[ModuleType, Path]:
     return module, entrypoint
 
 
-def _local_sglang_factory(module: ModuleType, base_url: str):
+def _local_sglang_factory(module: ModuleType, base_url: str, max_tokens: int):
     def setup_llm(llm_type: str, **kwargs: Any):
         if llm_type != "openrouter":
             raise ValueError("local HypoSpace evaluation requires llm.type=openrouter")
@@ -63,6 +77,7 @@ def _local_sglang_factory(module: ModuleType, base_url: str):
             model=kwargs.get("model", "novelty-model"),
             api_key=kwargs.get("api_key", "local"),
             temperature=kwargs.get("temperature", 0.7),
+            max_tokens=max_tokens,
             base_url=base_url.rstrip("/"),
         )
 
@@ -73,6 +88,7 @@ def run_official_hypospace(
     repository: Path,
     domain: str,
     base_url: str,
+    max_tokens: int,
     official_args: list[str],
 ) -> ModuleType:
     """Run an official HypoSpace CLI while routing its existing client to SGLang."""
@@ -81,7 +97,7 @@ def run_official_hypospace(
     sys.path.insert(0, str(domain_dir))
     try:
         module, entrypoint = _load_entrypoint(repository, domain)
-        module.setup_llm = _local_sglang_factory(module, base_url)
+        module.setup_llm = _local_sglang_factory(module, base_url, max_tokens)
         sys.argv = [str(entrypoint), *official_args]
         module.main()
         return module

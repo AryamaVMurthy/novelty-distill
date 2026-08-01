@@ -43,6 +43,8 @@ repositories:
     sparse_paths:
       - packages/novelty_bench
       - src
+      - pyproject.toml
+      - README.md
     license: verify-before-install
     use: NoveltyBench evaluation
   hypospace:

@@ -58,7 +58,7 @@ def build_checkout_commands(
                 checkout_text,
                 "sparse-checkout",
                 "set",
-                "--cone",
+                "--no-cone",
                 *repository.sparse_paths,
             )
         )
@@ -89,6 +89,19 @@ def checkout_official_repository(repository: OfficialRepository, destination: Pa
             )
         if status:
             raise RuntimeError(f"existing checkout {checkout} has local changes")
+        if repository.sparse_paths:
+            subprocess.run(
+                (
+                    "git",
+                    "-C",
+                    str(checkout),
+                    "sparse-checkout",
+                    "set",
+                    "--no-cone",
+                    *repository.sparse_paths,
+                ),
+                check=True,
+            )
         return checkout
 
     destination.mkdir(parents=True, exist_ok=True)

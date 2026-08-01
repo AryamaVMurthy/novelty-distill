@@ -148,6 +148,7 @@ case "${eval_suite}" in
         --checkpoint-dir "${evaluation_dir}/checkpoints" \
         --output "${evaluation_dir}/${SLURM_JOB_ID}.json" \
         --base-url "http://127.0.0.1:${port}/v1" \
+        --max-tokens "${MAX_TOKENS:-512}" \
         -- \
         --dataset "${dataset}" \
         --config "${repo_dir}/configs/evaluation/hypospace_sglang.yaml" \

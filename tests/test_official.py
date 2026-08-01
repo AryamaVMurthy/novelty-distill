@@ -37,9 +37,11 @@ def test_large_official_repository_uses_manifest_sparse_paths() -> None:
         "/scratch/project/official/inspect_evals",
         "sparse-checkout",
         "set",
-        "--cone",
+        "--no-cone",
         "packages/novelty_bench",
         "src",
+        "pyproject.toml",
+        "README.md",
     )
     assert commands[-1][-3:] == (
         "checkout",
