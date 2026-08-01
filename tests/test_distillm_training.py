@@ -103,5 +103,6 @@ def test_distillm_commands_delegate_preprocessing_and_training_to_official_repo(
         "/official/distillm/finetune.py",
     )
     assert training[training.index("--type") + 1] == "adaptive-sfkl"
+    assert training[training.index("--data-dir") + 1] == "/data/processed/qwen/"
     assert "--student-gen" in training
     assert training[training.index("--skew-alpha") + 1] == "0.1"

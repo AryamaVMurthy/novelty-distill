@@ -157,7 +157,7 @@ def build_distillm_training_command(
         "--n-gpu",
         "1",
         "--data-dir",
-        str(processed_dir),
+        f"{processed_dir}{os.sep}",
         "--train-num",
         str(spec.max_examples - spec.dev_examples),
         "--dev-num",
