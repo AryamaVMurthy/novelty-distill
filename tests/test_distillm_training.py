@@ -120,5 +120,8 @@ def test_distillm_commands_delegate_preprocessing_and_training_to_official_repo(
     )
     assert training[training.index("--type") + 1] == "adaptive-sfkl"
     assert training[training.index("--data-dir") + 1] == "/data/processed/qwen/"
+    assert training[training.index("--deepspeed_config") + 1] == (
+        "/official/distillm/configs/deepspeed/ds_config_zero2_offload.json"
+    )
     assert "--student-gen" in training
     assert training[training.index("--skew-alpha") + 1] == "0.1"

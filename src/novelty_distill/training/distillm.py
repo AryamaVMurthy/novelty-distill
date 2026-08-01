@@ -206,7 +206,12 @@ def build_distillm_training_command(
         str(spec.seed),
         "--deepspeed",
         "--deepspeed_config",
-        str(official_checkout / "configs" / "deepspeed" / "ds_config.json"),
+        str(
+            official_checkout
+            / "configs"
+            / "deepspeed"
+            / "ds_config_zero2_offload.json"
+        ),
         "--type",
         "adaptive-sfkl",
         "--student-gen",
