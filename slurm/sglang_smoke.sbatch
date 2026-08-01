@@ -79,9 +79,23 @@ if [[ "${ready}" != 1 ]]; then
   exit 1
 fi
 
-curl --fail --silent --show-error http://127.0.0.1:30000/v1/chat/completions \
-  -H 'Content-Type: application/json' \
-  -d '{"model":"Qwen/Qwen3-1.7B","messages":[{"role":"user","content":"State one testable scientific hypothesis in one sentence."}],"temperature":0.8,"top_p":0.95,"max_tokens":64,"n":2,"seed":17,"chat_template_kwargs":{"enable_thinking":false}}' \
-  | "${venv_dir}/bin/python" -m json.tool
+input="${scratch_root}/data/tomato-open-train-1000.jsonl"
+output_dir="${scratch_root}/generations/sglang-smoke"
+if [[ ! -f "${input}" ]]; then
+  echo "missing prepared smoke data: ${input}" >&2
+  exit 1
+fi
+mkdir -p "${output_dir}"
+"${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
+  --input <(head -n 1 "${input}") \
+  --output-dir "${output_dir}" \
+  --config "${repo_dir}/configs/generation/smoke.yaml" \
+  --concurrency 1
+"${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
+  --input <(head -n 1 "${input}") \
+  --output-dir "${output_dir}" \
+  --config "${repo_dir}/configs/generation/smoke.yaml" \
+  --concurrency 1
+find "${output_dir}" -maxdepth 1 -type f -name '*.json' -print
 
 "${venv_dir}/bin/python" -c 'import sglang, torch, transformers; print({"sglang": sglang.__version__, "torch": torch.__version__, "transformers": transformers.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0)})'
