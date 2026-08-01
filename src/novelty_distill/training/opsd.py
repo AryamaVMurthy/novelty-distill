@@ -3,9 +3,9 @@
 import json
 import os
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
@@ -59,11 +59,80 @@ def build_opsd_rows(
 
     if baseline.backend != "opsd":
         raise ValueError(f"baseline {baseline.id} does not use OPSD")
-    if baseline.teacher_context != "privileged":
-        raise NotImplementedError(
-            f"ordinary-context control {baseline.id} requires the matched-context collator"
+    if baseline.teacher_context == "ordinary":
+        return tuple(
+            {"id": example.id, "problem": example.student_prompt, "solution": ""}
+            for example in examples
         )
     return tuple(to_opsd_row(example) for example in examples)
+
+
+def render_matched_prompt_pairs(
+    features: Sequence[Mapping[str, str]],
+    *,
+    tokenizer: Any,
+    enable_thinking: bool,
+) -> tuple[tuple[str, str], ...]:
+    """Render byte-identical ordinary contexts for the E4 negative control."""
+
+    pairs: list[tuple[str, str]] = []
+    for feature in features:
+        messages = [{"role": "user", "content": feature["problem"]}]
+        prompt = tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=enable_thinking,
+        )
+        pairs.append((prompt, prompt))
+    return tuple(pairs)
+
+
+class MatchedContextCollator:
+    """OPSD collator for the no-privilege control with identical contexts."""
+
+    def __init__(self, tokenizer: Any, *, max_length: int, enable_thinking: bool):
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.enable_thinking = enable_thinking
+
+    def __call__(self, features: Sequence[Mapping[str, str]]) -> dict[str, Any]:
+        import torch
+
+        pairs = render_matched_prompt_pairs(
+            features,
+            tokenizer=self.tokenizer,
+            enable_thinking=self.enable_thinking,
+        )
+        prompts = [student for student, _teacher in pairs]
+        unpadded = self.tokenizer(
+            prompts,
+            padding=False,
+            truncation=True,
+            max_length=self.max_length,
+        )
+        lengths = [len(input_ids) for input_ids in unpadded["input_ids"]]
+        batch_length = max(lengths)
+        encoded = self.tokenizer(
+            prompts,
+            padding="max_length",
+            truncation=True,
+            max_length=batch_length,
+            return_tensors="pt",
+        )
+        input_ids = encoded["input_ids"]
+        attention_mask = encoded["attention_mask"]
+        lengths_tensor = torch.tensor(lengths)
+        return {
+            "student_prompts": input_ids,
+            "student_prompt_attention_mask": attention_mask,
+            "student_prompt_length": batch_length,
+            "student_prompt_lengths_per_example": lengths_tensor,
+            "teacher_prompts": input_ids.clone(),
+            "teacher_prompt_attention_mask": attention_mask.clone(),
+            "teacher_prompt_length": batch_length,
+            "teacher_prompt_lengths_per_example": lengths_tensor.clone(),
+        }
 
 
 def execute_opsd_training(
@@ -154,9 +223,17 @@ def execute_opsd_training(
         lora_dropout=0.0,
         target_modules="all-linear",
     )
+    data_collator = None
+    if baseline.teacher_context == "ordinary":
+        data_collator = MatchedContextCollator(
+            tokenizer,
+            max_length=spec.max_length,
+            enable_thinking=spec.student_thinking,
+        )
     trainer = OPSDTrainer(
         model=spec.model,
         args=training_args,
+        data_collator=data_collator,
         train_dataset=train_dataset,
         processing_class=tokenizer,
         peft_config=peft_config,
