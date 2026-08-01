@@ -1,0 +1,376 @@
+"""Thin data and command adapters for the pinned official DistiLLM repository."""
+
+import json
+import os
+import subprocess
+import sys
+import tempfile
+from collections.abc import Mapping, Sequence
+from pathlib import Path
+from typing import TypedDict
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+
+from novelty_distill.config import BaselineConfig
+from novelty_distill.data.tomato import CanonicalExample
+
+
+class DistiLLMRawRow(TypedDict):
+    instruction: str
+    input: str
+    output: str
+
+
+TeacherTargets = Mapping[str, Mapping[str, Sequence[str]]]
+
+
+class DistiLLMRunSpec(BaseModel):
+    """A bounded adaptive skew-FKL run through official `finetune.py`."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    baseline_id: str
+    student_model: str
+    student_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    teacher_model: str
+    teacher_revision: str = Field(pattern=r"^[0-9a-f]{40}$")
+    input: Path
+    teacher_targets: Path
+    raw_dir: Path
+    processed_dir: Path
+    output_dir: Path
+    max_examples: int = Field(gt=1)
+    dev_examples: int = Field(gt=0)
+    max_steps: int = Field(gt=0)
+    batch_size: int = Field(gt=0)
+    learning_rate: float = Field(gt=0)
+    max_length: int = Field(gt=0)
+    max_prompt_length: int = Field(gt=0)
+    skew_alpha: float = Field(gt=0, lt=1)
+    seed: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def split_and_lengths_are_valid(self) -> "DistiLLMRunSpec":
+        if self.dev_examples >= self.max_examples:
+            raise ValueError("DistiLLM needs at least one train row after its validation prefix")
+        if self.max_prompt_length >= self.max_length:
+            raise ValueError("max_prompt_length must be smaller than max_length")
+        return self
+
+
+def build_distillm_raw_rows(
+    baseline: BaselineConfig,
+    examples: Sequence[CanonicalExample],
+    *,
+    teacher_targets: TeacherTargets,
+) -> tuple[DistiLLMRawRow, ...]:
+    """Map static best-one targets to the official Dolly-style raw JSON schema."""
+
+    if baseline.backend != "distillm" or baseline.target_view != "best1":
+        raise ValueError(f"baseline {baseline.id} is not the configured DistiLLM baseline")
+    rows: list[DistiLLMRawRow] = []
+    for example in examples:
+        try:
+            targets = tuple(teacher_targets[example.id]["best1"])
+        except KeyError as error:
+            raise ValueError(f"missing best1 teacher target for {example.id}") from error
+        if len(targets) != 1 or not targets[0].strip():
+            raise ValueError(f"best1 requires exactly one non-empty target for {example.id}")
+        rows.append(
+            {
+                "instruction": example.student_prompt,
+                "input": "",
+                "output": targets[0].strip(),
+            }
+        )
+    return tuple(rows)
+
+
+def build_distillm_preprocess_command(
+    spec: DistiLLMRunSpec,
+    *,
+    python_executable: Path,
+    official_checkout: Path,
+    student_model_path: Path,
+    raw_dir: Path,
+    processed_dir: Path,
+) -> tuple[str, ...]:
+    """Use DistiLLM's official uint32 Qwen indexed-data preprocessor."""
+
+    return (
+        str(python_executable),
+        str(official_checkout / "tools" / "process_data_dolly.py"),
+        "--model-path",
+        str(student_model_path),
+        "--model-type",
+        "qwen",
+        "--data-dir",
+        str(raw_dir),
+        "--processed-data-dir",
+        str(processed_dir),
+        "--data-process-workers",
+        "1",
+        "--dev-num",
+        str(spec.dev_examples),
+        "--max-length",
+        str(spec.max_length),
+        "--max-prompt-length",
+        str(spec.max_prompt_length),
+    )
+
+
+def build_distillm_training_command(
+    spec: DistiLLMRunSpec,
+    *,
+    python_executable: Path,
+    official_checkout: Path,
+    student_model_path: Path,
+    teacher_model_path: Path,
+    processed_dir: Path,
+    output_dir: Path,
+) -> tuple[str, ...]:
+    """Build the official adaptive skew-forward-KL launch command."""
+
+    return (
+        str(python_executable),
+        "-m",
+        "torch.distributed.run",
+        "--standalone",
+        "--nnodes=1",
+        "--nproc_per_node=1",
+        str(official_checkout / "finetune.py"),
+        "--base-path",
+        str(official_checkout),
+        "--model-path",
+        str(student_model_path),
+        "--teacher-model-path",
+        str(teacher_model_path),
+        "--ckpt-name",
+        "qwen3-student",
+        "--teacher-ckpt-name",
+        "qwen3-teacher",
+        "--model-type",
+        "qwen",
+        "--teacher-model-type",
+        "qwen",
+        "--n-gpu",
+        "1",
+        "--data-dir",
+        str(processed_dir),
+        "--train-num",
+        str(spec.max_examples - spec.dev_examples),
+        "--dev-num",
+        str(spec.dev_examples),
+        "--num-workers",
+        "0",
+        "--lr",
+        str(spec.learning_rate),
+        "--lr-min",
+        str(spec.learning_rate),
+        "--batch-size",
+        str(spec.batch_size),
+        "--eval-batch-size",
+        "1",
+        "--gradient-accumulation-steps",
+        "1",
+        "--lr-decay-style",
+        "constant",
+        "--weight-decay",
+        "0.01",
+        "--clip-grad",
+        "1.0",
+        "--epochs",
+        "1",
+        "--total-iters",
+        str(spec.max_steps),
+        "--kd-ratio",
+        "1.0",
+        "--max-length",
+        str(spec.max_length),
+        "--max-prompt-length",
+        str(spec.max_prompt_length),
+        "--do-train",
+        "--do-valid",
+        "--save-interval",
+        str(spec.max_steps),
+        "--eval-interval",
+        str(spec.max_steps + 1),
+        "--log-interval",
+        "1",
+        "--mid-log-num",
+        "1",
+        "--save",
+        str(output_dir),
+        "--seed",
+        str(spec.seed),
+        "--deepspeed",
+        "--deepspeed_config",
+        str(official_checkout / "configs" / "deepspeed" / "ds_config.json"),
+        "--type",
+        "adaptive-sfkl",
+        "--student-gen",
+        "--do-sample",
+        "--top-k",
+        "0",
+        "--top-p",
+        "1.0",
+        "--temperature",
+        "1.0",
+        "--gen-num-beams",
+        "1",
+        "--gen-top-p",
+        "1.0",
+        "--skew-alpha",
+        str(spec.skew_alpha),
+        "--init-threshold",
+        "0.0",
+        "--loss-eps",
+        "0.1",
+        "--capacity",
+        "1000",
+    )
+
+
+def load_distillm_run_spec(path: Path) -> DistiLLMRunSpec:
+    with path.open(encoding="utf-8") as handle:
+        return DistiLLMRunSpec.model_validate(yaml.safe_load(handle))
+
+
+def execute_distillm_training(
+    spec: DistiLLMRunSpec,
+    *,
+    scratch_root: Path,
+    registry_path: Path,
+    manifest_path: Path,
+    official_root: Path,
+) -> dict[str, object]:
+    """Run official Qwen preprocessing followed by official adaptive skew-FKL training."""
+
+    from huggingface_hub import snapshot_download
+
+    from novelty_distill.config import load_baseline_registry
+    from novelty_distill.official import (
+        checkout_official_repository,
+        load_official_repositories,
+    )
+    from novelty_distill.training.gem import load_teacher_targets
+    from novelty_distill.training.trl import load_canonical_examples
+
+    registry = load_baseline_registry(registry_path)
+    matches = [baseline for baseline in registry.baselines if baseline.id == spec.baseline_id]
+    if len(matches) != 1 or matches[0].backend != "distillm":
+        raise ValueError(f"baseline {spec.baseline_id} is not a unique DistiLLM baseline")
+    baseline = matches[0]
+    repositories = load_official_repositories(manifest_path)
+    checkout = checkout_official_repository(repositories["distillm"], official_root)
+
+    input_path = _resolve_under(scratch_root, spec.input)
+    target_path = _resolve_under(scratch_root, spec.teacher_targets)
+    raw_dir = _resolve_under(scratch_root, spec.raw_dir)
+    processed_dir = _resolve_under(scratch_root, spec.processed_dir)
+    output_dir = _resolve_under(scratch_root, spec.output_dir)
+    examples = load_canonical_examples(input_path, limit=spec.max_examples)
+    rows = build_distillm_raw_rows(
+        baseline,
+        examples,
+        teacher_targets=load_teacher_targets(target_path),
+    )
+    _write_raw_jsonl(rows, raw_dir / "raw.jsonl")
+
+    student_path = Path(
+        snapshot_download(repo_id=spec.student_model, revision=spec.student_revision)
+    )
+    teacher_path = Path(
+        snapshot_download(repo_id=spec.teacher_model, revision=spec.teacher_revision)
+    )
+    environment = {
+        **os.environ,
+        "PYTHONPATH": str(checkout),
+        "CODE_BASE": "HF",
+        "WANDB_DISABLED": "true",
+    }
+    subprocess.run(
+        build_distillm_preprocess_command(
+            spec,
+            python_executable=Path(sys.executable),
+            official_checkout=checkout,
+            student_model_path=student_path,
+            raw_dir=raw_dir,
+            processed_dir=processed_dir,
+        ),
+        check=True,
+        cwd=checkout,
+        env=environment,
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        build_distillm_training_command(
+            spec,
+            python_executable=Path(sys.executable),
+            official_checkout=checkout,
+            student_model_path=student_path,
+            teacher_model_path=teacher_path,
+            processed_dir=processed_dir / "qwen",
+            output_dir=output_dir,
+        ),
+        check=True,
+        cwd=checkout,
+        env=environment,
+    )
+
+    metadata: dict[str, object] = {
+        "baseline_id": baseline.id,
+        "backend": baseline.backend,
+        "official_commit": repositories["distillm"].commit,
+        "student_model": spec.student_model,
+        "student_revision": spec.student_revision,
+        "teacher_model": spec.teacher_model,
+        "teacher_revision": spec.teacher_revision,
+        "divergence": baseline.divergence,
+        "trajectory_source": "adaptive static/student replay",
+        "target_view": baseline.target_view,
+        "skew_alpha": spec.skew_alpha,
+        "dataset_revision": examples[0].dataset_revision,
+        "example_ids": [example.id for example in examples],
+        "max_steps": spec.max_steps,
+        "seed": spec.seed,
+        "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
+        "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
+        "output_dir": str(output_dir),
+    }
+    with (output_dir / "run_metadata.json").open("w", encoding="utf-8") as handle:
+        json.dump(metadata, handle, indent=2, sort_keys=True)
+    return metadata
+
+
+def _write_raw_jsonl(rows: Sequence[DistiLLMRawRow], path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary_name: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=path.parent,
+            prefix=f".{path.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary_name = handle.name
+            for row in rows:
+                json.dump(row, handle, ensure_ascii=False, sort_keys=True)
+                handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, path)
+    finally:
+        if temporary_name is not None and os.path.exists(temporary_name):
+            os.unlink(temporary_name)
+
+
+def _resolve_under(root: Path, path: Path) -> Path:
+    root = root.resolve()
+    candidate = (root / path).resolve() if not path.is_absolute() else path.resolve()
+    if candidate != root and root not in candidate.parents:
+        raise ValueError(f"path must remain under scratch root {root}: {path}")
+    return candidate

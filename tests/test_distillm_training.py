@@ -1,0 +1,99 @@
+from pathlib import Path
+
+from novelty_distill.config import load_baseline_registry
+from novelty_distill.data.tomato import prepare_tomato_record
+from novelty_distill.training.distillm import (
+    DistiLLMRunSpec,
+    build_distillm_preprocess_command,
+    build_distillm_raw_rows,
+    build_distillm_training_command,
+)
+
+
+def _spec() -> DistiLLMRunSpec:
+    return DistiLLMRunSpec(
+        baseline_id="C3",
+        student_model="Qwen/Qwen3-1.7B",
+        student_revision="70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+        teacher_model="Qwen/Qwen3-14B",
+        teacher_revision="40c069824f4251a91eefaf281ebe4c544efd3e18",
+        input=Path("data/input.jsonl"),
+        teacher_targets=Path("data/teacher-targets.json"),
+        raw_dir=Path("data/distillm/raw"),
+        processed_dir=Path("data/distillm/processed"),
+        output_dir=Path("checkpoints/C3-distillm-smoke"),
+        max_examples=2,
+        dev_examples=1,
+        max_steps=1,
+        batch_size=1,
+        learning_rate=5e-6,
+        max_length=256,
+        max_prompt_length=192,
+        skew_alpha=0.1,
+        seed=17,
+    )
+
+
+def test_distillm_raw_rows_use_static_best_teacher_target() -> None:
+    example = prepare_tomato_record(
+        {
+            "source_id": "paper-1",
+            "research_question": "Question",
+            "background_survey": "Background",
+            "fine_grained_hypothesis": "Historical target",
+            "inspiration": [],
+        },
+        split="train",
+        task="open",
+    )
+    baseline = next(
+        item
+        for item in load_baseline_registry(Path("configs/baselines.yaml")).baselines
+        if item.id == "C3"
+    )
+
+    rows = build_distillm_raw_rows(
+        baseline,
+        (example,),
+        teacher_targets={"paper-1": {"best1": ("Teacher target",)}},
+    )
+
+    assert rows == (
+        {"instruction": example.student_prompt, "input": "", "output": "Teacher target"},
+    )
+
+
+def test_distillm_commands_delegate_preprocessing_and_training_to_official_repo() -> None:
+    spec = _spec()
+    preprocess = build_distillm_preprocess_command(
+        spec,
+        python_executable=Path("/env/bin/python"),
+        official_checkout=Path("/official/distillm"),
+        student_model_path=Path("/models/student"),
+        raw_dir=Path("/data/raw"),
+        processed_dir=Path("/data/processed"),
+    )
+    training = build_distillm_training_command(
+        spec,
+        python_executable=Path("/env/bin/python"),
+        official_checkout=Path("/official/distillm"),
+        student_model_path=Path("/models/student"),
+        teacher_model_path=Path("/models/teacher"),
+        processed_dir=Path("/data/processed/qwen"),
+        output_dir=Path("/output"),
+    )
+
+    assert preprocess[1] == "/official/distillm/tools/process_data_dolly.py"
+    assert preprocess[preprocess.index("--model-type") + 1] == "qwen"
+    assert training[:7] == (
+        "/env/bin/python",
+        "-m",
+        "torch.distributed.run",
+        "--standalone",
+        "--nnodes=1",
+        "--nproc_per_node=1",
+        "/official/distillm/finetune.py",
+    )
+    assert training[training.index("--type") + 1] == "adaptive-sfkl"
+    assert "--student-gen" in training
+    assert training[training.index("--skew-alpha") + 1] == "0.1"

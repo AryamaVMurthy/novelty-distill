@@ -7,6 +7,7 @@ The official projects do not share one compatible dependency stack, so the proje
 - `trl.in`: the minimal official TRL SFT/GKD stack.
 - `training.in`: the exact package versions declared by the official OPSD repository.
 - `gem.in`: the minimal imports used by the pinned official GEM training entrypoint.
-- MiniLLM and DistiLLM run from pinned official external checkouts. Any compatibility patch is stored as a small, reviewable patch without copying the upstream repository.
+- `distillm.in`: the minimal imports used by the pinned official DistiLLM preprocessor and trainer.
+- MiniLLM runs from its pinned official external checkout. Any compatibility patch is stored as a small, reviewable patch without copying the upstream repository.
 
 Compiled lock files are generated with `uv pip compile` after resolution is verified on Turing.

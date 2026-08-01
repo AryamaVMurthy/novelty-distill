@@ -33,6 +33,10 @@ elif [[ "${training_backend}" == "gem" ]]; then
   run_config="${RUN_CONFIG:-configs/training/gem_smoke.yaml}"
   venv_dir="${scratch_root}/venvs/gem"
   environment_lock="${repo_dir}/environments/gem.lock"
+elif [[ "${training_backend}" == "distillm" ]]; then
+  run_config="${RUN_CONFIG:-configs/training/distillm_smoke.yaml}"
+  venv_dir="${scratch_root}/venvs/distillm"
+  environment_lock="${repo_dir}/environments/distillm.lock"
 else
   echo "unsupported TRAINING_BACKEND=${training_backend}" >&2
   exit 1
@@ -94,6 +98,8 @@ echo "start_time=$(date --iso-8601=seconds)"
 nvidia-smi
 if [[ "${training_backend}" == "gem" ]]; then
   "${venv_dir}/bin/python" -c 'import datasets, deepspeed, torch, transformers; print({"torch": torch.__version__, "cuda": torch.version.cuda, "transformers": transformers.__version__, "datasets": datasets.__version__, "deepspeed": deepspeed.__version__, "cuda_available": torch.cuda.is_available(), "gpu": torch.cuda.get_device_name(0)})'
+elif [[ "${training_backend}" == "distillm" ]]; then
+  "${venv_dir}/bin/python" -c 'import deepspeed, peft, torch, transformers; print({"torch": torch.__version__, "cuda": torch.version.cuda, "transformers": transformers.__version__, "deepspeed": deepspeed.__version__, "peft": peft.__version__, "cuda_available": torch.cuda.is_available(), "gpu": torch.cuda.get_device_name(0)})'
 else
   "${venv_dir}/bin/python" -c 'import torch, transformers, trl, peft; print({"torch": torch.__version__, "cuda": torch.version.cuda, "transformers": transformers.__version__, "trl": trl.__version__, "peft": peft.__version__, "cuda_available": torch.cuda.is_available(), "gpu": torch.cuda.get_device_name(0)})'
 fi
@@ -114,8 +120,15 @@ elif [[ "${training_backend}" == "trl" ]]; then
     --config "${config_path}" \
     --scratch-root "${scratch_root}" \
     --registry "${repo_dir}/configs/baselines.yaml"
-else
+elif [[ "${training_backend}" == "gem" ]]; then
   "${venv_dir}/bin/python" "${repo_dir}/scripts/run_gem_baseline.py" \
+    --config "${config_path}" \
+    --scratch-root "${scratch_root}" \
+    --registry "${repo_dir}/configs/baselines.yaml" \
+    --manifest "${repo_dir}/third_party/manifest.yaml" \
+    --official-root "${scratch_root}/official"
+else
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/run_distillm_baseline.py" \
     --config "${config_path}" \
     --scratch-root "${scratch_root}" \
     --registry "${repo_dir}/configs/baselines.yaml" \
