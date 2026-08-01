@@ -112,6 +112,7 @@ case "${eval_suite}" in
         --model "sglang/${served_model}" \
         --model-base-url "${SGLANG_BASE_URL}" \
         -M api_key=local \
+        -M 'extra_body={"chat_template_kwargs":{"enable_thinking":false}}' \
         -T dataset_split="${NOVELTY_SPLIT:-curated}" \
         -T num_generations="${NUM_GENERATIONS:-2}" \
         -T quality_model=small \
