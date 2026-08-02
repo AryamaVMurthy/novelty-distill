@@ -82,7 +82,7 @@ jobs a contiguous all-GPU window before resuming.
 
 | Control | Current pass | Resume passes | Score passes | Final evaluation |
 |---|---:|---|---|---:|
-| A1 Qwen3-14B | 18078 | 18162 -> 18198 -> 18199 | 18201 -> 18202 | submitted by controller 18210 |
+| A1 Qwen3-14B | 18078 | 18162 -> 18198 -> 18199 | 18201 -> 18202 | submitted by controller 18222 |
 | A0 Qwen3-4B | 18084 | 18165 -> 18200 | 18203 -> 18204 | 18207 -> 18208 |
 
 The first replacement wrappers 18102--18106 used `/bin/sh` despite containing Bash's `pipefail`;
@@ -96,7 +96,7 @@ Before those pending continuations ran, a second audit found that repository syn
 locked but shared virtual-environment mutation was not. Running passes 18162/18165 remain valid;
 lock-bearing continuations 18198--18200, score passes 18201--18204, fresh target gate 18206, and
 A0 evaluation passes 18207--18208 replace the still-zero-runtime jobs 18163--18166, 18178--18181,
-and 18184--18185. Controller 18210 now waits for final score 18202 and control evaluation 18208.
+and 18184--18185. Controller 18222 now waits for final score 18202 and control evaluation 18208.
 The older one-prompt base audit 18177 now waits `afterany:18208`; its downstream C3 rerun 18186 and
 B4 proof 18191 remain serial, isolating those already-spooled scripts from all environment setup.
 Obsolete single-pass
@@ -115,7 +115,7 @@ Their resume jobs retain the same output IDs and begin at the first missing prom
 | TRL/OPSD bounded resumes | 18195 -> 18212 | indices 0-4, 6-11, and 13-18; chained `afterany`; 25-step checkpoints |
 | C3 DistiLLM | 18098 | index 12, four GPUs, 12-hour bound; after target gate 18132 and smoke 18092 |
 | Final target replay | 18209 | waits for 18212, final A1 score 18202, and final A0 evaluation 18208 |
-| Evaluation fan-out controller | 18210 | waits for final target replay 18209 and B4 deploy gate 18191; names the fresh target gate for every submitted evaluation chain |
+| Evaluation fan-out controller | 18222 | waits for final target replay 18209 and B4 deploy gate 18191; names the fresh target gate for every submitted evaluation chain |
 
 Completed TOMATO-1k production runs currently have the following measured systems costs. Training
 losses are intentionally omitted from this cross-backend table because CE, GEM, forward/reverse
@@ -178,6 +178,10 @@ reservation accounting, not any batch, optimizer, context, or checkpoint setting
 is required because D3 first enters the locked graph in 18195 and, at the measured 4.4-minute GKD
 step time, needs its own checkpoint-75 continuation. D1/D2 and short offline tasks will preflight
 complete in 18212; D3 consumes the remaining optimizer steps.
+
+At 2026-08-02 20:22 IST, D1 and D2 had both produced validated checkpoint-25 directories and were
+at steps 27/125 and 25/125 respectively. The same snapshot contained 822/1,658 A1 prompt shards and
+1,511/1,658 A0 prompt shards. These are live progress counts rather than completed-result claims.
 
 Pre-production context gates 18134--18138 ran on the longest tokenizer-audited TOMATO record.
 Task-faithful OPSD at 3,072 tokens passed in 18134. GKD 3,072 failed closed on memory in 18135, and
@@ -278,22 +282,29 @@ aggregate `CANCELLED` state reflects these superseded pending elements rather th
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
-edges release the other baselines and controls even if C3 fails, while controller 18210 separately
+edges release the other baselines and controls even if C3 fails, while controller 18222 separately
 requires C3 success before evaluation fan-out.
 
-Controller 18210 replaces pending controllers 18120, 18125, 18130, 18133, 18189, and 18197. Controller
+Controller 18222 replaces pending controllers 18120, 18125, 18130, 18133, 18189, 18197, and 18210.
+Job 18210 was cancelled with zero runtime only after replacement 18222 was accepted with the same
+upstream dependencies and exports. Controller
 18133 was cancelled before execution after its spooled script was found to predate the verified C3
 BF16 serving contract; 18189 was replaced before execution so every fan-out child is spooled with
 the environment-lock repair; 18197 was likewise replaced before execution when its control jobs
 were respun with that lock. Gate 18209 reruns exact target validation only after every other
-controller prerequisite succeeds; this keeps its Slurm ID fresh when controller 18210 submits
-downstream dependencies and avoids relying on purged historical gate 18132. Controller 18210
+controller prerequisite succeeds; this keeps its Slurm ID fresh when controller 18222 submits
+downstream dependencies and avoids relying on purged historical gate 18132. Controller 18222
 also requires B4 serving proof 18191 before it submits A1 and historical A3 controls plus 19 trained
 model chains. Each trained
 model chain has three resumable generation passes, two resumable judge passes, two cached anchored
 evaluation passes, and strict checkpoint preflight. The final CPU analysis requires all aligned
 evaluation artifacts, runs the frozen prompt-paired contrasts with per-metric Holm correction, and
 reports per-prompt favorable/tied/unfavorable directions over every declared clustering threshold.
+Commit `786bfc0` additionally makes controller 18222 submit two resumable research-taste annotation
+passes for A0, A1, A3, and every executable trained method. These attributed Chen--Zhao--Cohan
+taxonomy results are stored and analyzed separately as `secondary_descriptive`; they cannot modify
+the primary contrast family and require the declared two-human agreement gate before any headline
+claim. The complete contract is in `reports/RESEARCH_TASTE_PROTOCOL.md`.
 
 The final generation preflight also binds every local LoRA or full checkpoint to a streaming
 SHA-256 over inference-relevant configuration, tokenizer, index, and weight files. That identity is
