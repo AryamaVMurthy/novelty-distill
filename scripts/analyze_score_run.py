@@ -13,6 +13,7 @@ from novelty_distill.evaluation.score_analysis import (
     summarize_score_payloads,
 )
 from novelty_distill.evaluation.score_shards import load_score_shard
+from novelty_distill.provenance import repository_commit
 
 
 def parse_args() -> argparse.Namespace:
@@ -58,6 +59,7 @@ def _atomic_text(path: Path, text: str) -> None:
 
 def main() -> None:
     args = parse_args()
+    git_commit = repository_commit(Path(__file__).resolve().parents[1])
     if args.samples_per_prompt <= 0:
         raise ValueError("samples-per-prompt must be positive")
     if args.expected_prompts is not None and args.expected_prompts <= 0:
@@ -74,6 +76,7 @@ def main() -> None:
     )
     summary = summarize_score_payloads(payloads)
     summary["schema_version"] = 1
+    summary["git_commit"] = git_commit
     summary["input"] = {
         "path": str(args.score_dir),
         "tree_sha256": _tree_hash(paths),

@@ -13,6 +13,7 @@ from novelty_distill.data.teacher_views import (
     TeacherGeneration,
     validate_teacher_target_artifact,
 )
+from novelty_distill.provenance import repository_commit
 
 
 def parse_args() -> argparse.Namespace:
@@ -73,6 +74,7 @@ def _atomic_json(path: Path, payload: Mapping[str, object]) -> None:
 
 def main() -> None:
     args = parse_args()
+    validator_commit = repository_commit(Path(__file__).resolve().parents[1])
     if args.expected_prompts is not None and args.expected_prompts <= 0:
         raise ValueError("expected-prompts must be positive")
     prompt_ids = _load_prompt_ids(args.prompts)
@@ -95,15 +97,27 @@ def main() -> None:
         expected_prompt_ids=prompt_ids,
     )
     clustered_sha256 = _sha256(args.clustered)
-    expected_provenance = {
+    expected_provenance: dict[str, object] = {
         "clustered_input_sha256": clustered_sha256,
         "num_generations": len(generations),
         "seed": args.seed,
     }
-    if payload.get("provenance") != expected_provenance:
+    provenance = payload.get("provenance")
+    if not isinstance(provenance, Mapping) or any(
+        provenance.get(key) != value for key, value in expected_provenance.items()
+    ):
         raise ValueError("teacher-target provenance does not match its clustered input")
+    producer_commit = provenance.get("git_commit")
+    if (
+        not isinstance(producer_commit, str)
+        or len(producer_commit) != 40
+        or set(producer_commit) - set("0123456789abcdef")
+    ):
+        raise ValueError("teacher-target provenance has an invalid producer commit")
     manifest: dict[str, object] = {
         "schema_version": 1,
+        "producer_git_commit": producer_commit,
+        "validator_git_commit": validator_commit,
         **summary,
         "targets": {"path": str(args.targets), "sha256": _sha256(args.targets)},
         "clustered": {"path": str(args.clustered), "sha256": clustered_sha256},

@@ -15,6 +15,7 @@ from novelty_distill.evaluation.teacher_annotation import (
     cluster_cosine_embeddings,
     cosine_embedding_diagnostics,
 )
+from novelty_distill.provenance import repository_commit
 
 
 def parse_args() -> argparse.Namespace:
@@ -28,6 +29,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    git_commit = repository_commit(Path(__file__).resolve().parents[1])
     annotation = yaml.safe_load(args.annotation_config.read_text(encoding="utf-8"))
     score_paths = sorted(args.score_dir.glob("*.json"))
     if not score_paths:
@@ -110,6 +112,7 @@ def main() -> None:
     temporary.replace(args.output)
     metadata = {
         "schema_version": 1,
+        "git_commit": git_commit,
         "num_records": len(output_records),
         "num_prompts": len(score_paths),
         "embedding_model": annotation["embedding_model"],

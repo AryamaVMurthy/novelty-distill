@@ -13,6 +13,7 @@ from novelty_distill.evaluation.contrasts import (
     summarize_method_metrics,
 )
 from novelty_distill.evaluation.reporting import render_contrast_markdown
+from novelty_distill.provenance import repository_commit
 
 
 def parse_args() -> argparse.Namespace:
@@ -27,6 +28,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    git_commit = repository_commit(Path(__file__).resolve().parents[1])
     rows = tuple(
         json.loads(line)
         for line in args.input.read_text(encoding="utf-8").splitlines()
@@ -54,6 +56,7 @@ def main() -> None:
     )
     payload = {
         "schema_version": 2,
+        "git_commit": git_commit,
         "bootstrap_samples": config["bootstrap_samples"],
         "seed": config["seed"],
         "holm_family": "all declared contrasts within each metric",

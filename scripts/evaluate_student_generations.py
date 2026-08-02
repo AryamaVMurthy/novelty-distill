@@ -24,6 +24,7 @@ from novelty_distill.evaluation.student_evaluation import (
     summarize_quality_dimensions,
     summarize_student_prompt,
 )
+from novelty_distill.provenance import repository_commit
 
 
 def parse_args() -> argparse.Namespace:
@@ -113,6 +114,7 @@ def _mean_metrics(prompt_metrics: Mapping[str, Mapping[str, float]]) -> dict[str
 
 def main() -> None:
     args = parse_args()
+    git_commit = repository_commit(Path(__file__).resolve().parents[1])
     if args.samples_per_prompt <= 0:
         raise ValueError("samples per prompt must be positive")
     teacher_samples = args.teacher_samples_per_prompt or args.samples_per_prompt
@@ -217,6 +219,7 @@ def main() -> None:
     primary_metrics = metrics_by_threshold[primary_key]
     payload = {
         "schema_version": 1,
+        "git_commit": git_commit,
         "num_prompts": len(primary_metrics),
         "teacher_samples_per_prompt": teacher_samples,
         "student_samples_per_prompt": student_samples,

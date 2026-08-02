@@ -12,6 +12,7 @@ from novelty_distill.data.teacher_views import (
     TeacherGeneration,
     build_teacher_target_artifact,
 )
+from novelty_distill.provenance import repository_commit
 
 
 def main() -> None:
@@ -20,6 +21,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=17)
     args = parser.parse_args()
+    git_commit = repository_commit(Path(__file__).resolve().parents[1])
 
     generations: list[TeacherGeneration] = []
     with args.input.open(encoding="utf-8") as handle:
@@ -29,6 +31,7 @@ def main() -> None:
     artifact = build_teacher_target_artifact(generations, seed=args.seed)
     artifact["provenance"] = {
         "clustered_input_sha256": hashlib.sha256(args.input.read_bytes()).hexdigest(),
+        "git_commit": git_commit,
         "num_generations": len(generations),
         "seed": args.seed,
     }

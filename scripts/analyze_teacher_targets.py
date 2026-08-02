@@ -15,6 +15,7 @@ from novelty_distill.evaluation.teacher_target_analysis import (
     render_teacher_target_markdown,
     summarize_teacher_targets,
 )
+from novelty_distill.provenance import repository_commit
 from novelty_distill.training.provenance import atomic_json
 
 
@@ -68,6 +69,7 @@ def _atomic_text(path: Path, content: str) -> None:
 
 def main() -> None:
     args = parse_args()
+    git_commit = repository_commit(Path(__file__).resolve().parents[1])
     if args.expected_prompts <= 0:
         raise ValueError("expected-prompts must be positive")
     score_paths = sorted(args.score_dir.glob("*.json"))
@@ -93,6 +95,7 @@ def main() -> None:
         seed=args.seed,
     )
     summary["schema_version"] = 1
+    summary["git_commit"] = git_commit
     summary["inputs"] = {
         "scores": {"path": str(args.score_dir), "tree_sha256": _tree_hash(score_paths)},
         "clustered": {"path": str(args.clustered), "sha256": _sha256(args.clustered)},
