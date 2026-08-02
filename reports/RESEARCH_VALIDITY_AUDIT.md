@@ -52,6 +52,10 @@ not a results report and does not promote any baseline.
     and report this trade-off empirically. That supports retaining teacher-mode precision, recall,
     judge quality, and feasibility as separate outcomes rather than selecting a winner from one
     aggregate score.
+11. Empirical Jensen-Shannon divergence is estimator- and sampling-protocol dependent. Garrido et
+    al. show that finite-sample JSD estimates are not interchangeable across estimation protocols.
+    This study uses an explicitly declared categorical plug-in estimator on fixed semantic-mode
+    counts; its value is a matched operational index, not an unbiased population divergence.
 
 ## Consequences for this study
 
@@ -62,6 +66,9 @@ not a results report and does not promote any baseline.
 - ModePrecision and ClusterJSD operationalize fidelity to the sampled teacher distribution. Since
   eight teacher responses cannot enumerate every valid scientific direction, unmatched student
   modes need separate quality/expert inspection and are not automatically classified as failures.
+- ClusterJSD comparisons are restricted to methods with the same teacher/student sampling budgets
+  and frozen clustering protocol. A3's one-response divergence is reported descriptively and must
+  not be interpreted as sampling-budget-matched evidence.
 - Teacher samples are clustered first and their partition is frozen across methods. Students are
   assigned to the nearest qualifying teacher mode, while unmatched students are clustered into
   separately named novel modes. This avoids method-dependent teacher-mode merging through student
@@ -98,3 +105,5 @@ not a results report and does not promote any baseline.
   Models*, COLING 2025: <https://aclanthology.org/2025.coling-main.383/>
 - Le Bronnec et al., *Exploring Precision and Recall to Assess the Quality and Diversity of LLMs*,
   ACL 2024: <https://aclanthology.org/2024.acl-long.616/>
+- Garrido et al., *Not all Jensen-Shannon Divergence Estimators are Equal*:
+  <https://arxiv.org/abs/2606.16411>

@@ -51,6 +51,10 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
   scientific-value measures. A valid mode absent from eight teacher samples lowers precision just
   as an irrelevant mode does; interpret it beside judged quality, student-only mode count, and
   expert review rather than calling every precision decrease a novelty failure.
+- ClusterJSD is the categorical plug-in divergence of the observed teacher/student mode counts.
+  With eight teacher and sixteen student samples it is a finite-sample, protocol-dependent index,
+  not an unbiased population divergence. Compare it only across methods with the same sampling and
+  clustering contract; A3's K=1 value is descriptive only.
 - Report the full clustering threshold curve and per-prompt direction counts. A primary-threshold
   effect isolated to one prompt is exploratory.
 - Report length-stop rate, completion-token distribution, and training-target similarity beside

@@ -38,6 +38,12 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
             "descriptive controls and are not sampling-budget-matched comparisons."
         ),
         "",
+        (
+            "ClusterJSD is a finite-sample plug-in estimate over eight teacher draws and the "
+            "declared number of student draws. It is comparable only under the same sampling and "
+            "clustering protocol, and is not an unbiased estimate of population divergence."
+        ),
+        "",
     ]
     if git_commit := payload.get("git_commit"):
         lines[2:2] = [f"Producer Git commit: `{git_commit}`.", ""]
