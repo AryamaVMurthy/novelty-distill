@@ -10,6 +10,20 @@ metrics:
   - quality_adjusted_coverage
   - nearest_training_target_similarity_mean
   - length_stop_rate
+descriptive_metrics:
+  - student_quality_mean
+  - student_relevance_mean
+  - student_feasibility_mean
+  - student_soundness_mean
+  - student_clarity_mean
+  - student_instruction_compliance_mean
+  - teacher_mode_recall
+  - teacher_mode_precision
+  - cluster_jsd
+  - quality_adjusted_coverage
+  - nearest_training_target_similarity_mean
+  - length_stop_rate
+  - completion_tokens_mean
 threshold_metric_directions:
   student_semantic_clusters: higher
   teacher_mode_recall: higher

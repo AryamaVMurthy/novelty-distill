@@ -58,7 +58,8 @@ def main() -> None:
         "seed": config["seed"],
         "holm_family": "all declared contrasts within each metric",
         "method_summaries": summarize_method_metrics(
-            rows=rows, metrics=tuple(config["metrics"])
+            rows=rows,
+            metrics=tuple(config.get("descriptive_metrics", config["metrics"])),
         ),
         "results": results,
         "threshold_direction_counts": threshold_directions,

@@ -55,3 +55,19 @@ def test_production_teacher_uses_calibrated_concise_official_decoding() -> None:
     assert production.top_p == 0.8
     assert production.samples_per_prompt == 8
     assert production.enable_thinking is False
+
+
+def test_contrast_config_keeps_rubric_axes_descriptive() -> None:
+    config = yaml.safe_load(
+        (ROOT / "configs/evaluation/primary_contrasts.yaml").read_text(encoding="utf-8")
+    )
+
+    assert set(config["metrics"]) < set(config["descriptive_metrics"])
+    assert {
+        "student_relevance_mean",
+        "student_soundness_mean",
+        "student_clarity_mean",
+        "student_instruction_compliance_mean",
+        "completion_tokens_mean",
+    } <= set(config["descriptive_metrics"])
+    assert "student_instruction_compliance_mean" not in config["metrics"]
