@@ -56,6 +56,12 @@ not a results report and does not promote any baseline.
     al. show that finite-sample JSD estimates are not interchangeable across estimation protocols.
     This study uses an explicitly declared categorical plug-in estimator on fixed semantic-mode
     counts; its value is a matched operational index, not an unbiased population divergence.
+12. Linkage is part of the semantic-mode definition. SciPy's hierarchical-clustering specification
+    defines complete linkage by the farthest pair between candidate clusters, whereas single
+    linkage uses the nearest pair. With cosine distance, cutting a complete-linkage tree at a fixed
+    boundary prevents a chain of individually close samples from joining endpoints that violate
+    that boundary. The production teacher-only audit confirmed this distinction empirically and
+    motivated the complete-linkage partition.
 
 ## Consequences for this study
 
@@ -115,3 +121,5 @@ not a results report and does not promote any baseline.
   ACL 2024: <https://aclanthology.org/2024.acl-long.616/>
 - Garrido et al., *Not all Jensen-Shannon Divergence Estimators are Equal*:
   <https://arxiv.org/abs/2606.16411>
+- SciPy, *Hierarchical/agglomerative linkage methods*:
+  <https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html>
