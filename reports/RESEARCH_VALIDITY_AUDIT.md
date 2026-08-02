@@ -59,6 +59,9 @@ not a results report and does not promote any baseline.
 - K=16 samples are repeated observations within a prompt; prompt is the statistical unit.
 - Quality, feasibility, ModeRecall, ModePrecision, ClusterJSD, and quality-adjusted coverage remain
   separate outcomes. No unique-string or single-threshold result is called semantic diversity.
+- ModePrecision and ClusterJSD operationalize fidelity to the sampled teacher distribution. Since
+  eight teacher responses cannot enumerate every valid scientific direction, unmatched student
+  modes need separate quality/expert inspection and are not automatically classified as failures.
 - Teacher samples are clustered first and their partition is frozen across methods. Students are
   assigned to the nearest qualifying teacher mode, while unmatched students are clustered into
   separately named novel modes. This avoids method-dependent teacher-mode merging through student

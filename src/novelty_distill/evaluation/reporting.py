@@ -113,7 +113,9 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
                 "F/T/U is the number of paired prompts favorable, tied, or unfavorable for the "
                 "treatment at that threshold. `cluster_jsd` is favorable when lower; the other "
                 "declared threshold metrics are favorable when higher. Direction counts are "
-                "descriptive and are not an additional multiplicity-adjusted hypothesis family."
+                "descriptive and are not an additional multiplicity-adjusted hypothesis family. "
+                "Here favorable means teacher-distribution fidelity or declared operational "
+                "breadth, not that every unmatched student mode is scientifically invalid."
             ),
             "",
         ]
