@@ -18,6 +18,14 @@ record. All active or pending jobs use `codex/implementation` and synchronize th
 The second generation and scoring passes are deliberate safety passes. Current preflights validate
 all existing shards and exit before model loading when an artifact is already complete.
 
+Generation pass 1 completed successfully in 01:29:52 and pass 2 completed its strict preflight in
+00:00:44. The frozen artifact contains exactly 1,000 prompt shards and 8,000 completions under
+configuration hash `a6fff8e2deb2278cf2ac5a528df9c44cef791203a4c2073461d6dd44a4e43b79`.
+Every prompt has 8/8 distinct completions and all 8,000 completion texts are globally distinct.
+The completion-token distribution has mean 355.5487, median 353, and maximum 512. There are 7,985
+`stop` finishes and 15 `length` finishes, for a length-stop rate of 0.001875. These are generation
+integrity and lexical-uniqueness diagnostics; they do not establish semantic diversity or quality.
+
 ## Temporal controls
 
 The original A0/A1 generation jobs write stable prompt shards but cannot finish 1,658 prompts with
