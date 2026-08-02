@@ -94,6 +94,17 @@ def test_distillm_environment_pins_deepspeed_runtime_build_dependency() -> None:
     assert "setuptools==83.0.0" in requirements
 
 
+def test_distillm_small_smoke_fits_task_faithful_first_prompt() -> None:
+    spec = DistiLLMRunSpec.model_validate(
+        yaml.safe_load(
+            Path("configs/training/distillm_smoke.yaml").read_text(encoding="utf-8")
+        )
+    )
+
+    assert spec.max_prompt_length == 256
+    assert spec.max_length == 512
+
+
 def test_qwen_uint32_separator_is_normalized_for_official_loader(tmp_path: Path) -> None:
     data_path = tmp_path / "train_0.bin"
     data_path.write_bytes(

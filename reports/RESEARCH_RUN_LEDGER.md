@@ -158,7 +158,7 @@ and it cannot enter the executable matrix without a reviewed upstream implementa
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
-available. Completed tasks 0-3 produced deployable 69,782,384-byte LoRA adapters:
+available. Completed tasks 0-4 produced deployable 69,782,384-byte LoRA adapters:
 
 | Baseline | Steps | Epoch fraction | First loss | Last loss | Last gradient norm | Runtime |
 |---|---:|---:|---:|---:|---:|---:|
@@ -166,14 +166,18 @@ available. Completed tasks 0-3 produced deployable 69,782,384-byte LoRA adapters
 | B2a | 125 | 1.00 | 2.4363 | 1.3320 | 0.5553 | 00:02:58 |
 | B2b | 125 | 1.00 | 1.8238 | 0.8385 | 0.3666 | 00:02:59 |
 | B3 | 125 | 0.25 | 2.0011 | 1.3974 | 0.7914 | 00:03:01 |
+| D1 | 125 | 1.00 | 5.8326 | 2.9114 | 2.6754 | 04:58:09 |
 
 B3's 0.25 epoch is expected: four targets create 4,000 available rows while the frozen gate uses
 1,000 optimizer example exposures. UltraFeedback's canonical `human_target`, `best1`, and `mode1`
 are all the same preferred completion by construction. Therefore B1 and B2b are target-equivalent
 in this pilot; their nearly identical loss traces are a pipeline consistency finding, not a valid
 human-versus-best-target comparison. B2a uses the deterministic random completion and B3 uses all
-four unique official completions. D1 task 18043_4 remains the expensive on-policy pilot and must
-finish with a deployable adapter before that backend is considered research-ready.
+four unique official completions. D1 task 18043_4 completed all 125 on-policy steps with mean
+training loss 3.5920, peak observed GPU memory 23,970 MiB, and a readable 69,782,384-byte,
+392-tensor adapter. It used the earlier upstream UltraFeedback prompt/sampler and is systems
+evidence only; TOMATO production uses the separately gated task-faithful, non-thinking,
+frozen-decoding contract.
 
 ## Interpretation gates
 
