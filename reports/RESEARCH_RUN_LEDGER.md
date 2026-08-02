@@ -2,8 +2,10 @@
 
 This ledger freezes the submitted Turing job graph and completed systems evidence as of
 2026-08-02 (Asia/Kolkata). Slurm state is live; job IDs and dependency edges are the durable
-record. All active or pending jobs use `codex/implementation` and synchronize through
-`.git/novelty-distill-sync.lock` before consuming repository code.
+record. All newly staged jobs use `codex/implementation` and synchronize through
+`.git/novelty-distill-sync.lock` before consuming repository code. Primary array 18097 was spooled
+before that lock was added; it runs one task at a time while controls occupy the other GPUs, and
+locked resume array 18117 covers any incomplete artifact.
 
 ## Production teacher targets
 
@@ -67,8 +69,9 @@ keeps the 0.94 boundary consistent between teacher partitioning and student admi
 student could match one member while contradicting another. Unmatched students remain
 complete-linkage clustered as separately named student modes.
 
-Training jobs 18092, 18097, and 18098 and control evaluation 18113 directly require successful
-gate 18132, so no target consumer can run on a superseded artifact.
+Training jobs 18092, 18097, and 18098 directly required successful gate 18132. The replacement
+evaluation graph instead culminates in final target replay 18188, so no final metric consumer can
+run on a superseded artifact.
 
 ## Temporal controls
 
@@ -79,15 +82,17 @@ jobs a contiguous all-GPU window before resuming.
 
 | Control | Current pass | Resume passes | Score passes | Final evaluation |
 |---|---:|---|---|---:|
-| A1 Qwen3-14B | 18078 | 18162 -> 18163 -> 18164 | 18107 -> 18108 | submitted by controller 18133 |
-| A0 Qwen3-4B | 18084 | 18165 -> 18166 | 18109 -> 18110 | 18113 -> 18119 |
+| A1 Qwen3-14B | 18078 | 18162 -> 18163 -> 18164 | 18178 -> 18179 | submitted by controller 18189 |
+| A0 Qwen3-4B | 18084 | 18165 -> 18166 | 18180 -> 18181 | 18184 -> 18185 |
 
 The first replacement wrappers 18102--18106 used `/bin/sh` despite containing Bash's `pipefail`;
 all five failed in at most one second before repository synchronization, model loading, or data
 work. Direct Bash-script replacements 18162--18166 preserve exactly the same output IDs and
-completed shards. Later generation and score passes use `afterany` and the same stable output IDs. A0 evaluation
-18113 requires final A1 score 18108, final A0 score 18110, and target gate 18132; 18119 is its cached
-resume pass. Obsolete single-pass
+completed shards. A pre-execution batch-script audit found the same `/bin/sh` defect in queued score
+jobs 18107--18110 and evaluation job 18113; all were cancelled with zero runtime, along with its
+otherwise-correct downstream pass 18119. Direct-script replacements 18178--18181 score the same
+stable A1/A0 namespaces, and 18184--18185 evaluate A0 against A1 after both final score passes.
+Controller 18189 now waits for 18179 and 18185. Obsolete single-pass
 score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled before execution.
 The active passes 18078 and 18084 were ended once their atomic shards reached 523/1,658 A1 prompts
 and 983/1,658 A0 prompts, respectively, so the requested four-GPU gate could start immediately.
@@ -102,7 +107,64 @@ Their resume jobs retain the same output IDs and begin at the first missing prom
 | Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18132 and `afterany:18098` |
 | TRL/OPSD bounded resumes | 18117 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
 | C3 DistiLLM | 18098 | index 12, four GPUs, 12-hour bound; after target gate 18132 and smoke 18092 |
-| Evaluation fan-out controller | 18133 | waits for B4 task 18097_5, 18117, 18098, A0/A1, and names target gate 18132 |
+| Final target replay | 18188 | waits for 18117, final A1 score 18179, and final A0 evaluation 18185 |
+| Evaluation fan-out controller | 18189 | waits for 18188 and names its fresh target gate for every submitted evaluation chain |
+
+Completed TOMATO-1k production runs currently have the following measured systems costs. Training
+losses are intentionally omitted from this cross-backend table because CE, GEM, forward/reverse
+KL, and skew KL have different numerical scales.
+
+| Baseline | Objective/view | Available rows | Exposures | Train runtime (s) | Peak GPU MiB |
+|---|---|---:|---:|---:|---:|
+| B2a | CE / random-1 | 1,000 | 1,000 | 245.9 | 10,902 |
+| B2b | CE / best-1 | 1,000 | 1,000 | 245.1 | 10,982 |
+| B2c | CE / mode-1 | 1,000 | 1,000 | 251.0 | 10,924 |
+| B4 | GEM / diverse-4 | 4,000 | 1,000 | 340.9 | 39,626 |
+| C1-human | forward KL / human | 1,000 | 1,000 | 617.7 | 45,662 |
+| C1-best1 | forward KL / best-1 | 1,000 | 1,000 | 487.2 | 40,298 |
+| C1-diverse4 | forward KL / diverse-4 | 4,000 | 1,000 | 485.8 | 40,498 |
+| C2-human | reverse KL / human | 1,000 | 1,000 | 617.0 | 43,020 |
+| C2-best1 | reverse KL / best-1 | 1,000 | 1,000 | 489.9 | 40,024 |
+| C2-diverse4 | reverse KL / diverse-4 | 4,000 | 1,000 | 487.7 | 40,078 |
+| C3 | skew KL / best-1 | 1,000 | 1,000 | 1,846.0 | 48,502 |
+
+All nine completed LoRA artifacts above B4/C3 open as 132,187,888-byte rank-16 adapters with
+504 non-empty tensors. B4 is a structurally valid 8,044,981,992-byte, 398-tensor native-BF16 full
+model; C3's full-checkpoint and BF16-cast serving evidence is recorded below. The three long human
+targets in C1/C2 account for 1,446 completion-tail tokens and materially increase runtime and peak
+memory relative to the teacher-target views; this context-cost difference must remain visible in
+method comparisons.
+
+The checkpoint-125 trainer histories provide a separate convergence diagnostic. Values below are
+25-step window means, so they are comparable only within an objective and are not downstream
+quality metrics.
+
+| Baseline | First-window loss | Final-window loss | Change | Final-window gradient norm |
+|---|---:|---:|---:|---:|
+| B2a | 1.1235 | 0.6400 | -43.0% | 0.4247 |
+| B2b | 1.1172 | 0.6485 | -42.0% | 0.4165 |
+| B2c | 1.1046 | 0.6466 | -41.5% | 0.4169 |
+| C1-human | 3.4759 | 2.5733 | -26.0% | 1.9729 |
+| C1-best1 | 3.8937 | 2.5084 | -35.6% | 2.4118 |
+| C1-diverse4 | 3.9038 | 2.4845 | -36.4% | 2.3711 |
+| C2-human | 3.4503 | 2.9953 | -13.2% | 3.7836 |
+| C2-best1 | 3.4373 | 2.8166 | -18.1% | 3.6726 |
+| C2-diverse4 | 3.4013 | 2.7882 | -18.0% | 3.7093 |
+
+All windows are finite and show net loss reduction. The three SeqKD target views end within 1.4%
+of one another. Reverse-KL retains materially larger late-window gradient norms than forward-KL
+on the same model and exposure budget; this is an optimization finding only, and the frozen paired
+evaluation must determine whether it corresponds to useful behavioral differences.
+
+On-policy D1 started as array task 18097_13 (concrete job 18193) and completed its first two real
+steps in 265.9 and 278.8 seconds, with both 4B student and 14B teacher resident at approximately
+38.6 GiB GPU memory. This projects beyond one six-hour allocation, but the run saves every 25
+steps and the bounded resume array consumes its latest complete checkpoint. D2 initially remained
+resource-pending even though a fourth GPU was free: D1 plus the two controls reserved 256 GiB of
+the node's 386,630 MiB, leaving slightly less than D2's default 128 GiB request. Its pending-only
+reservation was conservatively reduced to 116 GiB (the identical live D1 workload's measured host
+RSS was about 1.6 GiB), after which concrete job 18194 started without restarting any active work.
+The node therefore has four useful GPU lanes rather than one scheduler-idle device.
 
 Pre-production context gates 18134--18138 ran on the longest tokenizer-audited TOMATO record.
 Task-faithful OPSD at 3,072 tokens passed in 18134. GKD 3,072 failed closed on memory in 18135, and
@@ -198,11 +260,14 @@ preflighting completed ones.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
-edges release the other baselines and controls even if C3 fails, while controller 18133 separately
+edges release the other baselines and controls even if C3 fails, while controller 18189 separately
 requires C3 success before evaluation fan-out.
 
-Controller 18133 replaces pending controllers 18120, 18125, 18130; their immutable exports named
-superseded target gates. Its internal target dependency is validation gate 18132. It submits A1 and
+Controller 18189 replaces pending controllers 18120, 18125, 18130, and 18133. Controller 18133 was
+cancelled before execution after its spooled script was found to predate the verified C3 BF16
+serving contract. Gate 18188 reruns exact target validation only after every other controller
+prerequisite succeeds; this keeps its Slurm ID fresh when controller 18189 submits downstream
+dependencies and avoids relying on purged historical gate 18132. Controller 18189 submits A1 and
 historical A3 controls plus 19 trained model chains. Each trained
 model chain has three resumable generation passes, two resumable judge passes, two cached anchored
 evaluation passes, and strict checkpoint preflight. The final CPU analysis requires all aligned evaluation artifacts,
@@ -248,9 +313,9 @@ frozen-decoding contract.
 - No semantic-diversity claim is promotable from one threshold; all eight thresholds and prompt
   direction counts must be inspected.
 - C3 has no verified optimizer-state resume path in the pinned official implementation. Its
-  production allocation is therefore 12 hours instead of the default six-hour research-job bound.
-  This is within the observed `u22` unlimited partition limit and the `high` QOS seven-day maximum;
-  the four-GPU smoke still must prove a real update and deployable checkpoint before C3 releases.
+  production allocation was therefore 12 hours instead of the default six-hour research-job
+  bound. The four-GPU smoke and production run both completed, and gates 18167/18174 proved the
+  deterministic BF16 deployment path for the full checkpoint.
 - The pinned-tokenizer corpus audit found no SFT/OPSD overflow at 3,072 and no prompt or on-policy
   overflow at GKD 2,048. Three of 1,000 historical human targets still require prompt-preserving
   completion-tail truncation at the hardware-safe GKD limit; this 0.3% rate and token count remain

@@ -9,6 +9,7 @@ from novelty_distill.training.gem import (
     GEMRunSpec,
     build_gem_rows,
     build_official_gem_command,
+    gem_loss_parameters,
     install_gem_trainer_compat,
     load_teacher_targets,
     tokenize_gem_example,
@@ -213,4 +214,27 @@ def test_gem_command_invokes_pinned_official_entrypoint() -> None:
     assert command[9] == "/official/gem/train.py"
     assert command[command.index("--loss") + 1] == "gem"
     assert command[command.index("--gem_beta") + 1] == "0.7"
+    assert command[command.index("--gem_h") + 1] == "linear"
     assert command[command.index("--model_name_or_path") + 1] == "/models/qwen"
+
+
+def test_gem_loss_metadata_records_every_official_loss_parameter() -> None:
+    spec = GEMRunSpec(
+        baseline_id="B4",
+        model="Qwen/Qwen3-1.7B",
+        revision="70d244cc86ccca08cf5af4e1e306ecf908b1ad5e",
+        input=Path("data/input.jsonl"),
+        teacher_targets=Path("data/teacher-targets.json"),
+        tokenized_output=Path("data/gem.jsonl"),
+        output_dir=Path("checkpoints/B4-gem-smoke"),
+        max_examples=1,
+        max_steps=1,
+        per_device_train_batch_size=1,
+        gradient_accumulation_steps=1,
+        learning_rate=2e-5,
+        max_length=768,
+        gem_beta=0.7,
+        seed=17,
+    )
+
+    assert gem_loss_parameters(spec) == {"gem_beta": 0.7, "gem_h": "linear"}

@@ -49,6 +49,12 @@ class GEMRunSpec(BaseModel):
     seed: int = Field(ge=0)
 
 
+def gem_loss_parameters(spec: GEMRunSpec) -> dict[str, object]:
+    """Return every loss parameter passed to the official GEM trainer."""
+
+    return {"gem_beta": spec.gem_beta, "gem_h": "linear"}
+
+
 def install_gem_trainer_compat(trainer_class: type[Any]) -> bool:
     """Accept Transformers' new duplicate LR argument in official GEM's override."""
 
@@ -94,6 +100,7 @@ def build_official_gem_command(
 ) -> tuple[str, ...]:
     """Build a one-process distributed command required by official GEM `train.py`."""
 
+    loss_parameters = gem_loss_parameters(spec)
     return (
         str(python_executable),
         "-m",
@@ -114,9 +121,9 @@ def build_official_gem_command(
         "--loss",
         "gem",
         "--gem_beta",
-        str(spec.gem_beta),
+        str(loss_parameters["gem_beta"]),
         "--gem_h",
-        "linear",
+        str(loss_parameters["gem_h"]),
         "--use_flash_attn",
         "False",
         "--bf16",
@@ -225,7 +232,7 @@ def execute_gem_training(
         "revision": spec.revision,
         "trajectory_source": baseline.trajectory_source,
         "target_view": baseline.target_view,
-        "gem_beta": spec.gem_beta,
+        **gem_loss_parameters(spec),
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
         "training_artifacts": {
