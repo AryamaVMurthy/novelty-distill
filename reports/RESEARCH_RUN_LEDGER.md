@@ -14,8 +14,8 @@ record. All active or pending jobs use `codex/implementation` and synchronize th
 | Quality score pass 1 | 18035 | `afterok:18033` |
 | Quality score pass 2 | 18037 | `afterany:18035`, same resumable score directory |
 | Score diagnostics | 18123 | `afterok:18037`; strict JSON and Markdown judge diagnostics |
-| Cluster and target views | 18124 | `afterok:18037`; cached embeddings; `data/teacher-targets-tomato1k-v1.json` |
-| Target provenance/findings gate | 18122 | `afterok:18124`; exact reconstruction, 1,000-ID validation, and descriptive findings |
+| Cluster and target views | 18127 | cached 0.95 rebuild; `data/teacher-targets-tomato1k-v1.json` |
+| Target provenance/findings gate | 18129 | exact reconstruction, 1,000-ID validation, and corrected descriptive findings |
 
 The second generation and scoring passes are deliberate safety passes. Current preflights validate
 all existing shards and exit before model loading when an artifact is already complete.
@@ -42,14 +42,25 @@ are 0.078351 and 0.111392. These results establish judge resolution and expose d
 ceilings; they do not validate the rubric against human scientific judgments. Full frozen values
 are recorded in `reports/TEACHER_SCORE_FINDINGS.md`.
 
-The original pending cluster job 18039 was first extended from 01:00:00 to 03:00:00, then replaced
-and cancelled before execution by current staged job 18124 so production uses the persistent atomic
-embedding cache. The observed seven-condition calibration cluster job processed 56 prompts in
-00:04:02; linear scaling projects about 72 minutes for 1,000 prompts, so 18124 retains a three-hour
-limit. Training jobs 18097 and 18098 and control evaluation 18113 require the
-successful provenance/findings gate 18122, so no model can consume the target artifact before
-validation. Gate 18121 was replaced and cancelled while pending because its immutable staged script
-predated the deterministic target-view findings report.
+The original pending cluster job 18039 was replaced before execution by cached job 18124. That job
+completed the first production clustering in 00:11:49 and gate 18122 exposed a teacher-only
+calibration failure: the original 0.82 threshold produced only 1.001 modes per prompt. Before any
+student output was inspected, the primary threshold was moved to the already-declared 0.95
+sensitivity endpoint. Cached rebuild 18127 completed in 00:01:45 and gate 18128 validated the new
+target. Gate 18129 then regenerated the corrected at-least-four-mode report after a labeling bug was
+found in the descriptive analysis. Jobs 18039, 18121, 18124, 18122, and 18128 remain in the ledger
+as superseded calibration history; the current release gate is 18129.
+
+The final target has 3.558 instructed modes per prompt (median 3), and 45.3% of prompts have at
+least four measured modes. `diverse4` contains 2.755 modes per prompt on average. Its quality mean
+is 0.868625 versus 0.9166 for best-1, exposing the intended selection trade-off. Mode-1 equals
+best-1 on 716 prompts, so their direct contrast is informative on only the remaining 284 prompts.
+Raw and instructed cluster counts differ materially at 0.95; the full curve and expert-review gate
+remain mandatory. Exact hashes and the full distribution are in
+`reports/TEACHER_TARGET_FINDINGS.md`.
+
+Training jobs 18092, 18097, and 18098 and control evaluation 18113 directly require successful
+gate 18129, so no target consumer can run on the superseded artifact.
 
 ## Temporal controls
 
@@ -60,12 +71,12 @@ jobs a contiguous all-GPU window before resuming.
 
 | Control | Current pass | Resume passes | Score passes | Final evaluation |
 |---|---:|---|---|---:|
-| A1 Qwen3-14B | 18078 | 18102 -> 18103 -> 18104 | 18107 -> 18108 | submitted by controller 18125 |
+| A1 Qwen3-14B | 18078 | 18102 -> 18103 -> 18104 | 18107 -> 18108 | submitted by controller 18130 |
 | A0 Qwen3-4B | 18084 | 18105 -> 18106 | 18109 -> 18110 | 18113 -> 18119 |
 
 Jobs 18102 and 18105 require `afterany` on both the current partial generation and C3 job 18098.
 Later generation and score passes use `afterany` and the same stable output IDs. A0 evaluation
-18113 requires final A1 score 18108, final A0 score 18110, and target gate 18122; 18119 is its cached
+18113 requires final A1 score 18108, final A0 score 18110, and target gate 18129; 18119 is its cached
 resume pass. Obsolete single-pass
 score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled before execution.
 
@@ -73,19 +84,19 @@ score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled b
 
 | Work | Job | Contract |
 |---|---:|---|
-| DistiLLM deployability smoke | 18092 | four GPUs; must produce a loadable full checkpoint after real optimizer updates |
-| Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18122 and `afterany:18098` |
+| DistiLLM deployability smoke | 18092 | four GPUs; after target gate 18129; must produce a loadable full checkpoint after real updates |
+| Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18129 and `afterany:18098` |
 | TRL/OPSD bounded resumes | 18117 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
-| C3 DistiLLM | 18098 | index 12, four GPUs, 12-hour bound; after target gate 18122 and smoke 18092 |
-| Evaluation fan-out controller | 18125 | waits for B4 task 18097_5, 18117, 18098, A0/A1, and validated targets 18122 |
+| C3 DistiLLM | 18098 | index 12, four GPUs, 12-hour bound; after target gate 18129 and smoke 18092 |
+| Evaluation fan-out controller | 18130 | waits for B4 task 18097_5, 18117, 18098, A0/A1, and names target gate 18129 |
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
-edges release the other baselines and controls even if C3 fails, while controller 18125 separately
+edges release the other baselines and controls even if C3 fails, while controller 18130 separately
 requires C3 success before evaluation fan-out.
 
-Controller 18125 replaces pending controller 18120, whose immutable export still named cancelled
-cluster job 18039. Its internal target dependency is validation gate 18122. It submits A1 and
+Controller 18130 replaces pending controllers 18120, 18125; their immutable exports named
+superseded target gates. Its internal target dependency is validation gate 18129. It submits A1 and
 historical A3 controls plus 19 trained model chains. Each trained
 model chain has three resumable generation passes, two resumable judge passes, two cached anchored
 evaluation passes, and strict checkpoint preflight. The final CPU analysis requires all aligned evaluation artifacts,
