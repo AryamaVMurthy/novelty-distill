@@ -99,6 +99,21 @@ def _mean_thresholds(
     }
 
 
+def _mean_judge_dimensions(
+    prompt_summaries: dict[str, dict[str, Any]],
+) -> dict[str, float]:
+    dimension_names = next(iter(prompt_summaries.values()))[
+        "judge_dimension_means"
+    ].keys()
+    return {
+        name: statistics.fmean(
+            summary["judge_dimension_means"][name]
+            for summary in prompt_summaries.values()
+        )
+        for name in dimension_names
+    }
+
+
 def _render_markdown(payload: dict[str, Any]) -> str:
     lines = [
         "# Teacher calibration results",
@@ -166,6 +181,7 @@ def main() -> None:
                 "instructed_clusters_by_threshold": _mean_thresholds(
                     prompt_summaries, "instructed_clusters_by_threshold"
                 ),
+                "judge_dimension_means": _mean_judge_dimensions(prompt_summaries),
             },
             "prompts": prompt_summaries,
         }

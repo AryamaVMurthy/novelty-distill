@@ -6,6 +6,7 @@ from typing import Any
 
 from novelty_distill.data.teacher_views import TeacherGeneration
 from novelty_distill.evaluation.semantic_modes import quality_adjusted_coverage
+from novelty_distill.evaluation.teacher_annotation import QualityDimensions
 from novelty_distill.generation.sglang import GenerationRecord
 
 
@@ -44,6 +45,18 @@ def summarize_calibration_prompt(
         instructed_thresholds, Mapping
     ):
         raise ValueError("calibration diagnostics require threshold cluster counts")
+    dimension_payloads = diagnostics.get("judge_dimensions")
+    if not isinstance(dimension_payloads, list | tuple) or len(dimension_payloads) != len(
+        generated
+    ):
+        raise ValueError("calibration diagnostics require one judge rubric per sample")
+    dimensions = tuple(
+        QualityDimensions.model_validate(payload) for payload in dimension_payloads
+    )
+    dimension_distributions = {
+        name: [getattr(dimension, name) for dimension in dimensions]
+        for name in QualityDimensions.model_fields
+    }
 
     qualities = tuple(record.quality_score for record in clustered)
     cluster_ids = tuple(record.cluster_id for record in clustered)
@@ -67,6 +80,11 @@ def summarize_calibration_prompt(
         "quality_standard_deviation": statistics.pstdev(qualities),
         "quality_min": min(qualities),
         "quality_max": max(qualities),
+        "judge_dimension_means": {
+            name: statistics.fmean(values)
+            for name, values in dimension_distributions.items()
+        },
+        "judge_dimension_distributions": dimension_distributions,
         "semantic_clusters": len(set(cluster_ids)),
         "quality_adjusted_coverage": quality_adjusted_coverage(
             clusters=cluster_ids, quality_scores=qualities

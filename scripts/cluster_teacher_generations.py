@@ -99,6 +99,7 @@ def main() -> None:
         )
         prompt_diagnostics[prompt_id] = {
             "primary_embedding": "instructed",
+            "judge_dimensions": [record["dimensions"] for record in records],
             "raw": cosine_embedding_diagnostics(
                 raw_embeddings, thresholds=diagnostic_thresholds
             ),

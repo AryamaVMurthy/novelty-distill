@@ -34,6 +34,16 @@ def test_calibration_prompt_summary_separates_quality_modes_and_length() -> None
     )
     diagnostics = {
         "primary_embedding": "instructed",
+        "judge_dimensions": [
+            {
+                "relevance": 5,
+                "feasibility": 4,
+                "soundness": 3,
+                "clarity": 2,
+                "instruction_compliance": 1,
+            }
+            for _ in range(4)
+        ],
         "raw": {
             "cosine_min": 0.5,
             "cosine_mean": 0.7,
@@ -60,6 +70,9 @@ def test_calibration_prompt_summary_separates_quality_modes_and_length() -> None
     assert summary["quality_mean"] == pytest.approx(0.4)
     assert summary["semantic_clusters"] == 3
     assert summary["quality_adjusted_coverage"] == pytest.approx(1.4)
+    assert summary["judge_dimension_means"]["relevance"] == 5
+    assert summary["judge_dimension_means"]["feasibility"] == 4
+    assert summary["judge_dimension_distributions"]["soundness"] == [3, 3, 3, 3]
     assert summary["instructed_clusters_by_threshold"]["0.820"] == 3
 
 
