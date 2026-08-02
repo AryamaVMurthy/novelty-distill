@@ -10,15 +10,16 @@ generation_run_id="${GENERATION_RUN_ID:-teacher-1k-v1}"
 generation_passes="${GENERATION_PASSES:-2}"
 score_passes="${SCORE_PASSES:-2}"
 submit_training="${SUBMIT_TRAINING:-1}"
+training_passes="${TRAINING_PASSES:-2}"
 for name in "${generation_run_id}"; do
   if [[ -z "${name}" || "${name}" == */* || "${name}" == *..* ]]; then
     echo "generation run ID must be a non-empty path-safe name" >&2
     exit 2
   fi
 done
-for value in "${generation_passes}" "${score_passes}"; do
+for value in "${generation_passes}" "${score_passes}" "${training_passes}"; do
   if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
-    echo "generation and score passes must be positive integers" >&2
+    echo "generation, score, and training passes must be positive integers" >&2
     exit 2
   fi
 done
@@ -76,13 +77,29 @@ cluster_job="$(
 )"
 
 training_job=""
+gem_training_job=""
 distillm_training_job=""
 if [[ "${submit_training}" == 1 ]]; then
-  training_job="$(
+  for ((pass = 1; pass <= training_passes; pass++)); do
+    if [[ -z "${training_job}" ]]; then
+      training_dependency="afterok:${cluster_job}"
+    else
+      training_dependency="afterany:${training_job}"
+    fi
+    training_job="$(
+      submit_job slurm/train_smoke.sbatch \
+        --time=06:00:00 \
+        --mem=128G \
+        --array=0-4,6-11,13-18%2 \
+        --dependency="${training_dependency}" \
+        --export=ALL,BASELINE_MATRIX=tomato1k
+    )"
+  done
+  gem_training_job="$(
     submit_job slurm/train_smoke.sbatch \
       --time=06:00:00 \
       --mem=128G \
-      --array=0-11,13-18%2 \
+      --array=5 \
       --dependency="afterok:${cluster_job}" \
       --export=ALL,BASELINE_MATRIX=tomato1k
   )"
@@ -97,6 +114,6 @@ if [[ "${submit_training}" == 1 ]]; then
   )"
 fi
 
-printf '{"generation_last":"%s","score_last":"%s","cluster":"%s","training":"%s","distillm_training":"%s"}\n' \
+printf '{"generation_last":"%s","score_last":"%s","cluster":"%s","adapter_training_final":"%s","adapter_training_passes":%s,"gem_training":"%s","distillm_training":"%s"}\n' \
   "${generation_job}" "${score_job}" "${cluster_job}" "${training_job}" \
-  "${distillm_training_job}"
+  "${training_passes}" "${gem_training_job}" "${distillm_training_job}"
