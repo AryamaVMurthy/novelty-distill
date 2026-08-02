@@ -35,7 +35,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--generation-root", type=Path, required=True)
     parser.add_argument("--cluster-root", type=Path, required=True)
-    parser.add_argument("--reference", default="t07-p08-l512")
+    parser.add_argument("--reference")
     parser.add_argument("--bootstrap-samples", type=int, default=10_000)
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--output", type=Path, required=True)
@@ -150,8 +150,9 @@ def main() -> None:
         (args.generation_root / "study-manifest.json").read_text(encoding="utf-8")
     )
     condition_ids = tuple(manifest["conditions"])
-    if args.reference not in condition_ids:
-        raise ValueError(f"reference condition {args.reference!r} is absent")
+    reference = args.reference or manifest.get("reference_condition", "t07-p08-l512")
+    if reference not in condition_ids:
+        raise ValueError(f"reference condition {reference!r} is absent")
 
     per_condition = {
         condition: _load_condition(
@@ -161,7 +162,7 @@ def main() -> None:
         )
         for condition in condition_ids
     }
-    reference_prompts = tuple(per_condition[args.reference])
+    reference_prompts = tuple(per_condition[reference])
     if any(tuple(summaries) != reference_prompts for summaries in per_condition.values()):
         raise ValueError("calibration conditions do not share exactly the same prompt IDs")
 
@@ -191,11 +192,11 @@ def main() -> None:
         metric_results: dict[str, Any] = {}
         p_values: dict[str, float] = {}
         reference_values = tuple(
-            per_condition[args.reference][prompt_id][metric]
+            per_condition[reference][prompt_id][metric]
             for prompt_id in reference_prompts
         )
         for condition in condition_ids:
-            if condition == args.reference:
+            if condition == reference:
                 continue
             estimate = paired_bootstrap(
                 reference=reference_values,
@@ -216,7 +217,7 @@ def main() -> None:
     payload = {
         "schema_version": 1,
         "study": manifest["study"],
-        "reference": args.reference,
+        "reference": reference,
         "prompt_ids": list(reference_prompts),
         "bootstrap_samples": args.bootstrap_samples,
         "seed": args.seed,

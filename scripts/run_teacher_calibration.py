@@ -74,6 +74,7 @@ def main() -> None:
         "study_config_sha256": _sha256(args.config),
         "input_sha256": _sha256(args.input),
         "prompt_ids": [prompt.id for prompt in prompts],
+        "reference_condition": study.reference_condition,
         "conditions": {
             condition.id: {
                 "generation_fingerprint": generation_fingerprint(condition.generation),

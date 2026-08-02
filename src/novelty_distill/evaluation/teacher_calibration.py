@@ -26,6 +26,7 @@ class TeacherCalibrationStudy(BaseModel):
     name: str = Field(min_length=1, pattern=r"^[a-z0-9][a-z0-9-]*$")
     prompt_count: int = Field(ge=2)
     concurrency: int = Field(gt=0)
+    reference_condition: str = Field(pattern=r"^[a-z0-9][a-z0-9-]*$")
     conditions: tuple[CalibrationCondition, ...] = Field(min_length=2)
 
     @model_validator(mode="after")
@@ -33,6 +34,8 @@ class TeacherCalibrationStudy(BaseModel):
         ids = [condition.id for condition in self.conditions]
         if len(ids) != len(set(ids)):
             raise ValueError("calibration condition ids must be unique")
+        if self.reference_condition not in ids:
+            raise ValueError("reference condition must name one calibration condition")
         first = self.conditions[0].generation
         shared_fields = (
             "model",

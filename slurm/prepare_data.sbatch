@@ -45,23 +45,52 @@ fi
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/data.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
-output="${scratch_root}/data/tomato-open-train-1000.jsonl"
-if [[ ! -f "${output}" ]]; then
-  "${venv_dir}/bin/python" "${repo_dir}/scripts/prepare_tomato.py" \
-    --split train \
-    --task open \
-    --size 1000 \
-    --seed 17 \
-    --output "${output}"
-fi
+for task in open composition; do
+  for size in 1000 5000 20000; do
+    output="${scratch_root}/data/tomato-${task}-train-${size}.jsonl"
+    if [[ ! -f "${output}" ]]; then
+      "${venv_dir}/bin/python" "${repo_dir}/scripts/prepare_tomato.py" \
+        --split train \
+        --task "${task}" \
+        --size "${size}" \
+        --seed 17 \
+        --output "${output}"
+    fi
+    wc -l "${output}"
+    sha256sum "${output}"
+  done
+done
 
-wc -l "${output}"
-sha256sum "${output}"
+for task in open composition; do
+  output="${scratch_root}/data/tomato-${task}-test-1658.jsonl"
+  if [[ ! -f "${output}" ]]; then
+    "${venv_dir}/bin/python" "${repo_dir}/scripts/prepare_tomato.py" \
+      --split test \
+      --task "${task}" \
+      --size 1658 \
+      --seed 17 \
+      --output "${output}"
+  fi
+  wc -l "${output}"
+  sha256sum "${output}"
+done
+
+"${venv_dir}/bin/python" "${repo_dir}/scripts/validate_prepared_tomato.py" \
+  --train-open "1000=${scratch_root}/data/tomato-open-train-1000.jsonl" \
+  --train-open "5000=${scratch_root}/data/tomato-open-train-5000.jsonl" \
+  --train-open "20000=${scratch_root}/data/tomato-open-train-20000.jsonl" \
+  --train-composition "1000=${scratch_root}/data/tomato-composition-train-1000.jsonl" \
+  --train-composition "5000=${scratch_root}/data/tomato-composition-train-5000.jsonl" \
+  --train-composition "20000=${scratch_root}/data/tomato-composition-train-20000.jsonl" \
+  --test-open "${scratch_root}/data/tomato-open-test-1658.jsonl" \
+  --test-composition "${scratch_root}/data/tomato-composition-test-1658.jsonl" \
+  --test-size 1658 \
+  --output "${scratch_root}/data/tomato-family-manifest.json"
 
 calibration_output="${scratch_root}/data/tomato-open-calibration-8.jsonl"
 if [[ ! -f "${calibration_output}" ]]; then
   "${venv_dir}/bin/python" "${repo_dir}/scripts/select_calibration_prompts.py" \
-    --input "${output}" \
+    --input "${scratch_root}/data/tomato-open-train-1000.jsonl" \
     --output "${calibration_output}" \
     --size 8
 fi

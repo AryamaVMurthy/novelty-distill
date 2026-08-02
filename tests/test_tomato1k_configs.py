@@ -34,6 +34,7 @@ def test_tomato1k_configs_share_main_models_data_size_and_optimizer_budget() -> 
         1000
     }
     assert distillm.max_examples == 1000
+    assert distillm.max_length == 896
     effective_examples = {
         sft.max_steps * sft.per_device_train_batch_size * sft.gradient_accumulation_steps,
         gkd.max_steps * gkd.per_device_train_batch_size * gkd.gradient_accumulation_steps,
@@ -59,4 +60,5 @@ def test_main_model_smokes_exercise_the_memory_heavy_backends() -> None:
     assert gkd.model == opsd.model == distillm.student_model == STUDENT
     assert gkd.teacher_model == distillm.teacher_model == TEACHER
     assert gkd.max_new_tokens == opsd.max_completion_length == 512
+    assert distillm.max_length == 896
     assert gkd.max_steps == opsd.max_steps == distillm.max_steps == 1

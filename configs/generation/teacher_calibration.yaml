@@ -2,6 +2,7 @@ schema_version: 1
 name: qwen3-14b-teacher-calibration-v1
 prompt_count: 8
 concurrency: 8
+reference_condition: t07-p08-l512
 
 conditions:
   - id: t06-p08-l512

@@ -133,6 +133,7 @@ export TRITON_CACHE_DIR="${scratch_root}/cache/triton"
 export CUDA_CACHE_PATH="${scratch_root}/cache/cuda"
 export TMPDIR="${scratch_root}/tmp"
 export TOKENIZERS_PARALLELISM=false
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 cleanup() {
   if [[ -n "${monitor_pid}" ]] && kill -0 "${monitor_pid}" 2>/dev/null; then
