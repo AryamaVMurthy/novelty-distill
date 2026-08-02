@@ -100,6 +100,10 @@ not a results report and does not promote any baseline.
   generation and final evaluation. This prevents an on-policy-only hidden reasoning mode from
   confounding the static/on-policy comparison; the choice is stored in every TRL run spec and
   metadata artifact.
+- DistiLLM's paper-defined adaptive replay begins at probability zero and can change only when
+  validation loss is checked. Production C3 uses ten 25-step validation stages and reconstructs
+  the scheduler history from the official log; it fails closed if training ends before step 250 or
+  if the logged thresholds contradict the scheduler rule.
 - Raw prompt-level metrics and all eight training-teacher samples are retained for reannotation.
 - OPSD's pinned upstream collator is math-specific and therefore is not used as a task adapter. The
   task-faithful collator preserves the official trainer/loss, makes student prompts byte-identical

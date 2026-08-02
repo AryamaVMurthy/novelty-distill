@@ -77,6 +77,10 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
   remains a declared hardware confound rather than being normalized away after results.
 - Use Qwen non-thinking chat rendering for every GKD prompt, matching teacher generation and
   evaluation; do not interpret a thinking-mode mismatch as evidence for on-policy distillation.
+- Admit C3 as an adaptive-replay treatment only when its official log contains every requested
+  optimizer step and all ten scheduled validation stages. Report the validation-loss trajectory
+  and terminal student-replay probability; a zero terminal value is an empirical scheduler outcome,
+  while a disabled scheduler is an invalid implementation.
 - The 1k gate fixes optimizer exposure at 1,000 target rows. `diverse4` expands to 4,000 available
   rows, so B3/B4 at this gate are budget-matched samples from the four-reference pool, not a full
   four-pass exposure. Report both `training_rows` and `optimizer_example_exposures`; any promoted

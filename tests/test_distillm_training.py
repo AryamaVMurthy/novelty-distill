@@ -8,12 +8,38 @@ from novelty_distill.data.tomato import prepare_tomato_record
 from novelty_distill.training.distillm import (
     DistiLLMRunSpec,
     _latest_distillm_checkpoint,
+    audit_distillm_log,
     build_distillm_preprocess_command,
     build_distillm_raw_rows,
     build_distillm_training_command,
     distillm_epoch_plan,
     normalize_distillm_qwen_sentinels,
 )
+
+
+def test_distillm_log_audit_records_adaptive_threshold_trajectory(
+    tmp_path: Path,
+) -> None:
+    log_path = tmp_path / "log.txt"
+    log_path.write_text(
+        "dev | avg_loss: 1.0 | {} | threshold: 0.0\n"
+        "train | epoch   0 | Iter:      1/     2 | global iter:      1/     2 | "
+        "loss: 0.5 | ds_loss: 0.5 | lr: 5e-6 | scale: 1 | micro time: 1 | step time: 1\n"
+        "dev | avg_loss: 1.2 | {} | threshold: 0.0\n"
+        "train | epoch   1 | Iter:      2/     2 | global iter:      2/     2 | "
+        "loss: 0.4 | ds_loss: 0.4 | lr: 5e-6 | scale: 1 | micro time: 1 | step time: 1\n"
+        "dev | avg_loss: 1.1 | {} | threshold: 0.1\n",
+        encoding="utf-8",
+    )
+
+    assert audit_distillm_log(log_path, expected_steps=2) == {
+        "logged_training_steps": 2,
+        "last_global_step": 2,
+        "validation_checks": 3,
+        "validation_losses": [1.0, 1.2, 1.1],
+        "adaptive_thresholds": [0.0, 0.0, 0.1],
+        "terminal_adaptive_threshold": 0.1,
+    }
 
 
 def test_distillm_environment_pins_deepspeed_runtime_build_dependency() -> None:
@@ -58,6 +84,7 @@ def _spec() -> DistiLLMRunSpec:
         learning_rate=5e-6,
         max_length=256,
         max_prompt_length=192,
+        validation_interval=2,
         skew_alpha=0.1,
         seed=17,
     )
@@ -169,6 +196,7 @@ def test_distillm_production_repeats_only_enough_data_to_reach_save_step() -> No
 
     assert plan == {"train_examples": 960, "steps_per_epoch": 240, "epochs": 2}
     assert training[training.index("--epochs") + 1] == "2"
+    assert training[training.index("--eval-interval") + 1] == "25"
     assert spec.max_steps * spec.batch_size * spec.num_gpus == 1000
 
 

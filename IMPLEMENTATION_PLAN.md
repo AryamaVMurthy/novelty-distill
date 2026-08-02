@@ -196,6 +196,11 @@ DistiLLM must compute enough official sampler epochs to reach `total-iters`: its
 sampler drops incomplete world-size batches, so a nominal one-pass dataset can otherwise terminate
 before the configured save step. The 1k C3 gate uses 960 train rows, 40 validation rows, and two
 epochs to reach 250 four-example optimizer steps exactly.
+The paper initializes the student-generated-output probability at zero and adjusts it in ten
+validation stages when validation loss worsens. C3 therefore validates every 25 steps; disabling
+intermediate validation would silently reduce the advertised adaptive replay method to static KD.
+The official log is a release artifact: all 250 steps, validation losses, threshold history, and
+the reconstructed terminal replay probability must be present in run metadata.
 
 ## Teacher generation
 

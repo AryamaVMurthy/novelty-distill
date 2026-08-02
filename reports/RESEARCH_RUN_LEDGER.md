@@ -120,6 +120,12 @@ to a complete world-size batch and its original one-epoch launch would yield onl
 validation rows, exactly 240 four-example steps per epoch, and computes two epochs to stop at step
 250. This preserves the common 1,000 optimizer-example exposure budget and guarantees that the
 official step-250 checkpoint branch is reachable.
+The same audit found that the paper's adaptive scheduler starts at replay probability zero and
+raises it over ten validation stages when held-out loss worsens. The previous `max_steps + 1`
+validation interval would never call that scheduler. C3 now runs the paper-aligned 25-step
+validation cadence and fails closed unless the official log contains every optimizer step and a
+consistent validation-loss/threshold trajectory. This preserves an adaptive-replay test rather
+than silently relabeling static skew-KL as DistiLLM.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`

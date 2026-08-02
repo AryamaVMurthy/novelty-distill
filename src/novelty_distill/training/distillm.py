@@ -3,6 +3,7 @@
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -49,6 +50,7 @@ class DistiLLMRunSpec(BaseModel):
     learning_rate: float = Field(gt=0)
     max_length: int = Field(gt=0)
     max_prompt_length: int = Field(gt=0)
+    validation_interval: int = Field(gt=0)
     num_gpus: int = Field(default=1, gt=0)
     skew_alpha: float = Field(gt=0, lt=1)
     seed: int = Field(ge=0)
@@ -212,7 +214,7 @@ def build_distillm_training_command(
         "--save-interval",
         str(spec.max_steps),
         "--eval-interval",
-        str(spec.max_steps + 1),
+        str(spec.validation_interval),
         "--log-interval",
         "1",
         "--mid-log-num",
@@ -264,6 +266,56 @@ def distillm_epoch_plan(spec: DistiLLMRunSpec) -> dict[str, int]:
         "train_examples": train_examples,
         "steps_per_epoch": steps_per_epoch,
         "epochs": math.ceil(spec.max_steps / steps_per_epoch),
+    }
+
+
+def audit_distillm_log(
+    path: Path, *, expected_steps: int, loss_epsilon: float = 0.1
+) -> dict[str, object]:
+    """Validate official progress and reconstruct its adaptive scheduler state."""
+
+    if not path.is_file():
+        raise ValueError(f"DistiLLM did not produce its official training log: {path}")
+    global_steps: list[int] = []
+    validation_losses: list[float] = []
+    logged_thresholds: list[float] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if match := re.search(r"global iter:\s*(\d+)/\s*(\d+)", line):
+            global_steps.append(int(match.group(1)))
+        if line.startswith("dev |"):
+            loss_match = re.search(r"avg_loss:\s*([^ |]+)", line)
+            threshold_match = re.search(r"threshold:\s*([^ |]+)", line)
+            if loss_match is None or threshold_match is None:
+                raise ValueError(f"malformed DistiLLM validation log line: {line}")
+            validation_losses.append(float(loss_match.group(1)))
+            logged_thresholds.append(float(threshold_match.group(1)))
+    unique_steps = sorted(set(global_steps))
+    if unique_steps != list(range(1, expected_steps + 1)):
+        raise ValueError(
+            "DistiLLM did not log every requested optimizer step: "
+            f"expected 1..{expected_steps}, observed {unique_steps[:1]}..{unique_steps[-1:]}"
+        )
+    if not validation_losses:
+        raise ValueError("DistiLLM did not log its initial validation loss")
+    previous_loss = validation_losses[0]
+    terminal_threshold = logged_thresholds[0]
+    for loss, logged_threshold in zip(
+        validation_losses[1:], logged_thresholds[1:], strict=True
+    ):
+        if logged_threshold != terminal_threshold:
+            raise ValueError(
+                "DistiLLM logged a threshold inconsistent with its scheduler history"
+            )
+        if loss >= previous_loss + loss_epsilon:
+            previous_loss = loss
+            terminal_threshold = min(terminal_threshold + 0.1, 1.0)
+    return {
+        "logged_training_steps": len(unique_steps),
+        "last_global_step": unique_steps[-1],
+        "validation_checks": len(validation_losses),
+        "validation_losses": validation_losses,
+        "adaptive_thresholds": logged_thresholds,
+        "terminal_adaptive_threshold": terminal_threshold,
     }
 
 
@@ -382,6 +434,9 @@ def execute_distillm_training(
         env=environment,
     )
     final_dir = _latest_distillm_checkpoint(output_dir)
+    log_audit = audit_distillm_log(
+        output_dir / "log.txt", expected_steps=spec.max_steps
+    )
 
     metadata: dict[str, object] = {
         "baseline_id": baseline.id,
@@ -408,6 +463,7 @@ def execute_distillm_training(
         "training_rows": len(rows),
         "optimizer_example_exposures": spec.max_steps * spec.batch_size * spec.num_gpus,
         "epoch_plan": distillm_epoch_plan(spec),
+        "log_audit": log_audit,
         "max_steps": spec.max_steps,
         "num_gpus": spec.num_gpus,
         "seed": spec.seed,
