@@ -87,6 +87,9 @@ Later generation and score passes use `afterany` and the same stable output IDs.
 18113 requires final A1 score 18108, final A0 score 18110, and target gate 18132; 18119 is its cached
 resume pass. Obsolete single-pass
 score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled before execution.
+The active passes 18078 and 18084 were ended once their atomic shards reached 523/1,658 A1 prompts
+and 983/1,658 A0 prompts, respectively, so the requested four-GPU gate could start immediately.
+Their resume jobs retain the same output IDs and begin at the first missing prompt after C3.
 
 ## Training and evaluation matrix
 
@@ -155,6 +158,16 @@ mistyped, nonexistent checkpoint root and failed before loading. Corrected retry
 00:01:06, loaded the 3,441,191,930-byte Qwen3-1.7B checkpoint, compiled scratch-cached JIT kernels,
 and produced two non-empty, non-thinking 64-token generations from a 223-token TOMATO prompt. The
 four-GPU smoke 18092 therefore returned to `PENDING (Resources)` with no unsatisfied dependency.
+After preserving the completed A0/A1 shards and ending their resumable active passes, 18092 started
+immediately and completed in 00:01:11. Its official four-rank update recorded train loss 0.9424,
+initial dev loss 5.3555, no truncation among five rows, peak observed GPU memory 48,174 MiB, and an
+8,044,991,278-byte step-1 Qwen3-4B checkpoint. Gate 18141 loaded those weights but failed in the
+same deterministic Triton kernel: DistiLLM's DeepSpeed recipe writes FP16 whereas the base
+Qwen3-4B is BF16. Standard eager replacement 18154 completed in 00:01:34 and generated 16/16
+non-empty, non-thinking samples, all with `stop` finish reasons and 320--382 completion tokens.
+Production C3 task 18098_12 then started automatically on four GPUs. Commit `13fe3df` makes dtype
+an explicit validated serving input and forces BF16 only for C3's full-checkpoint generation and
+official evaluation; deterministic BF16 confirmation 18156 waits until C3 releases the node.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`

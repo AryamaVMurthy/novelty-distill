@@ -71,8 +71,21 @@ one no-work submission with a mistyped checkpoint root (18150), corrected job 18
 kernels under scratch, became healthy, and wrote exactly two non-empty 64-token generations for
 the audited 223-token prompt. Neither output contained `<think>`. This proves standard eager
 deployability of the saved checkpoint; it does not claim deterministic-kernel support for the
-1.7B architecture on this GPU. The primary Qwen3-4B load gate remains deterministic because that
-architecture has already passed deterministic SGLang evaluation on the same host.
+1.7B architecture on this GPU.
+
+Four-GPU main-model gate 18092 subsequently completed in 00:01:11 at commit `248153c`. The
+official Qwen3-14B-to-Qwen3-4B update had finite train loss 0.9424 and initial development loss
+5.3555, zero context truncation across five rows, exactly five normalized separators and one
+audited optimizer step, peak observed GPU memory 48,174 MiB, and an 8,044,991,278-byte full
+checkpoint. Deterministic load job 18141 showed why base-model serving evidence did not transfer:
+the official DeepSpeed recipe saves this checkpoint as FP16 while the base Qwen3-4B artifact is
+BF16, and the FP16 batch-invariant Triton path hits the same Ada shared-memory limit. Standard
+eager gate 18154 completed in 00:01:34 and produced 16/16 non-empty, non-thinking completions; all
+ended naturally (`stop`) after 320--382 tokens. Commit `13fe3df` adds a validated serving-dtype
+override and configures only C3's full-checkpoint evaluation to load as BF16, preserving the
+deterministic final-evaluation contract while leaving every other method at native dtype. A
+deterministic BF16 confirmation job 18156 is queued after production C3 so it cannot displace the
+four-GPU run.
 
 Teacher-generation jobs 17918 and 17922 independently produced the same eight-record projection
 for one fixed TOMATO prompt. All eight hypotheses were distinct within each run, and the canonical
