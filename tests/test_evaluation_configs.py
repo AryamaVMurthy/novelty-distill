@@ -71,3 +71,13 @@ def test_contrast_config_keeps_rubric_axes_descriptive() -> None:
         "completion_tokens_mean",
     } <= set(config["descriptive_metrics"])
     assert "student_instruction_compliance_mean" not in config["metrics"]
+
+
+def test_primary_teacher_cluster_threshold_is_nondegenerate_before_student_evaluation() -> None:
+    config = yaml.safe_load(
+        (ROOT / "configs/evaluation/teacher_annotation.yaml").read_text(encoding="utf-8")
+    )
+
+    assert config["cosine_threshold"] == 0.95
+    assert config["cosine_threshold"] in config["cosine_thresholds"]
+    assert config["cosine_threshold"] == max(config["cosine_thresholds"])

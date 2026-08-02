@@ -9,6 +9,12 @@ systematic length truncation?
 This is a calibration study. It does not test a trained student and its results are not headline
 paper results.
 
+The study originally treated cosine 0.82 as primary. A later production teacher-only gate, still
+before any student evaluation, found that boundary degenerate at 1.001 modes per prompt and moved
+the primary analysis to the already-declared 0.95 sensitivity endpoint. The historical calibration
+tables remain unchanged; the production change and rationale are recorded in
+`reports/EXPERIMENT_HYPOTHESES.md`.
+
 ## Fixed design
 
 - Data: eight prompts selected as deterministic midpoints of equal prompt-character-length strata
@@ -93,4 +99,3 @@ Checked 2026-08-02:
   clustering as a supported task and recommends task-specific English instructions for downstream
   use. Relevance: predeclared raw-versus-instructed embedding sensitivity.
   <https://huggingface.co/Qwen/Qwen3-Embedding-4B>
-

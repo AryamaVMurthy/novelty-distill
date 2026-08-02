@@ -1,5 +1,11 @@
 # Teacher calibration findings
 
+> Production addendum (2026-08-02): these historical tables used cosine 0.82. The complete
+> 1,000-prompt teacher-only gate later found 1.001 modes/prompt at 0.82 and 3.558 at the
+> already-declared 0.95 endpoint. Before any student result was inspected, the production primary
+> threshold was changed to 0.95 so the diverse-four contrast would not be degenerate. All threshold
+> curves remain mandatory, and 0.95 is not claimed as a universal semantic boundary.
+
 These results are calibration evidence, not trained-student or headline paper results. The frozen
 design and promotion rules are in `reports/TEACHER_CALIBRATION_PROTOCOL.md`.
 

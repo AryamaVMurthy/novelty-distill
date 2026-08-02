@@ -11,8 +11,11 @@ ClusterJSD, quality-adjusted coverage, and nearest-training-target similarity. T
 clustered first to freeze one teacher-mode partition per prompt. Student samples join their nearest
 teacher mode only when cosine similarity reaches the threshold; unmatched students are clustered
 as novel student modes. This prevents a student bridge from merging teacher modes differently by
-method. The declared cosine threshold is 0.82, with the complete 0.70--0.95 curve reported as a
-sensitivity analysis.
+method. Before any student evaluation, the production teacher-only gate showed that the original
+0.82 threshold collapsed to 1.001 modes per prompt. The primary threshold was therefore
+recalibrated to the already-declared 0.95 sensitivity endpoint, which yields 3.558 teacher modes
+per prompt and makes the intended four-mode contrast measurable. The complete 0.70--0.95 curve is
+still reported as a sensitivity analysis.
 
 ## Pre-run predictions
 
@@ -59,6 +62,9 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
   clustering contract; A3's K=1 value is descriptive only.
 - Report the full clustering threshold curve and per-prompt direction counts. A primary-threshold
   effect isolated to one prompt is exploratory.
+- The 0.95 primary threshold is a teacher-only, pre-student calibration choice, not a universal
+  semantic-equivalence boundary. Raw versus instructed embeddings disagree materially at 0.95, so
+  any promoted result must be directionally stable across the curve and survive expert review.
 - Report length-stop rate, completion-token distribution, and training-target similarity beside
   every headline comparison to expose truncation and memorization.
 - The 1k gate fixes optimizer exposure at 1,000 target rows. `diverse4` expands to 4,000 available

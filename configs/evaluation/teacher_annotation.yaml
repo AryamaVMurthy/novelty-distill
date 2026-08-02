@@ -4,6 +4,6 @@ embedding_model: Qwen/Qwen3-Embedding-4B
 embedding_revision: 5cf2132abc99cad020ac570b19d031efec650f2b
 embedding_instruction: Represent the scientific hypothesis for clustering by its central mechanism, intervention, and experimental test.
 embedding_batch_size: 8
-cosine_threshold: 0.82
+cosine_threshold: 0.95
 cosine_thresholds: [0.70, 0.75, 0.80, 0.82, 0.85, 0.90, 0.95]
 embedding_max_length: 2048
