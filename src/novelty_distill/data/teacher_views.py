@@ -48,7 +48,7 @@ def build_teacher_target_artifact(
                     seed=seed,
                 )
             ]
-            for view in ("random1", "best1", "mode1", "diverse4")
+            for view in ("random1", "best1", "mode1", "diverse4", "all8")
         }
     return {"schema_version": 1, "targets": targets}
 

@@ -43,6 +43,7 @@ def test_teacher_target_artifact_derives_every_training_view_once() -> None:
 
     assert artifact["schema_version"] == 1
     views = artifact["targets"]["paper-1"]
-    assert set(views) == {"random1", "best1", "mode1", "diverse4"}
+    assert set(views) == {"random1", "best1", "mode1", "diverse4", "all8"}
     assert len(views["random1"]) == len(views["best1"]) == len(views["mode1"]) == 1
     assert len(views["diverse4"]) == 4
+    assert len(views["all8"]) == 8
