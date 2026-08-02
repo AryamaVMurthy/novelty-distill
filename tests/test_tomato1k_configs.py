@@ -45,7 +45,7 @@ def test_tomato1k_configs_share_main_models_data_size_and_optimizer_budget() -> 
         gem.max_steps
         * gem.per_device_train_batch_size
         * gem.gradient_accumulation_steps,
-        distillm.max_steps * distillm.batch_size,
+        distillm.max_steps * distillm.batch_size * distillm.num_gpus,
     }
     assert effective_examples == {1000}
     assert {sft.seed, gkd.seed, opsd.seed, gem.seed, distillm.seed} == {17}

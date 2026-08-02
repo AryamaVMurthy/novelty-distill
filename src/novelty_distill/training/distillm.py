@@ -55,6 +55,13 @@ class DistiLLMRunSpec(BaseModel):
     def split_and_lengths_are_valid(self) -> "DistiLLMRunSpec":
         if self.dev_examples >= self.max_examples:
             raise ValueError("DistiLLM needs at least one train row after its validation prefix")
+        train_examples = self.max_examples - self.dev_examples
+        distributed_batch = self.batch_size * self.num_gpus
+        if train_examples < distributed_batch:
+            raise ValueError(
+                "DistiLLM needs at least one complete distributed batch: "
+                f"train_examples={train_examples}, distributed_batch={distributed_batch}"
+            )
         if self.max_prompt_length >= self.max_length:
             raise ValueError("max_prompt_length must be smaller than max_length")
         return self
@@ -352,6 +359,7 @@ def execute_distillm_training(
         cwd=checkout,
         env=environment,
     )
+    final_dir = _latest_distillm_checkpoint(output_dir)
 
     metadata: dict[str, object] = {
         "baseline_id": baseline.id,
@@ -374,10 +382,31 @@ def execute_distillm_training(
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
         "output_dir": str(output_dir),
+        "final_dir": str(final_dir),
     }
     with (output_dir / "run_metadata.json").open("w", encoding="utf-8") as handle:
         json.dump(metadata, handle, indent=2, sort_keys=True)
     return metadata
+
+
+def _latest_distillm_checkpoint(output_dir: Path) -> Path:
+    """Return the latest official checkpoint, rejecting metadata-only runs."""
+
+    deployable = []
+    for candidate in output_dir.iterdir() if output_dir.is_dir() else ():
+        if not candidate.is_dir() or not candidate.name.isdigit():
+            continue
+        weights = (
+            *candidate.glob("*.safetensors"),
+            *candidate.glob("pytorch_model*.bin"),
+            *candidate.glob("*.safetensors.index.json"),
+            *candidate.glob("pytorch_model*.bin.index.json"),
+        )
+        if (candidate / "config.json").is_file() and weights:
+            deployable.append(candidate)
+    if not deployable:
+        raise ValueError(f"DistiLLM produced no deployable checkpoint under {output_dir}")
+    return max(deployable, key=lambda path: int(path.name))
 
 
 def _write_raw_jsonl(rows: Sequence[DistiLLMRawRow], path: Path) -> None:

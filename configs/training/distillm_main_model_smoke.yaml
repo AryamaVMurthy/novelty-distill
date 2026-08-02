@@ -5,10 +5,10 @@ teacher_model: Qwen/Qwen3-14B
 teacher_revision: 40c069824f4251a91eefaf281ebe4c544efd3e18
 input: data/tomato-open-train-1000.jsonl
 teacher_targets: data/teacher-targets.json
-raw_dir: data/distillm-main-model-smoke-l896/raw
-processed_dir: data/distillm-main-model-smoke-l896/processed
-output_dir: checkpoints/C3-main-model-smoke-l896-2gpu
-max_examples: 2
+raw_dir: data/distillm-main-model-smoke-l896-2gpu-v2/raw
+processed_dir: data/distillm-main-model-smoke-l896-2gpu-v2/processed
+output_dir: checkpoints/C3-main-model-smoke-l896-2gpu-v2
+max_examples: 3
 dev_examples: 1
 max_steps: 1
 batch_size: 1

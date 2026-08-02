@@ -1,9 +1,12 @@
 from pathlib import Path
 
+import pytest
+
 from novelty_distill.config import load_baseline_registry
 from novelty_distill.data.tomato import prepare_tomato_record
 from novelty_distill.training.distillm import (
     DistiLLMRunSpec,
+    _latest_distillm_checkpoint,
     build_distillm_preprocess_command,
     build_distillm_raw_rows,
     build_distillm_training_command,
@@ -142,3 +145,30 @@ def test_distillm_command_partitions_training_across_requested_gpus() -> None:
 
     assert training[training.index("--nproc_per_node=2")] == "--nproc_per_node=2"
     assert training[training.index("--n-gpu") + 1] == "2"
+
+
+def test_distillm_spec_rejects_too_few_rows_for_distributed_batch() -> None:
+    payload = _spec().model_dump()
+    payload.update({"num_gpus": 2, "max_examples": 2, "dev_examples": 1})
+
+    with pytest.raises(ValueError, match="distributed batch"):
+        DistiLLMRunSpec.model_validate(payload)
+
+
+def test_latest_distillm_checkpoint_requires_deployable_model_files(tmp_path: Path) -> None:
+    (tmp_path / "1").mkdir()
+    (tmp_path / "1" / "config.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "1" / "pytorch_model.bin").write_bytes(b"weights")
+    (tmp_path / "2").mkdir()
+    (tmp_path / "2" / "config.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "2" / "model.safetensors").write_bytes(b"weights")
+
+    assert _latest_distillm_checkpoint(tmp_path) == tmp_path / "2"
+
+
+def test_latest_distillm_checkpoint_fails_closed_without_weights(tmp_path: Path) -> None:
+    (tmp_path / "1").mkdir()
+    (tmp_path / "1" / "config.json").write_text("{}", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="deployable checkpoint"):
+        _latest_distillm_checkpoint(tmp_path)

@@ -10,7 +10,7 @@ processed_dir: data/distillm-tomato1k-seed17-l896/processed
 output_dir: checkpoints/C3-tomato1k-seed17-l896-2gpu
 max_examples: 1000
 dev_examples: 50
-max_steps: 1000
+max_steps: 500
 batch_size: 1
 learning_rate: 0.000005
 max_length: 896
