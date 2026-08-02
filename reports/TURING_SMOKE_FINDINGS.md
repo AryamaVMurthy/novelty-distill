@@ -60,6 +60,20 @@ completed in 00:00:50 with controls `temperature=0.7`, `top_p=0.8`, `top_k=20`, 
 finite loss 0.6325, gradient norm 1.9707, zero truncation, peak observed GPU memory 38,596 MiB,
 and a 132,187,888-byte adapter containing 504 readable tensors.
 
+The task-faithful DistiLLM checkpoint also passed an independent serving proof. Deterministic
+SGLang attempts 18147 and 18148 exposed an RTX 6000 Ada limitation in the batch-invariant Triton
+matmul (106,496 bytes of requested shared memory versus the 101,376-byte device limit); disabling
+CUDA graphs alone did not alter that kernel choice. A standard eager retry then reached JIT
+compilation, where 18149 exposed TVM-FFI's separate `~/.cache/tvm-ffi` default despite the existing
+XDG/Triton cache routing. Commit `26f246a` routes `TVM_FFI_CACHE_DIR` explicitly to scratch. After
+one no-work submission with a mistyped checkpoint root (18150), corrected job 18151 completed in
+00:01:06: SGLang loaded the 3,441,191,930-byte full Qwen3-1.7B checkpoint, built its runtime
+kernels under scratch, became healthy, and wrote exactly two non-empty 64-token generations for
+the audited 223-token prompt. Neither output contained `<think>`. This proves standard eager
+deployability of the saved checkpoint; it does not claim deterministic-kernel support for the
+1.7B architecture on this GPU. The primary Qwen3-4B load gate remains deterministic because that
+architecture has already passed deterministic SGLang evaluation on the same host.
+
 Teacher-generation jobs 17918 and 17922 independently produced the same eight-record projection
 for one fixed TOMATO prompt. All eight hypotheses were distinct within each run, and the canonical
 text-list SHA-256 was

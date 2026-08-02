@@ -146,6 +146,15 @@ student weight file. Its two 512-token pilot completion truncations are smoke-on
 isolate official log audits while preserving all earlier retry history. Regression 18146 reran the
 same optimizer step at commit `9c17194` and confirmed that the current invocation contains exactly
 one validation check and one logged training step despite the preserved historical log.
+Checkpoint-serving jobs 18147 and 18148 then isolated a device-specific deterministic-inference
+failure: the batch-invariant Triton matmul requests 106,496 bytes of shared memory, above node01's
+101,376-byte limit, and the failure persists with CUDA graphs disabled. Standard eager job 18149
+passed weight loading but exposed TVM-FFI's independent home-cache default; commit `26f246a` now
+sets `TVM_FFI_CACHE_DIR` to project scratch and verifies it is writable. Job 18150 contained a
+mistyped, nonexistent checkpoint root and failed before loading. Corrected retry 18151 completed in
+00:01:06, loaded the 3,441,191,930-byte Qwen3-1.7B checkpoint, compiled scratch-cached JIT kernels,
+and produced two non-empty, non-thinking 64-token generations from a 223-token TOMATO prompt. The
+four-GPU smoke 18092 therefore returned to `PENDING (Resources)` with no unsatisfied dependency.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
