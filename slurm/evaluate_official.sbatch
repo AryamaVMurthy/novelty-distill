@@ -18,10 +18,17 @@ set -euo pipefail
 module load u22/cuda/12.4
 
 eval_suite="${EVAL_SUITE:-noveltybench}"
+eval_id="${EVAL_ID:-base-qwen3-4b}"
 model_path="${MODEL_PATH:-Qwen/Qwen3-4B}"
 model_revision="${MODEL_REVISION:-1cfa9a7208912126459214e8b04321603b3df60c}"
 model_dtype="${MODEL_DTYPE:-auto}"
 served_model="novelty-model"
+base_served_model="${served_model}"
+lora_name="${LORA_NAME:-}"
+lora_path="${LORA_PATH:-}"
+domain="${HYPOSPACE_DOMAIN:-causal}"
+eval_limit="${EVAL_LIMIT:-}"
+num_generations="${NUM_GENERATIONS:-2}"
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
@@ -33,6 +40,42 @@ if [[ "${model_dtype}" != auto && "${model_dtype}" != bfloat16 && "${model_dtype
   echo "MODEL_DTYPE must be auto, bfloat16, or float16" >&2
   exit 2
 fi
+if [[ -z "${eval_id}" || "${eval_id}" == */* || "${eval_id}" == *..* ]]; then
+  echo "EVAL_ID must be a non-empty path-safe name" >&2
+  exit 2
+fi
+if [[ -z "${eval_limit}" ]]; then
+  if [[ "${eval_suite}" == noveltybench ]]; then
+    eval_limit=2
+  elif [[ "${eval_suite}" == hypospace ]]; then
+    eval_limit=1
+  else
+    echo "unsupported EVAL_SUITE=${eval_suite}" >&2
+    exit 2
+  fi
+fi
+for value in "${eval_limit}" "${num_generations}"; do
+  if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "EVAL_LIMIT and NUM_GENERATIONS must be positive integers" >&2
+    exit 2
+  fi
+done
+if [[ -n "${lora_name}" || -n "${lora_path}" ]]; then
+  if [[ -z "${lora_name}" || -z "${lora_path}" ]]; then
+    echo "LORA_NAME and LORA_PATH must be set together" >&2
+    exit 2
+  fi
+  if [[ "${lora_name}" == */* || "${lora_name}" == *..* || ! -d "${lora_path}" ]]; then
+    echo "LORA_NAME must be path-safe and LORA_PATH must be a directory" >&2
+    exit 2
+  fi
+  if [[ "${lora_name}" != "${served_model}" ]]; then
+    echo "official evaluation LORA_NAME must be ${served_model}" >&2
+    exit 2
+  fi
+  base_served_model="novelty-base"
+fi
+result_root="${scratch_root}/evaluations/official/${eval_id}"
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
@@ -65,15 +108,65 @@ mkdir -p \
   "${scratch_root}/tmp" \
   "${scratch_root}/evaluations" \
   "${TVM_FFI_CACHE_DIR}"
+mkdir -p "${scratch_root}/locks"
+exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
+flock -x 9
 git -C "${repo_dir}" diff --quiet
 git -C "${repo_dir}" fetch origin "${repo_ref}"
 git -C "${repo_dir}" switch "${repo_ref}"
 git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
+flock -u 9
+exec 8>"${scratch_root}/locks/venv-inference.lock"
+flock -x 8
 uv pip sync --python "${inference_venv}/bin/python" "${repo_dir}/environments/inference.lock"
+uv pip install --python "${inference_venv}/bin/python" --no-deps -e "${repo_dir}"
+flock -u 8
+
+artifact_path=""
+if [[ -n "${lora_path}" ]]; then
+  artifact_path="${lora_path}"
+elif [[ -d "${model_path}" ]]; then
+  artifact_path="${model_path}"
+fi
+if [[ -n "${artifact_path}" ]]; then
+  model_identity="sha256:$(${inference_venv}/bin/python "${repo_dir}/scripts/hash_model_artifact.py" --path "${artifact_path}")"
+else
+  model_identity="hf:${model_path}@${model_revision}"
+fi
+if [[ "${eval_suite}" == noveltybench ]]; then
+  summary_path="${result_root}/noveltybench/summary.json"
+  summary_domain=()
+elif [[ "${eval_suite}" == hypospace ]]; then
+  case "${domain}" in causal|3d|boolean) ;; *) echo "unsupported HYPOSPACE_DOMAIN=${domain}" >&2; exit 2 ;; esac
+  summary_path="${result_root}/hypospace/${domain}/summary.json"
+  summary_domain=(--domain "${domain}")
+else
+  echo "unsupported EVAL_SUITE=${eval_suite}" >&2
+  exit 2
+fi
+set +e
+"${inference_venv}/bin/python" "${repo_dir}/scripts/check_official_evaluation_status.py" \
+  --summary "${summary_path}" \
+  --eval-id "${eval_id}" \
+  --suite "${eval_suite}" \
+  "${summary_domain[@]}" \
+  --model-identity "${model_identity}" \
+  --expected-samples "${eval_limit}" \
+  --num-generations "${num_generations}"
+official_status=$?
+set -e
+if [[ "${official_status}" -eq 0 ]]; then
+  echo "stage=already_complete output=${summary_path}"
+  exit 0
+fi
+if [[ "${official_status}" -ne 3 ]]; then
+  echo "official evaluation preflight failed with status ${official_status}" >&2
+  exit "${official_status}"
+fi
 
 server_args=(
   --model-path "${model_path}"
-  --served-model-name "${served_model}"
+  --served-model-name "${base_served_model}"
   --dtype "${model_dtype}"
   --host 127.0.0.1
   --port "${port}"
@@ -83,6 +176,9 @@ server_args=(
 )
 if [[ -n "${model_revision}" ]]; then
   server_args+=(--revision "${model_revision}")
+fi
+if [[ -n "${lora_name}" ]]; then
+  server_args+=(--lora-paths "${lora_name}=${lora_path}")
 fi
 "${inference_venv}/bin/python" -m sglang.launch_server "${server_args[@]}" \
   >"${server_log}" 2>&1 &
@@ -112,44 +208,60 @@ case "${eval_suite}" in
     package_dir="${inspect_root}/packages/novelty_bench"
     test "$(git -C "${inspect_root}" rev-parse HEAD)" = \
       "6a35510e530f236fd1dbcd9df888f01937c8494a"
+    evaluation_dir="${result_root}/noveltybench"
+    mkdir -p "${evaluation_dir}"
     export UV_PROJECT_ENVIRONMENT="${scratch_root}/venvs/noveltybench"
     export SGLANG_BASE_URL="http://127.0.0.1:${port}/v1"
     export SGLANG_API_KEY=local
     (
       cd "${package_dir}"
+      exec 7>"${scratch_root}/locks/venv-noveltybench.lock"
+      flock -x 7
       uv sync --frozen
       uv pip install --python "${scratch_root}/venvs/noveltybench/bin/python" \
         openai==2.26.0 distro==1.9.0 jiter==0.13.0 torch==2.9.1
+      flock -u 7
       uv run --frozen --no-sync inspect eval inspect_evals/novelty_bench \
         --model "sglang/${served_model}" \
         --model-base-url "${SGLANG_BASE_URL}" \
         -M api_key=local \
         -T dataset_split="${NOVELTY_SPLIT:-curated}" \
-        -T num_generations="${NUM_GENERATIONS:-2}" \
+        -T num_generations="${num_generations}" \
         -T shuffle=false \
         -T quality_model=small \
         -T quality_model_device=cuda \
         -T partition_model_device=cuda \
-        --limit "${EVAL_LIMIT:-2}" \
+        --limit "${eval_limit}" \
         --max-connections "${MAX_CONNECTIONS:-2}" \
         --seed "${SEED:-17}" \
         --temperature "${TEMPERATURE:-0.7}" \
         --reasoning-effort none \
         --top-p "${TOP_P:-0.9}" \
         --max-tokens "${MAX_TOKENS:-512}" \
-        --log-dir "${scratch_root}/evaluations/noveltybench"
+        --log-dir "${evaluation_dir}"
+      PYTHONPATH="${repo_dir}/src" \
+        "${scratch_root}/venvs/noveltybench/bin/python" \
+        "${repo_dir}/scripts/summarize_noveltybench.py" \
+          --log-dir "${evaluation_dir}" \
+          --output "${summary_path}" \
+          --eval-id "${eval_id}" \
+          --model-identity "${model_identity}" \
+          --expected-samples "${eval_limit}" \
+          --num-generations "${num_generations}"
     )
     ;;
   hypospace)
-    domain="${HYPOSPACE_DOMAIN:-causal}"
     official_root="${scratch_root}/official/hypospace"
     hypospace_venv="${scratch_root}/venvs/hypospace"
-    evaluation_dir="${scratch_root}/evaluations/hypospace/${domain}"
+    evaluation_dir="${result_root}/hypospace/${domain}"
     test "$(git -C "${official_root}" rev-parse HEAD)" = \
       "c69e9318577b34b5b896996571aefd4ba6053f58"
+    exec 7>"${scratch_root}/locks/venv-hypospace.lock"
+    flock -x 7
     uv pip sync --python "${hypospace_venv}/bin/python" \
       "${repo_dir}/environments/hypospace.lock"
     uv pip install --python "${hypospace_venv}/bin/python" --no-deps -e "${repo_dir}"
+    flock -u 7
     case "${domain}" in
       causal) dataset="${official_root}/causal/datasets/node03/n3_all_observations.json" ;;
       3d) dataset="${official_root}/3d/datasets/3d_grid3_h3.json" ;;
@@ -169,11 +281,19 @@ case "${eval_suite}" in
         -- \
         --dataset "${dataset}" \
         --config "${repo_dir}/configs/evaluation/hypospace_sglang.yaml" \
-        --n-samples "${EVAL_LIMIT:-1}" \
-        --n-queries "${NUM_GENERATIONS:-2}" \
+        --n-samples "${eval_limit}" \
+        --n-queries "${num_generations}" \
         --query-multiplier 1.0 \
         --seed 33550336
     )
+    "${inference_venv}/bin/python" "${repo_dir}/scripts/summarize_hypospace.py" \
+      --input "${evaluation_dir}/${SLURM_JOB_ID}.json" \
+      --output "${summary_path}" \
+      --eval-id "${eval_id}" \
+      --domain "${domain}" \
+      --model-identity "${model_identity}" \
+      --expected-samples "${eval_limit}" \
+      --num-generations "${num_generations}"
     ;;
   *)
     echo "unsupported EVAL_SUITE=${eval_suite}" >&2

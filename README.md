@@ -29,6 +29,19 @@ scripts/turing_submit.sh slurm/evaluate_official.sbatch --export=ALL,EVAL_SUITE=
 scripts/turing_submit.sh slurm/evaluate_official.sbatch --export=ALL,EVAL_SUITE=hypospace,HYPOSPACE_DOMAIN=causal
 ```
 
+For a promoted checkpoint, the complete official suite uses four independent GPU jobs: all 100
+curated NoveltyBench prompts with K=10 and all 61 causal, 9 3D, and 35 Boolean HypoSpace cases with
+10 queries each. Results are content-bound, resumable, namespaced by `EVAL_ID`, and combined only
+after all four official artifacts validate:
+
+```bash
+EVAL_ID=<method-run> MODEL_PATH=Qwen/Qwen3-4B LORA_PATH=<adapter-final> \
+  scripts/submit_official_model_evaluation.sh
+```
+
+Full checkpoints use `MODEL_PATH=<checkpoint>` without `LORA_PATH`. The launcher registers adapters
+under the fixed `novelty-model` name required by the pinned official clients.
+
 Teacher calibration uses one SGLang server for the frozen seven-condition matrix, followed by the
 pinned judge and embedding model:
 

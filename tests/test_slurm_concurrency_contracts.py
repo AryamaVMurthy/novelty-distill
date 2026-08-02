@@ -38,9 +38,28 @@ def test_shared_inference_environment_mutations_are_serialized() -> None:
         assert script.rindex("uv pip") < script.index("flock -u 8"), name
 
 
+def test_official_evaluation_serializes_each_isolated_environment() -> None:
+    script = (ROOT / "slurm" / "evaluate_official.sbatch").read_text(encoding="utf-8")
+
+    assert 'exec 8>"${scratch_root}/locks/venv-inference.lock"' in script
+    assert 'exec 7>"${scratch_root}/locks/venv-noveltybench.lock"' in script
+    assert 'exec 7>"${scratch_root}/locks/venv-hypospace.lock"' in script
+    assert script.count("flock -x 7") == 2
+    assert script.count("flock -u 7") == 2
+
+
 def test_shared_data_environment_mutations_are_serialized() -> None:
     for name in ("validate_teacher_targets.sbatch", "analyze_evaluation_matrix.sbatch"):
         script = (ROOT / "slurm" / name).read_text(encoding="utf-8")
         assert 'exec 8>"${scratch_root}/locks/venv-data.lock"' in script, name
         assert script.index("flock -x 8") < script.index("uv pip"), name
         assert script.rindex("uv pip") < script.index("flock -u 8"), name
+
+
+def test_official_combiner_serializes_inference_environment() -> None:
+    script = (ROOT / "slurm" / "combine_official_results.sbatch").read_text(
+        encoding="utf-8"
+    )
+    assert 'exec 8>"${scratch_root}/locks/venv-inference.lock"' in script
+    assert script.index("flock -x 8") < script.index("uv pip install")
+    assert script.index("uv pip install") < script.index("flock -u 8")

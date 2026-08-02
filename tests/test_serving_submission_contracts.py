@@ -49,6 +49,10 @@ def test_official_evaluation_supports_scratch_cached_dtype_override() -> None:
     assert 'model_dtype="${MODEL_DTYPE:-auto}"' in script
     assert 'TVM_FFI_CACHE_DIR="${scratch_root}/cache/tvm-ffi"' in script
     assert '--dtype "${model_dtype}"' in script
+    assert 'eval_id="${EVAL_ID:-base-qwen3-4b}"' in script
+    assert '--lora-paths "${lora_name}=${lora_path}"' in script
+    assert 'base_served_model="novelty-base"' in script
+    assert 'result_root="${scratch_root}/evaluations/official/${eval_id}"' in script
 
 
 def test_research_taste_job_is_resumable_and_uses_the_pinned_annotator() -> None:
@@ -118,6 +122,16 @@ def test_promoted_training_launcher_separates_special_resource_backends() -> Non
     assert "--array=12" in script
     assert "--gres=gpu:4" in script
     assert "BASELINE_MATRIX=tomato_scale" in script
+
+
+def test_official_model_launcher_runs_full_suite_on_four_gpu_jobs() -> None:
+    script = Path("scripts/submit_official_model_evaluation.sh").read_text(encoding="utf-8")
+
+    assert "EVAL_SUITE=noveltybench,EVAL_LIMIT=100" in script
+    assert "domains=(causal 3d boolean)" in script
+    assert "limits=(61 9 35)" in script
+    assert "NUM_GENERATIONS=10" in script
+    assert "slurm/combine_official_results.sbatch" in script
 
 
 def test_final_controller_submits_research_taste_for_every_generation_family() -> None:
