@@ -65,6 +65,18 @@ def test_collect_prompt_metric_rows_rejects_changed_metric_schema() -> None:
         collect_prompt_metric_rows({"A0": _evaluation(), "B3": candidate})
 
 
+def test_collect_prompt_metric_rows_rejects_changed_teacher_partition() -> None:
+    reference = _evaluation()
+    candidate = _evaluation(offset=0.1)
+    for payload in (reference, candidate):
+        for metrics in payload["prompt_metrics"].values():  # type: ignore[union-attr]
+            metrics["teacher_semantic_clusters"] = 2
+    candidate["prompt_metrics"]["prompt-a"]["teacher_semantic_clusters"] = 1  # type: ignore[index,union-attr]
+
+    with pytest.raises(ValueError, match="teacher partition"):
+        collect_prompt_metric_rows({"A0": reference, "B3": candidate})
+
+
 def test_collect_threshold_metric_rows_aligns_methods_thresholds_and_prompts() -> None:
     rows = collect_threshold_metric_rows(
         {"A0": _evaluation(), "B3": _evaluation(offset=0.1)}
@@ -93,3 +105,18 @@ def test_collect_threshold_metric_rows_rejects_incomplete_curves() -> None:
 
     with pytest.raises(ValueError, match="thresholds"):
         collect_threshold_metric_rows({"A0": _evaluation(), "B3": candidate})
+
+
+def test_collect_threshold_metric_rows_rejects_changed_teacher_partition() -> None:
+    reference = _evaluation()
+    candidate = _evaluation(offset=0.1)
+    for payload in (reference, candidate):
+        for prompts in payload["prompt_metrics_by_threshold"].values():  # type: ignore[union-attr]
+            for metrics in prompts.values():
+                metrics["teacher_semantic_clusters"] = 2
+    candidate["prompt_metrics_by_threshold"]["0.820"]["prompt-a"][  # type: ignore[index]
+        "teacher_semantic_clusters"
+    ] = 1
+
+    with pytest.raises(ValueError, match="teacher partition"):
+        collect_threshold_metric_rows({"A0": reference, "B3": candidate})

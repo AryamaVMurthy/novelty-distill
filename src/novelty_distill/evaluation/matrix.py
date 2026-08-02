@@ -61,6 +61,16 @@ def collect_prompt_metric_rows(
 
     assert prompt_ids is not None
     assert metric_names is not None
+    if "teacher_semantic_clusters" in metric_names:
+        for prompt_id in prompt_ids:
+            counts = {
+                normalized[method][prompt_id]["teacher_semantic_clusters"]
+                for method in methods
+            }
+            if len(counts) != 1:
+                raise ValueError(
+                    f"teacher partition changed across methods for prompt {prompt_id!r}"
+                )
     return tuple(
         {
             "method": method,
@@ -164,6 +174,20 @@ def collect_threshold_metric_rows(
     assert expected_thresholds is not None
     assert expected_prompt_ids is not None
     assert expected_metric_names is not None
+    if "teacher_semantic_clusters" in expected_metric_names:
+        for threshold in expected_thresholds:
+            for prompt_id in expected_prompt_ids:
+                counts = {
+                    normalized[method][threshold][prompt_id][
+                        "teacher_semantic_clusters"
+                    ]
+                    for method in methods
+                }
+                if len(counts) != 1:
+                    raise ValueError(
+                        "teacher partition changed across methods for "
+                        f"threshold {threshold!r} prompt {prompt_id!r}"
+                    )
     return tuple(
         {
             "method": method,
