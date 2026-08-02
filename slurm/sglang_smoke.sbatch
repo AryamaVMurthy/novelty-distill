@@ -139,6 +139,22 @@ print(study.conditions[0].generation.revision)
   model_revision="${calibration_model[1]}"
 fi
 
+if [[ -n "${calibration_config}" ]]; then
+  input="${scratch_root}/data/tomato-open-calibration-8.jsonl"
+  output_dir="${scratch_root}/generations/teacher-calibration/${calibration_run_id}"
+  if [[ ! -f "${input}" ]]; then
+    echo "missing prepared calibration data: ${input}" >&2
+    exit 1
+  fi
+else
+  input="${INPUT_PATH:-${scratch_root}/data/tomato-open-train-1000.jsonl}"
+  output_dir="${scratch_root}/generations/${output_name}/${output_run_id}"
+  if [[ ! -f "${input}" ]]; then
+    echo "missing prepared generation data: ${input}" >&2
+    exit 1
+  fi
+fi
+
 server_args=(
   --model-path "${model_path}"
   --revision "${model_revision}"
@@ -178,12 +194,6 @@ if [[ "${ready}" != 1 ]]; then
 fi
 
 if [[ -n "${calibration_config}" ]]; then
-  input="${scratch_root}/data/tomato-open-calibration-8.jsonl"
-  output_dir="${scratch_root}/generations/teacher-calibration/${calibration_run_id}"
-  if [[ ! -f "${input}" ]]; then
-    echo "missing prepared calibration data: ${input}" >&2
-    exit 1
-  fi
   echo "stage=calibrate input=${input} output=${output_dir}"
   "${venv_dir}/bin/python" "${repo_dir}/scripts/run_teacher_calibration.py" \
     --input "${input}" \
@@ -191,12 +201,6 @@ if [[ -n "${calibration_config}" ]]; then
     --config "${repo_dir}/${calibration_config}" \
     --base-url "http://127.0.0.1:${port}"
 else
-  input="${INPUT_PATH:-${scratch_root}/data/tomato-open-train-1000.jsonl}"
-  output_dir="${scratch_root}/generations/${output_name}/${output_run_id}"
-  if [[ ! -f "${input}" ]]; then
-    echo "missing prepared smoke data: ${input}" >&2
-    exit 1
-  fi
   mkdir -p "${output_dir}"
   head -n "${input_limit}" "${input}" >"${input_slice}"
   echo "stage=generate input=${input_slice} output=${output_dir}"
