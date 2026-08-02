@@ -46,6 +46,7 @@ def test_contrast_report_renders_inference_and_threshold_direction_counts() -> N
 
     assert "# Frozen TOMATO contrast findings" in report
     assert "## Descriptive method levels" in report
+    assert "A3 is the single historical author response (K=1)" in report
     assert "| `A` | 3 | 0.4 |" in report
     assert (
         "| `B-vs-A` | 3 | 0.4 | 0.5 | 0.1 | [0.01, 0.2] | 0.5 | 0.02 | 0.04 |"

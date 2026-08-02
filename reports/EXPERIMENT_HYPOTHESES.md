@@ -58,6 +58,9 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
   central comparisons to seeds 17, 29, and 43 only after the frozen 1k gate.
 - Do not pool results across the 4B/14B and 1.7B/8B model pairs. The latter is a replication, not
   an extra seed.
+- A3 contains one historical author response per prompt, whereas A0, A1, and trained generative
+  methods use K=16. Its quality and feasibility remain useful author-anchored controls, but its
+  semantic breadth, mode recall, precision, and JSD are not sampling-budget-matched comparisons.
 
 ## Interpretation risks
 

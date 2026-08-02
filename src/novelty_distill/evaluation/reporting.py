@@ -32,6 +32,12 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
         "",
         "## Descriptive method levels",
         "",
+        (
+            "A3 is the single historical author response (K=1); A0, A1, and trained generative "
+            "methods use K=16. A3 semantic breadth, mode recall, and distribution metrics are "
+            "descriptive controls and are not sampling-budget-matched comparisons."
+        ),
+        "",
     ]
     mean_fields = sorted(
         {
