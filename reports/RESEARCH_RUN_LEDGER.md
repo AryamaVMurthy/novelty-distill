@@ -305,6 +305,13 @@ passes for A0, A1, A3, and every executable trained method. These attributed Che
 taxonomy results are stored and analyzed separately as `secondary_descriptive`; they cannot modify
 the primary contrast family and require the declared two-human agreement gate before any headline
 claim. The complete contract is in `reports/RESEARCH_TASTE_PROTOCOL.md`.
+Early resumable A0 annotation passes 18227 -> 18228 were submitted `afterok:18165` to consume the
+GPU released when the nearly complete A0 generation pass exits. Short array 18229 runs the missing
+B1 and B3 SFT artifacts sequentially on that GPU first; 18227 now waits `afterany:18229`. The locked
+resume arrays later preflight these stable output paths instead of retraining completed artifacts.
+The taste passes write the same content-bound
+namespace that controller 18222 later preflights, so early work is reused and cannot duplicate or
+silently conflict with the final graph.
 
 The final generation preflight also binds every local LoRA or full checkpoint to a streaming
 SHA-256 over inference-relevant configuration, tokenizer, index, and weight files. That identity is
