@@ -40,6 +40,8 @@ def test_teacher_target_summary_exposes_view_selection_and_thresholds() -> None:
         },
     )
     metadata = {
+        "clustering_linkage": "complete",
+        "cosine_threshold": 0.94,
         "prompt_diagnostics": {
             "p1": {
                 "raw": {"clusters_by_threshold": {"0.700": 2, "0.820": 4}},
@@ -57,6 +59,8 @@ def test_teacher_target_summary_exposes_view_selection_and_thresholds() -> None:
     )
 
     assert summary["num_prompts"] == 1
+    assert summary["clustering_linkage"] == "complete"
+    assert summary["primary_cosine_threshold"] == 0.94
     assert summary["views"]["best1"]["quality_mean"] == pytest.approx(0.9)
     assert summary["views"]["diverse4"]["quality_mean"] == pytest.approx(0.675)
     assert summary["views"]["diverse4"]["at_least_four_primary_clusters_rate"] == 1
@@ -70,3 +74,4 @@ def test_teacher_target_summary_exposes_view_selection_and_thresholds() -> None:
     assert "not expert novelty labels" in markdown
     assert "| `diverse4` |" in markdown
     assert "At-least-four-cluster prompts" in markdown
+    assert "complete linkage at cosine 0.94" in markdown

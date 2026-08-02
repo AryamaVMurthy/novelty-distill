@@ -115,37 +115,57 @@ def parse_quality_judge_response(
 def cluster_cosine_embeddings(
     embeddings: Sequence[Sequence[float]], *, threshold: float
 ) -> tuple[str, ...]:
-    """Return connected-component labels for a cosine-similarity threshold graph."""
+    """Return deterministic complete-linkage labels at a cosine-similarity threshold."""
 
     if not -1 <= threshold <= 1:
         raise ValueError("cosine threshold must be between -1 and 1")
     normalized = _normalize_embeddings(embeddings)
-
-    adjacency: list[list[int]] = [[] for _ in normalized]
+    similarities = [[1.0] * len(normalized) for _ in normalized]
     for left in range(len(normalized)):
         for right in range(left + 1, len(normalized)):
             similarity = sum(
                 a * b for a, b in zip(normalized[left], normalized[right], strict=True)
             )
-            if similarity >= threshold:
-                adjacency[left].append(right)
-                adjacency[right].append(left)
+            similarities[left][right] = similarity
+            similarities[right][left] = similarity
+
+    clusters = [(index,) for index in range(len(normalized))]
+    while True:
+        candidates: list[tuple[float, tuple[int, ...], tuple[int, ...], int, int]] = []
+        for left in range(len(clusters)):
+            for right in range(left + 1, len(clusters)):
+                complete_similarity = min(
+                    similarities[left_index][right_index]
+                    for left_index in clusters[left]
+                    for right_index in clusters[right]
+                )
+                if complete_similarity >= threshold:
+                    candidates.append(
+                        (
+                            -complete_similarity,
+                            clusters[left],
+                            clusters[right],
+                            left,
+                            right,
+                        )
+                    )
+        if not candidates:
+            break
+        _, _, _, left, right = min(candidates)
+        merged = tuple(sorted((*clusters[left], *clusters[right])))
+        clusters = [
+            cluster
+            for index, cluster in enumerate(clusters)
+            if index not in {left, right}
+        ]
+        clusters.append(merged)
+        clusters.sort()
 
     labels = [""] * len(normalized)
-    cluster_index = 0
-    for root in range(len(normalized)):
-        if labels[root]:
-            continue
+    for cluster_index, cluster in enumerate(clusters):
         label = f"cluster-{cluster_index:03d}"
-        labels[root] = label
-        frontier = [root]
-        while frontier:
-            current = frontier.pop()
-            for neighbor in adjacency[current]:
-                if not labels[neighbor]:
-                    labels[neighbor] = label
-                    frontier.append(neighbor)
-        cluster_index += 1
+        for index in cluster:
+            labels[index] = label
     return tuple(labels)
 
 

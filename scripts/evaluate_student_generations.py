@@ -132,6 +132,8 @@ def main() -> None:
         )
     training_texts = _load_training_texts(args.training_targets)
     annotation = yaml.safe_load(args.annotation_config.read_text(encoding="utf-8"))
+    if annotation.get("clustering_linkage") != "complete":
+        raise ValueError("student evaluation requires deterministic complete linkage")
     thresholds = tuple(float(value) for value in annotation["cosine_thresholds"])
     primary_threshold = float(annotation["cosine_threshold"])
     if primary_threshold not in thresholds:
@@ -225,9 +227,9 @@ def main() -> None:
         "student_samples_per_prompt": student_samples,
         "primary_cosine_threshold": primary_threshold,
         "semantic_clustering": {
-            "teacher_partition": "connected_components",
+            "teacher_partition": "complete_linkage",
             "student_assignment": "nearest_teacher_if_cosine_at_least_threshold",
-            "unmatched_student_partition": "connected_components",
+            "unmatched_student_partition": "complete_linkage",
             "teacher_modes_are_fixed_across_methods": True,
         },
         "embedding": {

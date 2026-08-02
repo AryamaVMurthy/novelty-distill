@@ -1,5 +1,6 @@
 """Descriptive analysis of frozen teacher target views and semantic clusters."""
 
+import math
 import statistics
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Mapping
@@ -108,6 +109,15 @@ def summarize_teacher_targets(
         overlaps[name] = {"count": count, "rate": count / len(prompt_ids)}
 
     diagnostics = cluster_metadata.get("prompt_diagnostics")
+    clustering_linkage = cluster_metadata.get("clustering_linkage")
+    if clustering_linkage != "complete":
+        raise ValueError("cluster metadata must declare complete linkage")
+    try:
+        primary_threshold = float(cluster_metadata["cosine_threshold"])
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("cluster metadata has no numeric primary threshold") from error
+    if not math.isfinite(primary_threshold) or not -1 <= primary_threshold <= 1:
+        raise ValueError("cluster metadata primary threshold must be finite and in [-1, 1]")
     if not isinstance(diagnostics, Mapping) or set(diagnostics) != prompt_ids:
         raise ValueError("cluster metadata prompt diagnostics do not align")
     threshold_names: set[str] | None = None
@@ -153,6 +163,8 @@ def summarize_teacher_targets(
     return {
         "num_prompts": len(prompt_ids),
         "num_generations": len(generation_tuple),
+        "clustering_linkage": clustering_linkage,
+        "primary_cosine_threshold": primary_threshold,
         "primary_cluster_count_mean": statistics.fmean(primary_counts),
         "primary_cluster_count_median": statistics.median(primary_counts),
         "primary_cluster_count_distribution": {
@@ -174,6 +186,11 @@ def render_teacher_target_markdown(summary: Mapping[str, Any]) -> str:
             f"The artifact contains {int(summary['num_prompts']):,} prompts and "
             f"{int(summary['num_generations']):,} frozen teacher samples. Cluster counts are "
             "fixed embedding-based operational modes, not expert novelty labels."
+        ),
+        "",
+        (
+            f"Primary partition: {summary['clustering_linkage']} linkage at cosine "
+            f"{_number(summary['primary_cosine_threshold'])}."
         ),
         "",
         (

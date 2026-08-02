@@ -79,6 +79,18 @@ def test_cosine_threshold_clustering_is_deterministic() -> None:
     assert labels == ("cluster-000", "cluster-000", "cluster-001", "cluster-002")
 
 
+def test_complete_linkage_prevents_similarity_bridge_chaining() -> None:
+    embeddings = (
+        (1.0, 0.0),
+        (0.9, 0.435889894),
+        (0.6, 0.8),
+    )
+
+    labels = cluster_cosine_embeddings(embeddings, threshold=0.8)
+
+    assert labels == ("cluster-000", "cluster-000", "cluster-001")
+
+
 def test_cosine_clustering_rejects_zero_vectors() -> None:
     with pytest.raises(ValueError, match="non-zero"):
         cluster_cosine_embeddings(((0.0, 0.0),), threshold=0.9)
@@ -97,4 +109,4 @@ def test_cosine_diagnostics_report_similarity_and_threshold_sensitivity() -> Non
     assert diagnostics["cosine_min"] == pytest.approx(0.0)
     assert diagnostics["cosine_mean"] == pytest.approx((0.8 + 0.0 + 0.6) / 3)
     assert diagnostics["cosine_max"] == pytest.approx(0.8)
-    assert diagnostics["clusters_by_threshold"] == {"0.500": 1, "0.900": 3}
+    assert diagnostics["clusters_by_threshold"] == {"0.500": 2, "0.900": 3}

@@ -69,16 +69,18 @@ not a results report and does not promote any baseline.
 - ClusterJSD comparisons are restricted to methods with the same teacher/student sampling budgets
   and frozen clustering protocol. A3's one-response divergence is reported descriptively and must
   not be interpreted as sampling-budget-matched evidence.
-- Teacher samples are clustered first and their partition is frozen across methods. Students are
-  assigned to the nearest qualifying teacher mode, while unmatched students are clustered into
-  separately named novel modes. This avoids method-dependent teacher-mode merging through student
-  bridge samples; the complete 0.70--0.95 threshold curve is still retained.
-- The original 0.82 primary threshold was rejected at the production teacher-only gate because it
-  produced only 1.001 instructed modes per prompt and would make ModeRecall almost degenerate. No
-  student result had been generated or inspected. The replacement 0.95 threshold was already in
-  the declared sensitivity grid and yields 3.558 teacher modes per prompt, close to the intended
-  diverse-four view. This is a transparent pre-student calibration, not evidence that 0.95 is a
-  universal semantic boundary.
+- Teacher samples are complete-linkage clustered first and their partition is frozen across
+  methods. Students are assigned to the nearest qualifying teacher mode, while unmatched students
+  are complete-linkage clustered into separately named novel modes. This avoids teacher-mode
+  chaining and method-dependent merging through student bridge samples; the complete 0.70--0.95
+  threshold curve is still retained.
+- The original connected-component threshold 0.82 was rejected at the production teacher-only gate
+  because it produced only 1.001 instructed modes per prompt. Connected components at 0.95 yielded
+  3.558 modes, but qualitative extremes split obvious paraphrases and the curve showed a sharp
+  chaining transition. No student result had been generated or inspected. Deterministic complete
+  linkage at 0.94 yields 3.798 teacher modes per prompt (median 4), 54.2% of prompts with at least
+  four modes, and groups the clearest duplicate pairs. This is a transparent pre-student
+  calibration, not evidence that 0.94 is a universal semantic boundary.
 - Finish reasons and completion-token diagnostics are preserved beside every score so truncation
   cannot masquerade as a method effect.
 - Raw prompt-level metrics and all eight training-teacher samples are retained for reannotation.

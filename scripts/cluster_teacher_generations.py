@@ -31,6 +31,8 @@ def main() -> None:
     args = parse_args()
     git_commit = repository_commit(Path(__file__).resolve().parents[1])
     annotation = yaml.safe_load(args.annotation_config.read_text(encoding="utf-8"))
+    if annotation.get("clustering_linkage") != "complete":
+        raise ValueError("teacher clustering requires deterministic complete linkage")
     score_paths = sorted(args.score_dir.glob("*.json"))
     if not score_paths:
         raise ValueError(f"no score shards found in {args.score_dir}")
@@ -119,6 +121,7 @@ def main() -> None:
         "embedding_revision": annotation["embedding_revision"],
         "embedding_instruction": annotation["embedding_instruction"],
         "embedding_batch_size": annotation["embedding_batch_size"],
+        "clustering_linkage": annotation["clustering_linkage"],
         "cosine_threshold": annotation["cosine_threshold"],
         "cosine_thresholds": annotation["cosine_thresholds"],
         "judge": judge_payload,

@@ -9,10 +9,12 @@ systematic length truncation?
 This is a calibration study. It does not test a trained student and its results are not headline
 paper results.
 
-The study originally treated cosine 0.82 as primary. A later production teacher-only gate, still
-before any student evaluation, found that boundary degenerate at 1.001 modes per prompt and moved
-the primary analysis to the already-declared 0.95 sensitivity endpoint. The historical calibration
-tables remain unchanged; the production change and rationale are recorded in
+The study originally treated connected-component cosine 0.82 as primary. A later production
+teacher-only gate, still before any student evaluation, found that boundary degenerate at 1.001
+modes per prompt. A qualitative audit of the 0.95 endpoint then exposed paraphrase splitting and
+the connected-component chaining transition. The production primary analysis consequently moved
+to complete linkage at 0.94. The historical calibration tables remain unchanged; the production
+change and rationale are recorded in
 `reports/EXPERIMENT_HYPOTHESES.md`.
 
 ## Fixed design

@@ -1,10 +1,11 @@
 # Teacher calibration findings
 
-> Production addendum (2026-08-02): these historical tables used cosine 0.82. The complete
-> 1,000-prompt teacher-only gate later found 1.001 modes/prompt at 0.82 and 3.558 at the
-> already-declared 0.95 endpoint. Before any student result was inspected, the production primary
-> threshold was changed to 0.95 so the diverse-four contrast would not be degenerate. All threshold
-> curves remain mandatory, and 0.95 is not claimed as a universal semantic boundary.
+> Production addendum (2026-08-02): these historical tables used connected-component cosine 0.82.
+> The 1,000-prompt teacher-only gate later found 1.001 modes/prompt at 0.82; moving connected
+> components to 0.95 exposed paraphrase splitting and a sharp chaining transition. Before any
+> student result was inspected, the production partition changed to complete linkage at 0.94,
+> yielding 3.798 modes/prompt (median 4) in the frozen audit. All threshold curves remain mandatory,
+> and 0.94 is not claimed as a universal semantic boundary.
 
 These results are calibration evidence, not trained-student or headline paper results. The frozen
 design and promotion rules are in `reports/TEACHER_CALIBRATION_PROTOCOL.md`.
