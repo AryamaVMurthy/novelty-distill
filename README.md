@@ -45,9 +45,18 @@ run uses the same SGLang job with a stable output ID:
 scripts/turing_submit.sh slurm/sglang_smoke.sbatch --export=ALL,GENERATION_CONFIG=configs/generation/teacher.yaml,OUTPUT_NAME=teacher,OUTPUT_RUN_ID=teacher-1k-v1,INPUT_LIMIT=1000,GENERATION_CONCURRENCY=8
 ```
 
+The complete research-scale teacher, target, and training graph is submitted with bounded resume
+passes by:
+
+```bash
+scripts/submit_tomato1k_pipeline.sh
+```
+
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
-submission helper briefly allocates node01 before calling `sbatch`.
+submission helper stages the small batch script under `~/.cache/novelty-distill-submit` and calls
+`sbatch` directly; it does not create an interactive control allocation. Each compute job then
+synchronizes the pinned branch under a shared repository lock.
 
 GEM and DistiLLM additionally require the versioned teacher-target artifact produced from the
 permanent eight-sample teacher generation set; their launchers intentionally fail rather than
@@ -63,3 +72,7 @@ adapter points its existing OpenRouter-compatible client at the local SGLang URL
 
 The verified Turing smoke results and their limitations are recorded in
 [`reports/TURING_SMOKE_FINDINGS.md`](reports/TURING_SMOKE_FINDINGS.md).
+The research-scale Slurm graph is frozen in
+[`reports/RESEARCH_RUN_LEDGER.md`](reports/RESEARCH_RUN_LEDGER.md), and the claim boundary informed
+by current primary literature is in
+[`reports/RESEARCH_VALIDITY_AUDIT.md`](reports/RESEARCH_VALIDITY_AUDIT.md).
