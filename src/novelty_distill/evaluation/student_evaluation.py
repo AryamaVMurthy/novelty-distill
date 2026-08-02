@@ -2,14 +2,17 @@
 
 import math
 import statistics
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import Any
 
 from novelty_distill.evaluation.semantic_modes import (
     mode_metrics,
     quality_adjusted_coverage,
 )
-from novelty_distill.evaluation.teacher_annotation import cluster_cosine_embeddings
+from novelty_distill.evaluation.teacher_annotation import (
+    QualityDimensions,
+    cluster_cosine_embeddings,
+)
 
 
 def evaluate_joint_embeddings(
@@ -118,6 +121,23 @@ def summarize_generation_diagnostics(
         "completion_tokens_mean": statistics.fmean(tokens),
         "completion_tokens_median": statistics.median(tokens),
         "completion_tokens_max": max(tokens),
+    }
+
+
+def summarize_quality_dimensions(
+    dimensions: Iterable[Mapping[str, Any]],
+) -> dict[str, float]:
+    """Preserve all rubric axes so an aggregate-score ceiling remains visible."""
+
+    validated = tuple(QualityDimensions.model_validate(value) for value in dimensions)
+    if not validated:
+        raise ValueError("quality dimension summary requires at least one record")
+    names = tuple(validated[0].model_dump())
+    return {
+        f"student_{name}_mean": statistics.fmean(
+            int(record.model_dump()[name]) for record in validated
+        )
+        for name in names
     }
 
 

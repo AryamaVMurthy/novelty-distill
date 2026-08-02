@@ -3,6 +3,7 @@ import pytest
 from novelty_distill.evaluation.student_evaluation import (
     evaluate_joint_embeddings,
     summarize_generation_diagnostics,
+    summarize_quality_dimensions,
     summarize_student_prompt,
 )
 
@@ -97,3 +98,30 @@ def test_generation_diagnostics_reject_missing_usage() -> None:
             finish_reasons=("stop", "length"),
             completion_tokens=(100,),
         )
+
+
+def test_quality_dimension_summary_preserves_each_rubric_axis() -> None:
+    dimensions = (
+        {
+            "relevance": 5,
+            "feasibility": 3,
+            "soundness": 2,
+            "clarity": 4,
+            "instruction_compliance": 5,
+        },
+        {
+            "relevance": 3,
+            "feasibility": 5,
+            "soundness": 4,
+            "clarity": 2,
+            "instruction_compliance": 5,
+        },
+    )
+
+    assert summarize_quality_dimensions(dimensions) == {
+        "student_relevance_mean": 4.0,
+        "student_feasibility_mean": 4.0,
+        "student_soundness_mean": 3.0,
+        "student_clarity_mean": 3.0,
+        "student_instruction_compliance_mean": 5.0,
+    }

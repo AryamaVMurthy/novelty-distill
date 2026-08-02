@@ -20,6 +20,7 @@ from novelty_distill.evaluation.embeddings import (
 from novelty_distill.evaluation.score_shards import load_score_shard
 from novelty_distill.evaluation.student_evaluation import (
     summarize_generation_diagnostics,
+    summarize_quality_dimensions,
     summarize_student_prompt,
 )
 from novelty_distill.evaluation.teacher_annotation import cluster_cosine_embeddings
@@ -200,7 +201,14 @@ def main() -> None:
                 finish_reasons=(str(record["finish_reason"]) for record in student_records),
                 completion_tokens=(int(record["completion_tokens"]) for record in student_records),
             )
-            prompt_metrics[prompt_id] = {**semantic_metrics, **diagnostics}
+            dimension_metrics = summarize_quality_dimensions(
+                record["dimensions"] for record in student_records
+            )
+            prompt_metrics[prompt_id] = {
+                **semantic_metrics,
+                **dimension_metrics,
+                **diagnostics,
+            }
         metrics_by_threshold[f"{threshold:.3f}"] = prompt_metrics
 
     primary_key = f"{primary_threshold:.3f}"
