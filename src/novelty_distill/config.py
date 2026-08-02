@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, model_validator
 
 
 class BaselineConfig(BaseModel):
-    """One runnable baseline backed by an official implementation."""
+    """One planned baseline and its official-implementation boundary."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -17,6 +17,8 @@ class BaselineConfig(BaseModel):
     family: Literal["control", "sft", "off_policy", "on_policy", "self_distillation"]
     backend: Literal["evaluation", "trl_sft", "trl_gkd", "gem", "distillm", "opsd"]
     official_source: str
+    execution_status: Literal["runnable", "fail_closed"] = "runnable"
+    non_executable_reason: str = ""
     trajectory_source: Literal["none", "human", "teacher", "student", "static"] = "none"
     target_view: Literal["none", "human", "random1", "best1", "mode1", "diverse4"] = "none"
     divergence: Literal["none", "forward_kl", "reverse_kl", "generalized_jsd", "skew_kl"] = (
@@ -34,6 +36,10 @@ class BaselineConfig(BaseModel):
             raise ValueError(f"{self.backend} requires lmbda and beta")
         if self.trajectory_source == "student" and self.lmbda != 1.0:
             raise ValueError("student trajectories require fully on-policy lmbda=1")
+        if self.execution_status == "fail_closed" and not self.non_executable_reason.strip():
+            raise ValueError("fail-closed baselines require a non-executable reason")
+        if self.execution_status == "runnable" and self.non_executable_reason:
+            raise ValueError("runnable baselines cannot have a non-executable reason")
         return self
 
 

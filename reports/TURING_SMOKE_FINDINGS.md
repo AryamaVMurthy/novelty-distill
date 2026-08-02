@@ -25,7 +25,9 @@ Nineteen executable training variants completed and wrote auditable `run_metadat
 
 The runs use official TRL, GEM, DistiLLM, or OPSD code pinned in `third_party/manifest.yaml`.
 E1 is intentionally fail-closed: the pinned official OPSD repository has no static-trajectory
-off-policy mode, and this project does not invent an unofficial substitute.
+off-policy mode, and this project does not invent an unofficial substitute. The registry records
+that boundary with `execution_status: fail_closed`, so matrix consumers can distinguish an
+unsupported planned control from a missing or silently skipped run.
 
 Teacher-generation jobs 17918 and 17922 independently produced the same eight-record projection
 for one fixed TOMATO prompt. All eight hypotheses were distinct within each run, and the canonical

@@ -43,6 +43,19 @@ def test_registry_contains_every_planned_baseline_once() -> None:
     assert all(baseline.official_source for baseline in registry.baselines)
 
 
+def test_registry_marks_the_unsupported_static_opsd_control_fail_closed() -> None:
+    registry = load_baseline_registry(Path("configs/baselines.yaml"))
+    by_id = {baseline.id: baseline for baseline in registry.baselines}
+
+    assert by_id["E1"].execution_status == "fail_closed"
+    assert "static" in by_id["E1"].non_executable_reason.lower()
+    assert {
+        baseline.id
+        for baseline in registry.baselines
+        if baseline.execution_status == "runnable"
+    } == {baseline.id for baseline in registry.baselines} - {"E1"}
+
+
 def test_soft_distillation_config_cannot_omit_official_loss_controls() -> None:
     with pytest.raises(ValidationError, match="requires lmbda and beta"):
         BaselineConfig.model_validate(

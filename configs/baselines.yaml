@@ -178,6 +178,10 @@ baselines:
     family: self_distillation
     backend: opsd
     official_source: siyan-zhao/OPSD
+    execution_status: fail_closed
+    non_executable_reason: >-
+      The pinned official OPSD trainer has no static-trajectory off-policy mode;
+      execution requires a reviewed upstream implementation rather than a local substitute.
     trajectory_source: static
     target_view: human
     divergence: forward_kl
