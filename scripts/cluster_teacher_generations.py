@@ -10,7 +10,7 @@ import yaml
 
 from novelty_distill.data.teacher_views import TeacherGeneration
 from novelty_distill.evaluation.embeddings import embed_texts
-from novelty_distill.evaluation.score_shards import load_score_shard
+from novelty_distill.evaluation.score_shards import load_score_shard, shard_score_paths
 from novelty_distill.evaluation.teacher_annotation import (
     cluster_cosine_embeddings,
     cosine_embedding_diagnostics,
@@ -24,6 +24,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--annotation-config", type=Path, required=True)
     parser.add_argument("--embedding-cache-dir", type=Path)
+    parser.add_argument("--num-shards", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     return parser.parse_args()
 
 
@@ -33,9 +35,16 @@ def main() -> None:
     annotation = yaml.safe_load(args.annotation_config.read_text(encoding="utf-8"))
     if annotation.get("clustering_linkage") != "complete":
         raise ValueError("teacher clustering requires deterministic complete linkage")
-    score_paths = sorted(args.score_dir.glob("*.json"))
-    if not score_paths:
+    all_score_paths = sorted(args.score_dir.glob("*.json"))
+    if not all_score_paths:
         raise ValueError(f"no score shards found in {args.score_dir}")
+    score_paths = shard_score_paths(
+        all_score_paths, num_shards=args.num_shards, shard_index=args.shard_index
+    )
+    if not score_paths:
+        raise ValueError(
+            f"cluster partition {args.shard_index} has no inputs from {args.score_dir}"
+        )
 
     output_records: list[TeacherGeneration] = []
     prompt_diagnostics: dict[str, object] = {}
@@ -113,10 +122,13 @@ def main() -> None:
             handle.write(record.model_dump_json() + "\n")
     temporary.replace(args.output)
     metadata = {
-        "schema_version": 1,
+        "schema_version": 2,
         "git_commit": git_commit,
         "num_records": len(output_records),
         "num_prompts": len(score_paths),
+        "global_num_prompts": len(all_score_paths),
+        "num_shards": args.num_shards,
+        "shard_index": args.shard_index,
         "embedding_model": annotation["embedding_model"],
         "embedding_revision": annotation["embedding_revision"],
         "embedding_instruction": annotation["embedding_instruction"],
@@ -126,6 +138,10 @@ def main() -> None:
         "cosine_thresholds": annotation["cosine_thresholds"],
         "judge": judge_payload,
         "prompt_diagnostics": prompt_diagnostics,
+        "score_files": [
+            {"name": path.name, "prompt_id": str(records[0]["prompt_id"])}
+            for path, records in prompt_batches
+        ],
     }
     args.output.with_suffix(args.output.suffix + ".metadata.json").write_text(
         json.dumps(metadata, indent=2, sort_keys=True) + "\n", encoding="utf-8"

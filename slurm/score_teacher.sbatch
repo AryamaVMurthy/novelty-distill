@@ -22,6 +22,7 @@ generation_job_id="${GENERATION_JOB_ID:-}"
 generation_name="${GENERATION_NAME:-teacher-smoke}"
 generation_config="${GENERATION_CONFIG:-configs/generation/teacher.yaml}"
 prompts_path="${PROMPTS_PATH:-}"
+prompts_name="${PROMPTS_NAME:-}"
 score_namespace="${SCORE_NAMESPACE:-teacher-scores}"
 score_concurrency="${SCORE_CONCURRENCY:-8}"
 score_num_shards="${SCORE_NUM_SHARDS:-1}"
@@ -36,6 +37,10 @@ if [[ -n "${calibration_run_id}" && ("${calibration_run_id}" == */* || "${calibr
 fi
 if [[ "${score_namespace}" == */* || "${score_namespace}" == *..* ]]; then
   echo "SCORE_NAMESPACE must be a path-safe name" >&2
+  exit 2
+fi
+if [[ -n "${prompts_name}" && ("${prompts_name}" == */* || "${prompts_name}" == *..*) ]]; then
+  echo "PROMPTS_NAME must be a path-safe filename" >&2
   exit 2
 fi
 if ! [[ "${score_concurrency}" =~ ^[1-9][0-9]*$ ]]; then
@@ -55,7 +60,9 @@ repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
-if [[ -z "${prompts_path}" ]]; then
+if [[ -n "${prompts_name}" ]]; then
+  prompts_path="${scratch_root}/data/${prompts_name}"
+elif [[ -z "${prompts_path}" ]]; then
   prompts_path="${scratch_root}/data/tomato-open-train-1000.jsonl"
 fi
 if [[ "${generation_config}" != /* ]]; then

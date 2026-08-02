@@ -25,6 +25,7 @@ model_revision="${MODEL_REVISION:-70d244cc86ccca08cf5af4e1e306ecf908b1ad5e}"
 served_model_name="${SERVED_MODEL_NAME:-}"
 model_dtype="${MODEL_DTYPE:-auto}"
 generation_config="${GENERATION_CONFIG:-configs/generation/smoke.yaml}"
+input_name="${INPUT_NAME:-}"
 input_limit="${INPUT_LIMIT:-1}"
 output_name="${OUTPUT_NAME:-sglang-smoke}"
 output_run_id="${OUTPUT_RUN_ID:-${SLURM_JOB_ID}}"
@@ -72,6 +73,10 @@ if [[ "${model_dtype}" != auto && "${model_dtype}" != bfloat16 && "${model_dtype
 fi
 if [[ "${output_name}" == */* || "${output_name}" == *..* || "${output_run_id}" == */* || "${output_run_id}" == *..* ]]; then
   echo "OUTPUT_NAME and OUTPUT_RUN_ID must be path-safe names" >&2
+  exit 2
+fi
+if [[ -n "${input_name}" && ("${input_name}" == */* || "${input_name}" == *..*) ]]; then
+  echo "INPUT_NAME must be a path-safe filename" >&2
   exit 2
 fi
 if [[ -n "${lora_name}" || -n "${lora_path}" ]]; then
@@ -207,7 +212,11 @@ if [[ -n "${calibration_config}" ]]; then
     exit 1
   fi
 else
-  input="${INPUT_PATH:-${scratch_root}/data/tomato-open-train-1000.jsonl}"
+  if [[ -n "${input_name}" ]]; then
+    input="${scratch_root}/data/${input_name}"
+  else
+    input="${INPUT_PATH:-${scratch_root}/data/tomato-open-train-1000.jsonl}"
+  fi
   output_dir="${scratch_root}/generations/${output_name}/${output_run_id}"
   if [[ ! -f "${input}" ]]; then
     echo "missing prepared generation data: ${input}" >&2

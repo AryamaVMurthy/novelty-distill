@@ -20,6 +20,8 @@ module load u22/cuda/12.4
 calibration_run_id="${CALIBRATION_RUN_ID:-}"
 generation_job_id="${GENERATION_JOB_ID:-}"
 target_name="${TARGET_NAME:-teacher-targets.json}"
+cluster_num_shards="${CLUSTER_NUM_SHARDS:-1}"
+cluster_shard_index="${CLUSTER_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"
 if [[ -z "${calibration_run_id}" && -z "${generation_job_id}" ]]; then
   echo "set GENERATION_JOB_ID or CALIBRATION_RUN_ID" >&2
   exit 2
@@ -30,6 +32,19 @@ if [[ -n "${calibration_run_id}" && ("${calibration_run_id}" == */* || "${calibr
 fi
 if [[ "${target_name}" == */* || "${target_name}" == *..* ]]; then
   echo "TARGET_NAME must be a filename without '..'" >&2
+  exit 2
+fi
+if ! [[ "${cluster_num_shards}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "CLUSTER_NUM_SHARDS must be a positive integer" >&2
+  exit 2
+fi
+if ! [[ "${cluster_shard_index}" =~ ^[0-9]+$ ]] \
+  || ((cluster_shard_index >= cluster_num_shards)); then
+  echo "CLUSTER_SHARD_INDEX must be within CLUSTER_NUM_SHARDS" >&2
+  exit 2
+fi
+if [[ -n "${calibration_run_id}" && "${cluster_num_shards}" != 1 ]]; then
+  echo "calibration clustering does not support partition arrays" >&2
   exit 2
 fi
 repo_ref="${REPO_REF:-codex/implementation}"
@@ -96,14 +111,28 @@ if [[ -n "${calibration_run_id}" ]]; then
   test -s "${analysis_root}/analysis.json"
   test -s "${analysis_root}/findings.md"
 else
+  if [[ "${cluster_num_shards}" -eq 1 ]]; then
+    clustered_output="${scratch_root}/data/teacher-generations-${generation_job_id}.jsonl"
+  else
+    cluster_shard_root="${scratch_root}/data/teacher-generation-shards/${generation_job_id}"
+    mkdir -p "${cluster_shard_root}"
+    clustered_output="$(printf '%s/part-%05d-of-%05d.jsonl' \
+      "${cluster_shard_root}" "${cluster_shard_index}" "${cluster_num_shards}")"
+  fi
   "${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
     --score-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
-    --output "${scratch_root}/data/teacher-generations-${generation_job_id}.jsonl" \
+    --output "${clustered_output}" \
     --embedding-cache-dir "${scratch_root}/cache/embeddings" \
-    --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
+    --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+    --num-shards "${cluster_num_shards}" \
+    --shard-index "${cluster_shard_index}"
 
-  "${venv_dir}/bin/python" "${repo_dir}/scripts/derive_teacher_targets.py" \
-    --input "${scratch_root}/data/teacher-generations-${generation_job_id}.jsonl" \
-    --output "${scratch_root}/data/${target_name}" \
-    --seed 17
+  if [[ "${cluster_num_shards}" -eq 1 ]]; then
+    "${venv_dir}/bin/python" "${repo_dir}/scripts/derive_teacher_targets.py" \
+      --input "${clustered_output}" \
+      --output "${scratch_root}/data/${target_name}" \
+      --seed 17
+  else
+    echo "cluster_partition=${cluster_shard_index}/${cluster_num_shards} output=${clustered_output}"
+  fi
 fi

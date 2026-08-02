@@ -27,6 +27,7 @@ def test_sglang_job_forwards_deterministic_prompt_shard_coordinates() -> None:
     assert 'generation_shard_index="${GENERATION_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"' in script
     assert script.count('--num-shards "${generation_num_shards}"') == 3
     assert script.count('--shard-index "${generation_shard_index}"') == 3
+    assert 'input_name="${INPUT_NAME:-}"' in script
 
 
 def test_distillm_matrix_evaluation_forces_bfloat16_serving() -> None:
@@ -67,6 +68,44 @@ def test_quality_score_job_forwards_deterministic_prompt_shard_coordinates() -> 
     assert 'score_shard_index="${SCORE_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"' in script
     assert script.count('--num-shards "${score_num_shards}"') == 2
     assert script.count('--shard-index "${score_shard_index}"') == 2
+    assert 'prompts_name="${PROMPTS_NAME:-}"' in script
+
+
+def test_global_generation_gate_ignores_worker_sharding() -> None:
+    script = Path("slurm/validate_generation_run.sbatch").read_text(encoding="utf-8")
+
+    assert "scripts/check_generation_status.py" in script
+    assert "--num-shards 1" in script
+    assert "EXPECTED_PROMPTS" in script
+
+
+def test_global_score_gate_ignores_worker_sharding() -> None:
+    script = Path("slurm/validate_score_run.sbatch").read_text(encoding="utf-8")
+
+    assert "scripts/check_score_status.py" in script
+    assert "--num-shards 1" in script
+    assert "EXPECTED_PROMPTS" in script
+
+
+def test_teacher_clustering_supports_gpu_partitions_and_strict_merge() -> None:
+    cluster = Path("slurm/cluster_teacher.sbatch").read_text(encoding="utf-8")
+    merge = Path("slurm/merge_teacher_clusters.sbatch").read_text(encoding="utf-8")
+
+    assert 'cluster_num_shards="${CLUSTER_NUM_SHARDS:-1}"' in cluster
+    assert '--num-shards "${cluster_num_shards}"' in cluster
+    assert "scripts/merge_teacher_clusters.py" in merge
+    assert '--expected-prompts "${expected_prompts}"' in merge
+
+
+def test_scale_teacher_launcher_uses_four_gpu_arrays_and_global_gates() -> None:
+    script = Path("scripts/submit_teacher_scale.sh").read_text(encoding="utf-8")
+
+    assert 'num_gpu_shards="${NUM_GPU_SHARDS:-4}"' in script
+    assert script.count('--array="0-$((num_gpu_shards - 1))%${num_gpu_shards}"') == 3
+    assert "slurm/validate_generation_run.sbatch" in script
+    assert "slurm/validate_score_run.sbatch" in script
+    assert "slurm/merge_teacher_clusters.sbatch" in script
+    assert "slurm/validate_teacher_targets.sbatch" in script
 
 
 def test_final_controller_submits_research_taste_for_every_generation_family() -> None:

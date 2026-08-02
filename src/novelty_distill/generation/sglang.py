@@ -1,5 +1,6 @@
 """Requests for the official SGLang OpenAI-compatible server."""
 
+import fcntl
 import hashlib
 import json
 import os
@@ -366,44 +367,52 @@ def ensure_generation_run_manifest(
             raise ValueError("served artifact identity must be non-empty when provided")
         manifest["served_artifact_identity"] = served_artifact_identity
     destination = output_dir / "_metadata" / "run-manifest.json"
-    if destination.exists():
-        with destination.open(encoding="utf-8") as handle:
-            if json.load(handle) != manifest:
-                raise ValueError(f"generation run changed for existing {destination}")
-        return destination
-
-    orphaned_shard = next(output_dir.glob("*.json"), None) if output_dir.exists() else None
-    if orphaned_shard is not None:
-        raise ValueError(
-            f"generation shards exist without a run manifest: {orphaned_shard}"
-        )
-
     destination.parent.mkdir(parents=True, exist_ok=True)
-    temporary_name: str | None = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode="w",
-            encoding="utf-8",
-            dir=destination.parent,
-            prefix=f".{destination.name}.",
-            suffix=".tmp",
-            delete=False,
-        ) as handle:
-            temporary_name = handle.name
-            json.dump(manifest, handle, ensure_ascii=False, sort_keys=True)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(temporary_name, destination)
-        directory_fd = os.open(destination.parent, os.O_RDONLY)
+    lock_path = destination.parent / ".run-manifest.lock"
+    with lock_path.open("a+", encoding="utf-8") as lock_handle:
+        fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
         try:
-            os.fsync(directory_fd)
+            if destination.exists():
+                with destination.open(encoding="utf-8") as handle:
+                    if json.load(handle) != manifest:
+                        raise ValueError(
+                            f"generation run changed for existing {destination}"
+                        )
+                return destination
+
+            orphaned_shard = next(output_dir.glob("*.json"), None)
+            if orphaned_shard is not None:
+                raise ValueError(
+                    f"generation shards exist without a run manifest: {orphaned_shard}"
+                )
+
+            temporary_name: str | None = None
+            try:
+                with tempfile.NamedTemporaryFile(
+                    mode="w",
+                    encoding="utf-8",
+                    dir=destination.parent,
+                    prefix=f".{destination.name}.",
+                    suffix=".tmp",
+                    delete=False,
+                ) as handle:
+                    temporary_name = handle.name
+                    json.dump(manifest, handle, ensure_ascii=False, sort_keys=True)
+                    handle.write("\n")
+                    handle.flush()
+                    os.fsync(handle.fileno())
+                os.replace(temporary_name, destination)
+                directory_fd = os.open(destination.parent, os.O_RDONLY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
+            finally:
+                if temporary_name is not None and os.path.exists(temporary_name):
+                    os.unlink(temporary_name)
+            return destination
         finally:
-            os.close(directory_fd)
-    finally:
-        if temporary_name is not None and os.path.exists(temporary_name):
-            os.unlink(temporary_name)
-    return destination
+            fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
 
 
 PostJSON = Callable[[str, dict[str, Any], float], Mapping[str, Any]]
