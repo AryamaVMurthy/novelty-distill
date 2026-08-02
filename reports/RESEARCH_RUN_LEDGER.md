@@ -26,6 +26,11 @@ The completion-token distribution has mean 355.5487, median 353, and maximum 512
 `stop` finishes and 15 `length` finishes, for a length-stop rate of 0.001875. These are generation
 integrity and lexical-uniqueness diagnostics; they do not establish semantic diversity or quality.
 
+Job 18039's pending time limit was increased from 01:00:00 to 03:00:00 before execution. The
+observed seven-condition calibration cluster job processed 56 prompts in 00:04:02; linear scaling
+projects about 72 minutes for 1,000 prompts, so the original limit had inadequate margin. The job
+ID and every downstream dependency remain unchanged.
+
 ## Temporal controls
 
 The original A0/A1 generation jobs write stable prompt shards but cannot finish 1,658 prompts with
