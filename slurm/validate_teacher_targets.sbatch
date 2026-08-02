@@ -57,3 +57,18 @@ output="${scratch_root}/evaluations/teacher-target-validation-${generation_id}.j
   --seed 17 \
   --output "${output}"
 test -s "${output}"
+
+analysis_root="${scratch_root}/evaluations/teacher-targets-${generation_id}"
+mkdir -p "${analysis_root}"
+"${venv_dir}/bin/python" "${repo_dir}/scripts/analyze_teacher_targets.py" \
+  --score-dir "${scratch_root}/teacher-scores/${generation_id}" \
+  --clustered "${scratch_root}/data/teacher-generations-${generation_id}.jsonl" \
+  --cluster-metadata \
+    "${scratch_root}/data/teacher-generations-${generation_id}.jsonl.metadata.json" \
+  --targets "${scratch_root}/data/${target_name}" \
+  --expected-prompts "${expected_prompts}" \
+  --seed 17 \
+  --output "${analysis_root}/analysis.json" \
+  --markdown "${analysis_root}/findings.md"
+test -s "${analysis_root}/analysis.json"
+test -s "${analysis_root}/findings.md"
