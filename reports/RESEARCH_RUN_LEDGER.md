@@ -5,7 +5,7 @@ This ledger freezes the submitted Turing job graph and completed systems evidenc
 record. All newly staged jobs use `codex/implementation` and synchronize through
 `.git/novelty-distill-sync.lock` before consuming repository code. Primary array 18097 was spooled
 before that lock was added; it runs one task at a time while controls occupy the other GPUs, and
-locked resume array 18195 covers any incomplete artifact.
+locked resume arrays 18195 -> 18212 cover incomplete and newly deferred artifacts.
 
 ## Production teacher targets
 
@@ -112,9 +112,9 @@ Their resume jobs retain the same output IDs and begin at the first missing prom
 | DistiLLM deployability smoke | 18092 | four GPUs; after target gate 18132; must produce a loadable full checkpoint after real updates |
 | DistiLLM SGLang load gate | 18141 | after smoke 18092; C3 production cannot start until the full checkpoint generates successfully |
 | Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18132 and `afterany:18098` |
-| TRL/OPSD bounded resumes | 18195 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
+| TRL/OPSD bounded resumes | 18195 -> 18212 | indices 0-4, 6-11, and 13-18; chained `afterany`; 25-step checkpoints |
 | C3 DistiLLM | 18098 | index 12, four GPUs, 12-hour bound; after target gate 18132 and smoke 18092 |
-| Final target replay | 18209 | waits for 18195, final A1 score 18202, and final A0 evaluation 18208 |
+| Final target replay | 18209 | waits for 18212, final A1 score 18202, and final A0 evaluation 18208 |
 | Evaluation fan-out controller | 18210 | waits for final target replay 18209 and B4 deploy gate 18191; names the fresh target gate for every submitted evaluation chain |
 
 Completed TOMATO-1k production runs currently have the following measured systems costs. Training
@@ -172,9 +172,12 @@ the node's 386,630 MiB, leaving slightly less than D2's default 128 GiB request.
 reservation was conservatively reduced to 116 GiB (the identical live D1 workload's measured host
 RSS was about 1.6 GiB), after which concrete job 18194 started without restarting any active work.
 The node therefore has four useful GPU lanes rather than one scheduler-idle device. Pending resume
-array 18195 now uses the same 116 GiB reservation, allowing its two-task throttle to coexist with
-both 64 GiB controls under the node's measured RAM ceiling; this changes only Slurm reservation
-accounting, not any batch, optimizer, context, or checkpoint setting.
+arrays 18195/18212 use the same 116 GiB reservation, allowing their two-task throttle to coexist
+with both 64 GiB controls under the node's measured RAM ceiling; this changes only Slurm
+reservation accounting, not any batch, optimizer, context, or checkpoint setting. The second pass
+is required because D3 first enters the locked graph in 18195 and, at the measured 4.4-minute GKD
+step time, needs its own checkpoint-75 continuation. D1/D2 and short offline tasks will preflight
+complete in 18212; D3 consumes the remaining optimizer steps.
 
 Pre-production context gates 18134--18138 ran on the longest tokenizer-audited TOMATO record.
 Task-faithful OPSD at 3,072 tokens passed in 18134. GKD 3,072 failed closed on memory in 18135, and
@@ -264,11 +267,12 @@ non-thinking, pairwise-distinct Qwen3-4B outputs: 12 stopped naturally and four 
 
 The first old-spooled primary-matrix tasks B1 (18097_0) and B3 (18097_4) failed in two seconds
 while concurrent jobs raced updating the shared remote Git ref; neither reached environment setup
-or training. Fresh bounded resume array 18195 contains both repository and per-environment `flock`
-protection, depends `afterany` on the entire primary array, and will rerun incomplete artifacts
-while preflighting completed ones. It supersedes pending array 18117 before any task ran.
+or training. Fresh bounded resume arrays 18195/18212 contain both repository and per-environment
+`flock` protection. The first depends `afterany` on the entire primary array, and the second depends
+`afterany` on the first; both rerun incomplete artifacts while preflighting completed ones. They
+supersede pending array 18117 before any task ran.
 After D1 and D2 were safely running, the remaining unstarted old-spooled elements D3/E2/E3/E4
-(18097_15--18) were cancelled before execution. Array 18195 contains all four indices, so this
+(18097_15--18) were cancelled before execution. Arrays 18195/18212 contain all four indices, so this
 removes the known unlocked-fetch race without omitting any baseline; the primary array's expected
 aggregate `CANCELLED` state reflects these superseded pending elements rather than a new run fault.
 
