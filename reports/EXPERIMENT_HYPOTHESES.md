@@ -37,6 +37,12 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
 - Aggregate at the prompt level; K=16 samples are repeated observations, not 16 independent tasks.
 - Report paired bootstrap confidence intervals and standardized paired effects for promoted
   contrasts. Adjust confirmatory contrast p-values with Holm's method.
+- Holm adjustment is applied to all 17 declared contrasts separately within each metric, not to
+  the complete cross-metric set. A favorable result selected after scanning multiple outcomes is
+  exploratory unless its metric and contrast were declared as the specific claim in advance.
+- A non-significant difference is not evidence of equivalence. Any later equivalence claim needs a
+  scientifically justified smallest effect size of interest and a confidence interval contained
+  inside those bounds; this 1k gate does not define such a bound post hoc.
 - Treat quality and coverage as separate axes. Do not claim a diversity win from unique strings,
   cluster count alone, or a quality-adjusted-coverage increase caused only by judge score.
 - Report the full clustering threshold curve and per-prompt direction counts. A primary-threshold
