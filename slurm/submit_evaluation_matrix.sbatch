@@ -20,13 +20,14 @@ scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 teacher_score_job_id="${TEACHER_SCORE_JOB_ID:?set TEACHER_SCORE_JOB_ID}"
 target_job_id="${TARGET_JOB_ID:?set TARGET_JOB_ID}"
+control_eval_job_id="${CONTROL_EVAL_JOB_ID:-18090}"
 teacher_score_id="${TEACHER_SCORE_ID:-A1-temporal-k16-seed17000}"
 input_path="${scratch_root}/data/tomato-open-test-1658.jsonl"
 model_revision="1cfa9a7208912126459214e8b04321603b3df60c"
 score_namespace="evaluation-scores"
 target_name="teacher-targets-tomato1k-v1.json"
 
-for job_id in "${teacher_score_job_id}" "${target_job_id}"; do
+for job_id in "${teacher_score_job_id}" "${target_job_id}" "${control_eval_job_id}"; do
   if ! [[ "${job_id}" =~ ^[0-9]+$ ]]; then
     echo "teacher score and target dependencies must be numeric Slurm job IDs" >&2
     exit 2
@@ -41,6 +42,7 @@ adapter_ids=(
   C1-human C1-best1 C1-diverse4 C2-human C2-best1 C2-diverse4
   D1 D2 D3 E2 E3 E4
 )
+evaluation_jobs=()
 for baseline_id in "${adapter_ids[@]}"; do
   adapter_path="${scratch_root}/checkpoints/${baseline_id}-tomato1k-seed17/final"
   test -f "${adapter_path}/adapter_config.json"
@@ -104,6 +106,7 @@ submit_chain() {
       --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=${eval_id},SCORE_NAMESPACE=${score_namespace},TARGET_NAME=${target_name},OUTPUT_NAME=${eval_id}" \
       slurm/evaluate_student.sbatch
   )"
+  evaluation_jobs+=("${evaluation_job}")
   printf '{"baseline":"%s","generation":"%s","score":"%s","evaluation":"%s"}\n' \
     "${baseline_id}" "${generation_job}" "${score_job}" "${evaluation_job}"
 }
@@ -117,3 +120,12 @@ for baseline_id in "${adapter_ids[@]}"; do
 done
 submit_chain B4 "${gem_path}" configs/generation/eval_qwen3_4b.yaml
 submit_chain C3 "${distillm_path}" configs/generation/eval_qwen3_4b.yaml
+
+evaluation_dependency="$(IFS=:; printf '%s' "${evaluation_jobs[*]}")"
+analysis_job="$(
+  submit_job \
+    --dependency="afterok:${control_eval_job_id}:${evaluation_dependency}" \
+    slurm/analyze_evaluation_matrix.sbatch
+)"
+printf '{"analysis":"%s","evaluations":%s}\n' \
+  "${analysis_job}" "${#evaluation_jobs[@]}"
