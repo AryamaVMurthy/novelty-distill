@@ -23,6 +23,8 @@ all existing shards and exit before model loading when an artifact is already co
 Generation pass 1 completed successfully in 01:29:52 and pass 2 completed its strict preflight in
 00:00:44. The frozen artifact contains exactly 1,000 prompt shards and 8,000 completions under
 configuration hash `a6fff8e2deb2278cf2ac5a528df9c44cef791203a4c2073461d6dd44a4e43b79`.
+The filename-NUL-content tree serialization is 16,860,476 bytes with SHA-256
+`151b5b79cb65126a84abcbc8a92276215a0f1a2b05b8d3aede3f494a1afb8d32`.
 Every prompt has 8/8 distinct completions and all 8,000 completion texts are globally distinct.
 The completion-token distribution has mean 355.5487, median 353, and maximum 512. There are 7,985
 `stop` finishes and 15 `length` finishes, for a length-stop rate of 0.001875. These are generation
