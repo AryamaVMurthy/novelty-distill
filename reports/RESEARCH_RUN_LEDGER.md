@@ -317,6 +317,17 @@ The taste passes write the same content-bound
 namespace that controller 18222 later preflights, so early work is reused and cannot duplicate or
 silently conflict with the final graph.
 
+At 21:08 IST on 2026-08-02, A0 generation 18165 completed all 1,658 temporal prompts and released
+judge pass 18203. A1 generation 18162 and the D1/D2 online-distillation jobs remained healthy.
+Commits `93cd569`--`bc7db5c` add a four-GPU scale path with disjoint generation, judge, and
+embedding partitions plus global fail-closed gates and a strict cluster merge. The 5k chain is
+18235--18242 -> 18246 -> 18247, gated behind controller 18222. The 20k chain is 18248--18257 and
+cannot begin until the 5k target gate 18247 passes. Bootstrap jobs 18235 and 18248 verify prompt
+text hashes and frozen generation controls before copying the exact nested 1k -> 5k -> 20k shards;
+identical prompts are not regenerated. The cancelled zero-runtime 5k merge/target jobs 18243 and
+18244 were replaced after Turing automatically attached a GPU to the original four-CPU merge;
+replacement 18246 requests two CPUs and no GPU.
+
 The final generation preflight also binds every local LoRA or full checkpoint to a streaming
 SHA-256 over inference-relevant configuration, tokenizer, index, and weight files. That identity is
 stored in the run manifest and must match on every resume, preventing shards from an older model at
