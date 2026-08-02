@@ -15,7 +15,10 @@ from typing import Any
 import httpx
 import yaml
 
-from novelty_distill.evaluation.score_shards import validate_score_shard
+from novelty_distill.evaluation.score_shards import (
+    shard_score_paths,
+    validate_score_shard,
+)
 from novelty_distill.evaluation.teacher_annotation import (
     JudgeSpec,
     build_quality_judge_payload,
@@ -38,6 +41,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", default="http://127.0.0.1:30000")
     parser.add_argument("--timeout", type=float, default=600)
     parser.add_argument("--concurrency", type=int, default=1)
+    parser.add_argument("--num-shards", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     return parser.parse_args()
 
 
@@ -106,7 +111,12 @@ def main() -> None:
 
     completed = 0
     with ThreadPoolExecutor(max_workers=args.concurrency) as executor:
-        for generation_path in sorted(args.generation_dir.glob("*.json")):
+        generation_paths = shard_score_paths(
+            list(args.generation_dir.glob("*.json")),
+            num_shards=args.num_shards,
+            shard_index=args.shard_index,
+        )
+        for generation_path in generation_paths:
             records = load_prompt_shard(generation_path, generation_spec)
             prompt_id = records[0].prompt_id
             if prompt_id not in prompts:

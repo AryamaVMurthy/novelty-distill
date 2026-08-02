@@ -11,6 +11,21 @@ from novelty_distill.evaluation.teacher_annotation import JudgeSpec, QualityDime
 from novelty_distill.generation.sglang import GenerationSpec, load_prompt_shard
 
 
+def shard_score_paths(
+    paths: list[Path] | tuple[Path, ...], *, num_shards: int, shard_index: int
+) -> tuple[Path, ...]:
+    """Return one deterministic position-based shard of sorted generation paths."""
+
+    if num_shards <= 0:
+        raise ValueError("number of score shards must be positive")
+    if not 0 <= shard_index < num_shards:
+        raise ValueError("score shard index is outside the shard count")
+    ordered = tuple(sorted(paths))
+    return tuple(
+        path for index, path in enumerate(ordered) if index % num_shards == shard_index
+    )
+
+
 def validate_score_shard(
     path: Path,
     *,
@@ -104,12 +119,19 @@ def score_run_status(
     output_dir: Path,
     generation_spec: GenerationSpec,
     judge: JudgeSpec,
+    num_shards: int = 1,
+    shard_index: int = 0,
 ) -> tuple[int, int]:
     """Return total and pending prompt shards after strictly validating completed scores."""
 
     total = 0
     pending = 0
-    for generation_path in sorted(generation_dir.glob("*.json")):
+    generation_paths = shard_score_paths(
+        list(generation_dir.glob("*.json")),
+        num_shards=num_shards,
+        shard_index=shard_index,
+    )
+    for generation_path in generation_paths:
         records = load_prompt_shard(generation_path, generation_spec)
         prompt_id = records[0].prompt_id
         text_hashes = [hashlib.sha256(record.text.encode()).hexdigest() for record in records]

@@ -3,8 +3,26 @@ import json
 
 import pytest
 
-from novelty_distill.evaluation.score_shards import load_score_shard, validate_score_shard
+from novelty_distill.evaluation.score_shards import (
+    load_score_shard,
+    shard_score_paths,
+    validate_score_shard,
+)
 from novelty_distill.evaluation.teacher_annotation import JudgeSpec
+
+
+def test_score_path_shards_are_disjoint_complete_and_deterministic(tmp_path) -> None:
+    paths = tuple(tmp_path / f"{index:02d}.json" for index in range(10))
+
+    shards = tuple(
+        shard_score_paths(paths, num_shards=3, shard_index=index) for index in range(3)
+    )
+
+    assert [len(shard) for shard in shards] == [4, 3, 3]
+    assert {path for shard in shards for path in shard} == set(paths)
+    assert sum(len(shard) for shard in shards) == len(paths)
+    with pytest.raises(ValueError, match="shard"):
+        shard_score_paths(paths, num_shards=3, shard_index=3)
 
 
 def test_validate_score_shard_distinguishes_missing_current_and_stale(tmp_path) -> None:

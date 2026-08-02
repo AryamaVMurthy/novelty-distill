@@ -60,6 +60,15 @@ def test_research_taste_job_is_resumable_and_uses_the_pinned_annotator() -> None
     assert 'flock -x 8' in script
 
 
+def test_quality_score_job_forwards_deterministic_prompt_shard_coordinates() -> None:
+    script = Path("slurm/score_teacher.sbatch").read_text(encoding="utf-8")
+
+    assert 'score_num_shards="${SCORE_NUM_SHARDS:-1}"' in script
+    assert 'score_shard_index="${SCORE_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"' in script
+    assert script.count('--num-shards "${score_num_shards}"') == 2
+    assert script.count('--shard-index "${score_shard_index}"') == 2
+
+
 def test_final_controller_submits_research_taste_for_every_generation_family() -> None:
     script = Path("slurm/submit_evaluation_matrix.sbatch").read_text(encoding="utf-8")
 

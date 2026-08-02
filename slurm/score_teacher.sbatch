@@ -24,6 +24,8 @@ generation_config="${GENERATION_CONFIG:-configs/generation/teacher.yaml}"
 prompts_path="${PROMPTS_PATH:-}"
 score_namespace="${SCORE_NAMESPACE:-teacher-scores}"
 score_concurrency="${SCORE_CONCURRENCY:-8}"
+score_num_shards="${SCORE_NUM_SHARDS:-1}"
+score_shard_index="${SCORE_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"
 if [[ -z "${calibration_run_id}" && -z "${generation_job_id}" ]]; then
   echo "set GENERATION_JOB_ID or CALIBRATION_RUN_ID" >&2
   exit 2
@@ -38,6 +40,15 @@ if [[ "${score_namespace}" == */* || "${score_namespace}" == *..* ]]; then
 fi
 if ! [[ "${score_concurrency}" =~ ^[1-9][0-9]*$ ]]; then
   echo "SCORE_CONCURRENCY must be a positive integer" >&2
+  exit 2
+fi
+if ! [[ "${score_num_shards}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "SCORE_NUM_SHARDS must be a positive integer" >&2
+  exit 2
+fi
+if ! [[ "${score_shard_index}" =~ ^[0-9]+$ ]] \
+  || ((score_shard_index >= score_num_shards)); then
+  echo "SCORE_SHARD_INDEX must be within SCORE_NUM_SHARDS" >&2
   exit 2
 fi
 repo_ref="${REPO_REF:-codex/implementation}"
@@ -103,7 +114,9 @@ if [[ -z "${calibration_run_id}" ]]; then
     --generation-dir "${generation_dir}" \
     --generation-config "${generation_config}" \
     --output-dir "${score_dir}" \
-    --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
+    --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+    --num-shards "${score_num_shards}" \
+    --shard-index "${score_shard_index}"
   score_status=$?
   set -e
   if [[ "${score_status}" -eq 0 ]]; then
@@ -174,5 +187,7 @@ else
     --output-dir "${scratch_root}/${score_namespace}/${generation_job_id}" \
     --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
     --concurrency "${score_concurrency}" \
+    --num-shards "${score_num_shards}" \
+    --shard-index "${score_shard_index}" \
     --base-url "http://127.0.0.1:${port}"
 fi

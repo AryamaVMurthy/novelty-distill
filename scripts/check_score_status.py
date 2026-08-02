@@ -18,6 +18,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--generation-config", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--annotation-config", type=Path, required=True)
+    parser.add_argument("--num-shards", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     return parser.parse_args()
 
 
@@ -33,6 +35,8 @@ def main() -> None:
         output_dir=args.output_dir,
         generation_spec=generation_spec,
         judge=judge,
+        num_shards=args.num_shards,
+        shard_index=args.shard_index,
     )
     print(json.dumps({"complete": pending == 0, "pending": pending, "total": total}))
     if pending:
