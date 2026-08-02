@@ -22,6 +22,26 @@ not a results report and does not promote any baseline.
    labels. LLM-Rubric explicitly learns a calibration layer from human ratings. This project's
    fixed five-dimension judge provides reproducible proxy scores, not human-calibrated scientific
    utility estimates.
+5. Fluent judge rationales do not establish correct novelty decisions. RINoBench contains 1,381
+   expert-judged research ideas and reports that leading LLMs can produce human-like rationales
+   while their final novelty judgments still diverge substantially from the expert labels. The
+   fixed judge here intentionally scores relevance, feasibility, soundness, clarity, and instruction
+   compliance only; its mean must never be renamed or interpreted as a novelty score.
+6. Standalone and comparative LLM judging can both create a scientific “novelty mirage.” RQ-Bench
+   reports that LLM judges favor model-generated research questions while domain experts prefer the
+   author-anchored questions, and that judges often miss narrow or source-bound generations. The A3
+   historical target is therefore an author-anchored control, not a complete gold standard, and a
+   promoted claim needs expert checks for narrowness/source dependence as well as mechanism novelty.
+7. Diversity should be semantic rather than merely lexical. A 2025 ACL meta-evaluation finds that
+   form-based diversity measures overestimate diversity, including for random strings, whereas
+   content-based measures perform better. This supports the instructed semantic-embedding analysis
+   and the decision not to use unique-string rate as an outcome, but it does not eliminate the need
+   for expert validation of the embedding clusters.
+8. Automated novelty assessment is stronger when grounded in retrieved literature. The Idea
+   Novelty Checker uses retrieve-then-rerank, facet comparison, and expert-labeled demonstrations;
+   its ablations support literature grounding rather than standalone rubric judging. This study has
+   no frozen retrieval corpus for the temporal test, so literature novelty remains outside the
+   automated claim boundary instead of being improvised after results are visible.
 
 ## Consequences for this study
 
@@ -37,6 +57,9 @@ not a results report and does not promote any baseline.
 - A central semantic-coverage claim requires a blinded expert subset, ideally using pairwise or
   odd-one-out judgments of mechanism/intervention equivalence. Until that exists, conclusions are
   explicitly limited to the fixed Qwen judge and Qwen embedding operational definitions.
+- Expert review for any promoted scientific-novelty claim must separately label literature-grounded
+  novelty, narrow/source-bound restatement, and mechanism/intervention equivalence. The automated
+  quality mean and the historical-target similarity are not substitutes for those labels.
 
 ## Primary source log
 
@@ -48,3 +71,11 @@ not a results report and does not promote any baseline.
   <https://aclanthology.org/2026.eacl-long.182/>
 - Hashemi et al., *LLM-Rubric: A Multidimensional, Calibrated Approach to Automated Evaluation of
   Natural Language Texts*, ACL 2024: <https://aclanthology.org/2024.acl-long.745/>
+- Schopf and Färber, *Is this Idea Novel? An Automated Benchmark for Judgment of Research Ideas*
+  (RINoBench), LREC 2026: <https://arxiv.org/abs/2603.10303>
+- Sinhahajari et al., *On the Limits of LLM-as-Judge for Scientific Novelty Assessment* (RQ-Bench),
+  2026: <https://arxiv.org/abs/2606.12071>
+- Zhang et al., *Evaluating the Evaluation of Diversity in Commonsense Generation*, ACL 2025:
+  <https://aclanthology.org/2025.acl-long.1181/>
+- Shahid et al., *Literature-Grounded Novelty Assessment of Scientific Ideas*, SDP 2025:
+  <https://aclanthology.org/2025.sdp-1.9/>
