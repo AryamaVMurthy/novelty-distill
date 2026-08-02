@@ -13,6 +13,7 @@ from novelty_distill.data.ultrafeedback import (
     ULTRAFEEDBACK_DATASET_ID,
     ULTRAFEEDBACK_REVISION,
     prepare_ultrafeedback_record,
+    ultrafeedback_record_id,
 )
 
 
@@ -59,10 +60,9 @@ def main() -> None:
         revision=ULTRAFEEDBACK_REVISION,
         split="train",
     )
-    instructions = [str(value).strip() for value in dataset["instruction"]]
-    identifiers = [hashlib.sha256(value.encode()).hexdigest() for value in instructions]
+    identifiers = [ultrafeedback_record_id(row) for row in dataset]
     if len(identifiers) != len(set(identifiers)):
-        raise ValueError("UltraFeedback instructions must be unique for stable pilot IDs")
+        raise ValueError("UltraFeedback content identities must be unique for stable pilot IDs")
     if args.size > len(identifiers):
         raise ValueError(f"requested {args.size} rows from {len(identifiers)}")
     selected_indices = sorted(

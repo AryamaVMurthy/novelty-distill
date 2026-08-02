@@ -2,6 +2,7 @@
 
 import hashlib
 import itertools
+import json
 import re
 from collections.abc import Mapping
 from typing import Any
@@ -23,6 +24,30 @@ class UltraFeedbackCompletion(BaseModel):
     response: str = Field(min_length=1)
     overall_score: float
     fine_grained_score: float = Field(validation_alias="fine-grained_score")
+
+
+def ultrafeedback_record_id(raw: Mapping[str, Any]) -> str:
+    """Hash content fields that distinguish duplicate official instructions."""
+
+    raw_completions = raw.get("completions")
+    if not isinstance(raw_completions, list):
+        raise ValueError("UltraFeedback completions must be a list")
+    identity = {
+        "source": str(raw.get("source", "")).strip(),
+        "instruction": str(raw.get("instruction", "")).strip(),
+        "completions": sorted(
+            (
+                str(completion.get("model", "")),
+                str(completion.get("response", "")),
+            )
+            for completion in raw_completions
+            if isinstance(completion, Mapping)
+        ),
+    }
+    encoded = json.dumps(
+        identity, ensure_ascii=False, sort_keys=True, separators=(",", ":")
+    ).encode()
+    return "ultrafeedback-" + hashlib.sha256(encoded).hexdigest()
 
 
 def prepare_ultrafeedback_record(
@@ -47,7 +72,7 @@ def prepare_ultrafeedback_record(
     if len(set(models)) != 4 or set(models) != {completion.model for completion in completions}:
         raise ValueError("UltraFeedback model and completion identities must align")
 
-    record_id = "ultrafeedback-" + hashlib.sha256(instruction.encode()).hexdigest()
+    record_id = ultrafeedback_record_id(raw)
     best = min(
         completions,
         key=lambda completion: (

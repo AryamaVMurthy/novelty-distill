@@ -1,4 +1,7 @@
-from novelty_distill.data.ultrafeedback import prepare_ultrafeedback_record
+from novelty_distill.data.ultrafeedback import (
+    prepare_ultrafeedback_record,
+    ultrafeedback_record_id,
+)
 
 
 def _completion(model: str, response: str, score: float) -> dict[str, object]:
@@ -60,3 +63,30 @@ def test_ultrafeedback_views_are_independent_of_completion_input_order() -> None
     )
 
     assert first == second
+
+
+def test_content_identity_distinguishes_duplicate_instructions_and_ignores_order() -> None:
+    completions = [
+        _completion("model-z", "alpha beta gamma", 3),
+        _completion("model-a", "alpha beta", 9),
+        _completion("model-c", "red green blue", 7),
+        _completion("model-b", "alpha beta delta", 5),
+    ]
+    raw = {
+        "source": "test-source",
+        "instruction": "Repeated instruction.",
+        "models": ["model-z", "model-a", "model-c", "model-b"],
+        "completions": completions,
+    }
+    changed = {
+        **raw,
+        "completions": [
+            {**completions[0], "response": "different response"},
+            *completions[1:],
+        ],
+    }
+
+    assert ultrafeedback_record_id(raw) == ultrafeedback_record_id(
+        {**raw, "completions": list(reversed(completions))}
+    )
+    assert ultrafeedback_record_id(raw) != ultrafeedback_record_id(changed)
