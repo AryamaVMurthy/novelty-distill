@@ -2,6 +2,7 @@
 """Analyze secondary research-taste distributions across aligned methods."""
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 from typing import Any
@@ -11,8 +12,10 @@ import yaml
 from novelty_distill.evaluation.research_taste import (
     ResearchTasteRecord,
     analyze_research_taste_matrix,
+    research_taste_protocol_hash,
 )
 from novelty_distill.evaluation.taste_shards import load_research_taste_shard
+from novelty_distill.provenance import repository_commit
 
 
 def parse_args() -> argparse.Namespace:
@@ -66,6 +69,27 @@ def _load_records(path: Path) -> tuple[dict[str, Any], ...]:
             )
             records.append(record.model_dump(mode="json"))
     return tuple(records)
+
+
+def _tree_provenance(path: Path) -> dict[str, Any]:
+    shard_paths = sorted(path.glob("*.json"), key=lambda candidate: candidate.name)
+    if not shard_paths:
+        raise ValueError(f"no research-taste shards found in {path}")
+    digest = hashlib.sha256()
+    total_bytes = 0
+    for shard_path in shard_paths:
+        content = shard_path.read_bytes()
+        total_bytes += len(content)
+        digest.update(shard_path.name.encode())
+        digest.update(b"\0")
+        digest.update(content)
+        digest.update(b"\0")
+    return {
+        "path": str(path.resolve()),
+        "num_shards": len(shard_paths),
+        "total_bytes": total_bytes,
+        "sha256": digest.hexdigest(),
+    }
 
 
 def _number(value: float) -> str:
@@ -151,6 +175,11 @@ def main() -> None:
         bootstrap_confidence_level=bootstrap["confidence_level"],
     )
     result["source"] = config["source"]
+    result["protocol_hash"] = research_taste_protocol_hash()
+    result["repository_commit"] = repository_commit(Path(__file__).resolve().parents[1])
+    result["inputs"] = {
+        method: _tree_provenance(path) for method, path in sorted(inputs.items())
+    }
     result["human_validation"] = config["human_validation"]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.markdown.parent.mkdir(parents=True, exist_ok=True)
