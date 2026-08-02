@@ -27,6 +27,8 @@ input_limit="${INPUT_LIMIT:-1}"
 output_name="${OUTPUT_NAME:-sglang-smoke}"
 output_run_id="${OUTPUT_RUN_ID:-${SLURM_JOB_ID}}"
 generation_concurrency="${GENERATION_CONCURRENCY:-1}"
+lora_name="${LORA_NAME:-}"
+lora_path="${LORA_PATH:-}"
 calibration_config="${CALIBRATION_CONFIG:-}"
 calibration_run_id="${CALIBRATION_RUN_ID:-}"
 server_log="${scratch_root}/logs/sglang-${SLURM_JOB_ID}.log"
@@ -44,6 +46,20 @@ fi
 if [[ "${output_name}" == */* || "${output_name}" == *..* || "${output_run_id}" == */* || "${output_run_id}" == *..* ]]; then
   echo "OUTPUT_NAME and OUTPUT_RUN_ID must be path-safe names" >&2
   exit 2
+fi
+if [[ -n "${lora_name}" || -n "${lora_path}" ]]; then
+  if [[ -z "${lora_name}" || -z "${lora_path}" ]]; then
+    echo "LORA_NAME and LORA_PATH must be set together" >&2
+    exit 2
+  fi
+  if [[ "${lora_name}" == */* || "${lora_name}" == *..* ]]; then
+    echo "LORA_NAME must be a path-safe adapter name" >&2
+    exit 2
+  fi
+  if [[ ! -d "${lora_path}" ]]; then
+    echo "missing LoRA adapter directory: ${lora_path}" >&2
+    exit 1
+  fi
 fi
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
@@ -123,15 +139,22 @@ print(study.conditions[0].generation.revision)
   model_revision="${calibration_model[1]}"
 fi
 
+server_args=(
+  --model-path "${model_path}"
+  --revision "${model_revision}"
+  --served-model-name "${model_path}"
+  --host 127.0.0.1
+  --port "${port}"
+  --mem-fraction-static 0.75
+  --disable-piecewise-cuda-graph
+  --enable-deterministic-inference
+)
+if [[ -n "${lora_name}" ]]; then
+  server_args+=(--lora-paths "${lora_name}=${lora_path}")
+fi
+
 "${venv_dir}/bin/python" -m sglang.launch_server \
-  --model-path "${model_path}" \
-  --revision "${model_revision}" \
-  --served-model-name "${model_path}" \
-  --host 127.0.0.1 \
-  --port "${port}" \
-  --mem-fraction-static 0.75 \
-  --disable-piecewise-cuda-graph \
-  --enable-deterministic-inference \
+  "${server_args[@]}" \
   >"${server_log}" 2>&1 &
 server_pid="$!"
 
@@ -168,7 +191,7 @@ if [[ -n "${calibration_config}" ]]; then
     --config "${repo_dir}/${calibration_config}" \
     --base-url "http://127.0.0.1:${port}"
 else
-  input="${scratch_root}/data/tomato-open-train-1000.jsonl"
+  input="${INPUT_PATH:-${scratch_root}/data/tomato-open-train-1000.jsonl}"
   output_dir="${scratch_root}/generations/${output_name}/${output_run_id}"
   if [[ ! -f "${input}" ]]; then
     echo "missing prepared smoke data: ${input}" >&2

@@ -20,6 +20,9 @@ module load u22/cuda/12.4
 calibration_run_id="${CALIBRATION_RUN_ID:-}"
 generation_job_id="${GENERATION_JOB_ID:-}"
 generation_name="${GENERATION_NAME:-teacher-smoke}"
+generation_config="${GENERATION_CONFIG:-configs/generation/teacher.yaml}"
+prompts_path="${PROMPTS_PATH:-}"
+score_namespace="${SCORE_NAMESPACE:-teacher-scores}"
 if [[ -z "${calibration_run_id}" && -z "${generation_job_id}" ]]; then
   echo "set GENERATION_JOB_ID or CALIBRATION_RUN_ID" >&2
   exit 2
@@ -28,10 +31,20 @@ if [[ -n "${calibration_run_id}" && ("${calibration_run_id}" == */* || "${calibr
   echo "CALIBRATION_RUN_ID must be a path-safe name" >&2
   exit 2
 fi
+if [[ "${score_namespace}" == */* || "${score_namespace}" == *..* ]]; then
+  echo "SCORE_NAMESPACE must be a path-safe name" >&2
+  exit 2
+fi
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
+if [[ -z "${prompts_path}" ]]; then
+  prompts_path="${scratch_root}/data/tomato-open-train-1000.jsonl"
+fi
+if [[ "${generation_config}" != /* ]]; then
+  generation_config="${repo_dir}/${generation_config}"
+fi
 judge_model="Qwen/Qwen3-32B-FP8"
 judge_revision="aa55da1ecc13d006e8b8e4f54579b1ea8c3db2df"
 server_log="${scratch_root}/logs/judge-${SLURM_JOB_ID}.log"
@@ -123,9 +136,9 @@ if [[ -n "${calibration_run_id}" ]]; then
 else
   "${venv_dir}/bin/python" "${repo_dir}/scripts/score_teacher_generations.py" \
     --generation-dir "${scratch_root}/generations/${generation_name}/${generation_job_id}" \
-    --generation-config "${repo_dir}/configs/generation/teacher.yaml" \
-    --prompts "${scratch_root}/data/tomato-open-train-1000.jsonl" \
-    --output-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
+    --generation-config "${generation_config}" \
+    --prompts "${prompts_path}" \
+    --output-dir "${scratch_root}/${score_namespace}/${generation_job_id}" \
     --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
     --base-url "http://127.0.0.1:${port}"
 fi

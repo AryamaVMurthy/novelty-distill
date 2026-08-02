@@ -54,13 +54,9 @@ def test_generation_response_instruction_is_part_of_the_effective_prompt_and_fin
         samples_per_prompt=8,
         seed=17,
     )
-    concise = base.model_copy(
-        update={"response_instruction": "Return at most 300 words."}
-    )
+    concise = base.model_copy(update={"response_instruction": "Return at most 300 words."})
 
-    payload = build_chat_completion_payload(
-        "Propose a hypothesis.", concise, sample_index=0
-    )
+    payload = build_chat_completion_payload("Propose a hypothesis.", concise, sample_index=0)
 
     assert payload["messages"] == [
         {
@@ -69,6 +65,28 @@ def test_generation_response_instruction_is_part_of_the_effective_prompt_and_fin
         }
     ]
     assert generation_fingerprint(concise) != generation_fingerprint(base)
+
+
+def test_lora_adapter_is_routed_explicitly_and_fingerprinted() -> None:
+    base = GenerationSpec(
+        model="Qwen/Qwen3-4B",
+        revision="1cfa9a7208912126459214e8b04321603b3df60c",
+        temperature=0.7,
+        top_p=0.8,
+        max_new_tokens=512,
+        samples_per_prompt=16,
+        seed=17,
+    )
+    adapted = base.model_copy(update={"lora_path": "D1-seed17"})
+
+    payload = build_chat_completion_payload("Propose a hypothesis.", adapted, sample_index=0)
+
+    assert payload["model"] == base.model
+    assert payload["lora_path"] == "D1-seed17"
+    assert "lora_path" not in build_chat_completion_payload(
+        "Propose a hypothesis.", base, sample_index=0
+    )
+    assert generation_fingerprint(adapted) != generation_fingerprint(base)
 
 
 def test_response_is_parsed_into_auditable_sample_records() -> None:

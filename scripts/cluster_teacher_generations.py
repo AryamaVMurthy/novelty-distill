@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from novelty_distill.data.teacher_views import TeacherGeneration
+from novelty_distill.evaluation.embeddings import embed_texts
 from novelty_distill.evaluation.teacher_annotation import (
     cluster_cosine_embeddings,
     cosine_embedding_diagnostics,
@@ -20,44 +21,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--annotation-config", type=Path, required=True)
     return parser.parse_args()
-
-
-def _embed(
-    texts: list[str],
-    *,
-    model_id: str,
-    revision: str,
-    max_length: int,
-    batch_size: int,
-) -> list[list[float]]:
-    import torch
-    import torch.nn.functional as functional
-    from transformers import AutoModel, AutoTokenizer
-
-    tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision, padding_side="left")
-    model = AutoModel.from_pretrained(
-        model_id,
-        revision=revision,
-        torch_dtype=torch.bfloat16,
-        attn_implementation="sdpa",
-    ).cuda().eval()
-    if batch_size <= 0:
-        raise ValueError("embedding batch size must be positive")
-    embeddings: list[list[float]] = []
-    with torch.inference_mode():
-        for start in range(0, len(texts), batch_size):
-            batch = tokenizer(
-                texts[start : start + batch_size],
-                padding=True,
-                truncation=True,
-                max_length=max_length,
-                return_tensors="pt",
-            ).to(model.device)
-            hidden = model(**batch).last_hidden_state
-            pooled = hidden[:, -1]
-            normalized = functional.normalize(pooled.float(), p=2, dim=1)
-            embeddings.extend(normalized.cpu().tolist())
-    return embeddings
 
 
 def main() -> None:
@@ -76,10 +39,8 @@ def main() -> None:
             raise ValueError(f"score shard {score_path} must contain exactly eight records")
         texts = [record["text"] for record in records]
         instruction = str(annotation["embedding_instruction"])
-        embedding_inputs = texts + [
-            f"Instruct: {instruction}\nQuery: {text}" for text in texts
-        ]
-        all_embeddings = _embed(
+        embedding_inputs = texts + [f"Instruct: {instruction}\nQuery: {text}" for text in texts]
+        all_embeddings = embed_texts(
             embedding_inputs,
             model_id=annotation["embedding_model"],
             revision=annotation["embedding_revision"],
@@ -94,15 +55,11 @@ def main() -> None:
         prompt_id = str(records[0]["prompt_id"])
         if any(str(record["prompt_id"]) != prompt_id for record in records):
             raise ValueError(f"score shard {score_path} contains multiple prompt ids")
-        diagnostic_thresholds = tuple(
-            float(value) for value in annotation["cosine_thresholds"]
-        )
+        diagnostic_thresholds = tuple(float(value) for value in annotation["cosine_thresholds"])
         prompt_diagnostics[prompt_id] = {
             "primary_embedding": "instructed",
             "judge_dimensions": [record["dimensions"] for record in records],
-            "raw": cosine_embedding_diagnostics(
-                raw_embeddings, thresholds=diagnostic_thresholds
-            ),
+            "raw": cosine_embedding_diagnostics(raw_embeddings, thresholds=diagnostic_thresholds),
             "instructed": cosine_embedding_diagnostics(
                 instructed_embeddings, thresholds=diagnostic_thresholds
             ),

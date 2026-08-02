@@ -29,6 +29,7 @@ class GenerationSpec(BaseModel):
     seed: int = Field(ge=0)
     enable_thinking: bool = False
     response_instruction: str | None = Field(default=None, min_length=1)
+    lora_path: str | None = Field(default=None, min_length=1)
 
 
 class Prompt(BaseModel):
@@ -84,7 +85,7 @@ def build_chat_completion_payload(
         raise ValueError("sample index is outside the generation specification")
 
     effective_prompt = render_generation_prompt(prompt, spec)
-    return {
+    payload = {
         "model": spec.model,
         "messages": [{"role": "user", "content": effective_prompt}],
         "temperature": spec.temperature,
@@ -96,6 +97,9 @@ def build_chat_completion_payload(
         "seed": spec.seed + sample_index,
         "chat_template_kwargs": {"enable_thinking": spec.enable_thinking},
     }
+    if spec.lora_path:
+        payload["lora_path"] = spec.lora_path
+    return payload
 
 
 def render_generation_prompt(prompt: str, spec: GenerationSpec) -> str:
