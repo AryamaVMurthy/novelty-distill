@@ -89,8 +89,8 @@ if [[ "${submit_training}" == 1 ]]; then
   distillm_training_job="$(
     submit_job slurm/train_smoke.sbatch \
       --time=06:00:00 \
-      --mem=128G \
-      --gres=gpu:2 \
+      --mem=192G \
+      --gres=gpu:4 \
       --array=12 \
       --dependency="afterok:${cluster_job}" \
       --export=ALL,BASELINE_MATRIX=tomato1k
