@@ -27,6 +27,18 @@ The runs use official TRL, GEM, DistiLLM, or OPSD code pinned in `third_party/ma
 E1 is intentionally fail-closed: the pinned official OPSD repository has no static-trajectory
 off-policy mode, and this project does not invent an unofficial substitute.
 
+Teacher-generation jobs 17918 and 17922 independently produced the same eight-record projection
+for one fixed TOMATO prompt. All eight hypotheses were distinct within each run, and the canonical
+text-list SHA-256 was
+`f1e2a65adbee57edb7c3a466e8366d725c850e1f561d1d7df9657b5451901be3`. This required one
+single-sample SGLang request per hypothesis with seeds `base_seed + sample_index`; one deterministic
+request with `n=8` had incorrectly returned eight copies of one hypothesis. Judge job 17926 then
+completed against the corrected shard using Qwen3-32B-FP8.
+
+All eight corrected teacher responses reached the configured 512-token ceiling. They are valid
+training records, but this saturation must be measured on a larger prompt sample before promotion;
+the final length cap or prompt concision constraint should be frozen from that analysis.
+
 ## Official evaluation evidence
 
 NoveltyBench jobs 17906 and 17908 used pinned Inspect Evals commit
@@ -67,6 +79,10 @@ small for model comparisons.
    not make dynamic batches invariant. NoveltyBench now uses the official `shuffle=false` task
    option, and every SGLang server uses `--enable-deterministic-inference`. SGLang ports are derived
    from the Slurm job ID so concurrent jobs cannot connect to one another's server.
+6. SGLang deterministic mode plus one request containing `n=8` makes every choice identical for
+   this Qwen path. Independent single-sample requests with derived seeds preserve exact rerun
+   reproducibility while recovering eight distinct hypotheses. The strategy is part of the shard
+   fingerprint so old collapsed shards fail validation instead of being resumed.
 
 ## Next research-scale gate
 
