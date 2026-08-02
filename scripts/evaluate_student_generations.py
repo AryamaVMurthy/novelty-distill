@@ -17,6 +17,7 @@ from novelty_distill.evaluation.embeddings import (
     embed_texts,
     embedding_cache_fingerprint,
 )
+from novelty_distill.evaluation.score_shards import load_score_shard
 from novelty_distill.evaluation.student_evaluation import (
     summarize_generation_diagnostics,
     summarize_student_prompt,
@@ -44,13 +45,8 @@ def _load_scores(directory: Path, *, samples_per_prompt: int) -> dict[str, list[
     if not paths:
         raise ValueError(f"no score shards found in {directory}")
     for path in paths:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        records = payload.get("records")
-        if not isinstance(records, list) or len(records) != samples_per_prompt:
-            raise ValueError(
-                f"score shard {path} must contain exactly {samples_per_prompt} records"
-            )
-        ordered = sorted(records, key=lambda record: int(record["sample_index"]))
+        payload = load_score_shard(path, samples_per_prompt=samples_per_prompt)
+        ordered = payload["records"]
         prompt_id = str(payload.get("prompt_id", ""))
         if not prompt_id or any(str(record.get("prompt_id")) != prompt_id for record in ordered):
             raise ValueError(f"score shard {path} has inconsistent prompt ids")

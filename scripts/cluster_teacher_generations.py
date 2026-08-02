@@ -10,6 +10,7 @@ import yaml
 
 from novelty_distill.data.teacher_views import TeacherGeneration
 from novelty_distill.evaluation.embeddings import embed_texts
+from novelty_distill.evaluation.score_shards import load_score_shard
 from novelty_distill.evaluation.teacher_annotation import (
     cluster_cosine_embeddings,
     cosine_embedding_diagnostics,
@@ -36,12 +37,21 @@ def main() -> None:
     prompt_diagnostics: dict[str, object] = {}
     prompt_batches: list[tuple[Path, list[dict[str, Any]]]] = []
     embedding_inputs: list[str] = []
+    judge_payload: dict[str, Any] | None = None
+    prompt_ids: set[str] = set()
     instruction = str(annotation["embedding_instruction"])
     for score_path in score_paths:
-        payload = json.loads(score_path.read_text(encoding="utf-8"))
-        records = payload.get("records", [])
-        if len(records) != 8:
-            raise ValueError(f"score shard {score_path} must contain exactly eight records")
+        payload = load_score_shard(score_path, samples_per_prompt=8)
+        records = payload["records"]
+        current_judge = payload["judge"]
+        if judge_payload is None:
+            judge_payload = current_judge
+        elif current_judge != judge_payload:
+            raise ValueError(f"score shard {score_path} changed the judge specification")
+        prompt_id = str(payload["prompt_id"])
+        if prompt_id in prompt_ids:
+            raise ValueError(f"duplicate score prompt ID {prompt_id!r}")
+        prompt_ids.add(prompt_id)
         texts = [record["text"] for record in records]
         prompt_batches.append((score_path, records))
         embedding_inputs.extend(texts)
@@ -108,6 +118,7 @@ def main() -> None:
         "embedding_batch_size": annotation["embedding_batch_size"],
         "cosine_threshold": annotation["cosine_threshold"],
         "cosine_thresholds": annotation["cosine_thresholds"],
+        "judge": judge_payload,
         "prompt_diagnostics": prompt_diagnostics,
     }
     args.output.with_suffix(args.output.suffix + ".metadata.json").write_text(
