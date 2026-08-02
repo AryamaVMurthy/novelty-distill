@@ -8,6 +8,7 @@ from novelty_distill.generation.sglang import (
     GenerationRecord,
     GenerationSpec,
     Prompt,
+    bootstrap_generation_shards,
     build_chat_completion_payload,
     ensure_generation_run_manifest,
     generate_prompt,
@@ -236,6 +237,57 @@ def test_generation_manifest_rejects_changed_prompt_text(tmp_path: Path) -> None
             prompts=(Prompt(id="p1", text="changed"),),
             spec=spec,
         )
+
+
+def test_larger_generation_run_bootstraps_exact_subset_without_regeneration(
+    tmp_path: Path,
+) -> None:
+    spec = GenerationSpec(
+        model="Qwen/Qwen3-14B",
+        revision="40c069824f4251a91eefaf281ebe4c544efd3e18",
+        temperature=0.8,
+        top_p=0.95,
+        max_new_tokens=512,
+        samples_per_prompt=2,
+        seed=17,
+    )
+    source_input = tmp_path / "source.jsonl"
+    target_input = tmp_path / "target.jsonl"
+    source_input.write_text('{"id":"p1","student_prompt":"first"}\n', encoding="utf-8")
+    target_input.write_text(
+        '{"id":"p1","student_prompt":"first"}\n'
+        '{"id":"p2","student_prompt":"second"}\n',
+        encoding="utf-8",
+    )
+    source_dir = tmp_path / "source"
+    target_dir = tmp_path / "target"
+    prompts = (Prompt(id="p1", text="first"),)
+    ensure_generation_run_manifest(
+        input_path=source_input, output_dir=source_dir, prompts=prompts, spec=spec
+    )
+    ensure_generation_run_manifest(
+        input_path=target_input,
+        output_dir=target_dir,
+        prompts=(*prompts, Prompt(id="p2", text="second")),
+        spec=spec,
+    )
+    records = tuple(
+        GenerationRecord(
+            prompt_id="p1",
+            sample_index=index,
+            text=f"sample-{index}",
+            finish_reason="stop",
+            model=spec.model,
+            request_id=f"request-{index}",
+            config_hash=generation_fingerprint(spec),
+        )
+        for index in range(2)
+    )
+    write_prompt_shard(source_dir, records, spec)
+
+    assert bootstrap_generation_shards(source_dir=source_dir, target_dir=target_dir) == (1, 0)
+    assert bootstrap_generation_shards(source_dir=source_dir, target_dir=target_dir) == (0, 1)
+    assert load_prompt_shard(next(target_dir.glob("*.json")), spec) == records
 
 
 def test_generation_manifest_binds_local_model_artifact_bytes(tmp_path: Path) -> None:

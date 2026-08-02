@@ -10,6 +10,7 @@ train_size="${TRAIN_SIZE:-5000}"
 generation_passes="${GENERATION_PASSES:-2}"
 score_passes="${SCORE_PASSES:-2}"
 num_gpu_shards="${NUM_GPU_SHARDS:-4}"
+start_after_job_id="${START_AFTER_JOB_ID:-}"
 case "${train_size}" in
   5000|20000) ;;
   *) echo "TRAIN_SIZE must be 5000 or 20000" >&2; exit 2 ;;
@@ -24,10 +25,19 @@ if [[ "${num_gpu_shards}" -ne 4 ]]; then
   echo "NUM_GPU_SHARDS must be 4 for the production scale protocol" >&2
   exit 2
 fi
+if [[ -n "${start_after_job_id}" && ! "${start_after_job_id}" =~ ^[0-9]+$ ]]; then
+  echo "START_AFTER_JOB_ID must be a numeric Slurm job ID" >&2
+  exit 2
+fi
 
 generation_id="teacher-${train_size}-v1"
 input_name="tomato-open-train-${train_size}.jsonl"
 target_name="teacher-targets-tomato${train_size}-v1.json"
+if [[ "${train_size}" == 5000 ]]; then
+  source_generation_id="teacher-1k-v1"
+else
+  source_generation_id="teacher-5000-v1"
+fi
 
 submit_job() {
   local output job_id
@@ -41,10 +51,21 @@ submit_job() {
   printf '%s\n' "${job_id}"
 }
 
+bootstrap_dependency=()
+if [[ -n "${start_after_job_id}" ]]; then
+  bootstrap_dependency=(--dependency="afterok:${start_after_job_id}")
+fi
+bootstrap_job="$(
+  submit_job slurm/bootstrap_generation_run.sbatch \
+    "${bootstrap_dependency[@]}" \
+    --export="ALL,SOURCE_GENERATION_ID=${source_generation_id},TARGET_GENERATION_ID=${generation_id},INPUT_NAME=${input_name},GENERATION_CONFIG=configs/generation/teacher.yaml"
+)"
+
 generation_job=""
 for ((pass = 1; pass <= generation_passes; pass++)); do
-  dependency=()
-  if [[ -n "${generation_job}" ]]; then
+  if [[ -z "${generation_job}" ]]; then
+    dependency=(--dependency="afterok:${bootstrap_job}")
+  else
     dependency=(--dependency="afterany:${generation_job}")
   fi
   generation_job="$(
@@ -104,6 +125,6 @@ target_gate="$(
     --export="ALL,GENERATION_ID=${generation_id},TARGET_NAME=${target_name},PROMPTS_NAME=${input_name},EXPECTED_PROMPTS=${train_size}"
 )"
 
-printf '{"train_size":%s,"generation_last":"%s","generation_gate":"%s","score_last":"%s","score_gate":"%s","cluster":"%s","merge":"%s","target_gate":"%s"}\n' \
-  "${train_size}" "${generation_job}" "${generation_gate}" "${score_job}" \
+printf '{"train_size":%s,"bootstrap":"%s","generation_last":"%s","generation_gate":"%s","score_last":"%s","score_gate":"%s","cluster":"%s","merge":"%s","target_gate":"%s"}\n' \
+  "${train_size}" "${bootstrap_job}" "${generation_job}" "${generation_gate}" "${score_job}" \
   "${score_gate}" "${cluster_job}" "${merge_job}" "${target_gate}"

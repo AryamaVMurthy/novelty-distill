@@ -4,6 +4,7 @@ import fcntl
 import hashlib
 import json
 import os
+import shutil
 import tempfile
 from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
@@ -413,6 +414,66 @@ def ensure_generation_run_manifest(
             return destination
         finally:
             fcntl.flock(lock_handle.fileno(), fcntl.LOCK_UN)
+
+
+def bootstrap_generation_shards(*, source_dir: Path, target_dir: Path) -> tuple[int, int]:
+    """Copy a complete compatible source run into a larger frozen target run."""
+
+    source_manifest_path = source_dir / "_metadata" / "run-manifest.json"
+    target_manifest_path = target_dir / "_metadata" / "run-manifest.json"
+    source_manifest = json.loads(source_manifest_path.read_text(encoding="utf-8"))
+    target_manifest = json.loads(target_manifest_path.read_text(encoding="utf-8"))
+    for manifest, path in (
+        (source_manifest, source_manifest_path),
+        (target_manifest, target_manifest_path),
+    ):
+        if manifest.get("schema_version") != 1 or not isinstance(manifest.get("prompts"), list):
+            raise ValueError(f"unsupported generation manifest in {path}")
+    for field in ("config_hash", "generation", "served_artifact_identity"):
+        if source_manifest.get(field) != target_manifest.get(field):
+            raise ValueError(f"generation manifest field {field!r} changed across bootstrap")
+    target_prompts = {
+        entry.get("id"): entry.get("text_sha256") for entry in target_manifest["prompts"]
+    }
+    source_prompts = {
+        entry.get("id"): entry.get("text_sha256") for entry in source_manifest["prompts"]
+    }
+    if len(source_prompts) != len(source_manifest["prompts"]) or not source_prompts:
+        raise ValueError("source generation manifest has invalid or duplicate prompts")
+    if any(target_prompts.get(prompt_id) != digest for prompt_id, digest in source_prompts.items()):
+        raise ValueError("source prompts are not an exact subset of the target generation run")
+    spec = GenerationSpec.model_validate(source_manifest["generation"])
+    copied = 0
+    reused = 0
+    for prompt_id in source_prompts:
+        source = prompt_shard_path(source_dir, str(prompt_id))
+        records = load_prompt_shard(source, spec)
+        if records[0].prompt_id != prompt_id:
+            raise ValueError(f"source generation prompt mismatch in {source}")
+        destination = prompt_shard_path(target_dir, str(prompt_id))
+        if destination.exists():
+            existing = load_prompt_shard(destination, spec)
+            if existing != records:
+                raise ValueError(f"target generation shard differs from source: {destination}")
+            reused += 1
+            continue
+        temporary_name: str | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                dir=target_dir,
+                prefix=f".{destination.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                temporary_name = handle.name
+            shutil.copyfile(source, temporary_name)
+            os.replace(temporary_name, destination)
+            temporary_name = None
+        finally:
+            if temporary_name is not None and os.path.exists(temporary_name):
+                os.unlink(temporary_name)
+        copied += 1
+    return copied, reused
 
 
 PostJSON = Callable[[str, dict[str, Any], float], Mapping[str, Any]]

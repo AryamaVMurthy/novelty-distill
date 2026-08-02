@@ -103,6 +103,7 @@ def test_scale_teacher_launcher_uses_four_gpu_arrays_and_global_gates() -> None:
     assert 'num_gpu_shards="${NUM_GPU_SHARDS:-4}"' in script
     assert script.count('--array="0-$((num_gpu_shards - 1))%${num_gpu_shards}"') == 3
     assert "slurm/validate_generation_run.sbatch" in script
+    assert "slurm/bootstrap_generation_run.sbatch" in script
     assert "slurm/validate_score_run.sbatch" in script
     assert "slurm/merge_teacher_clusters.sbatch" in script
     assert "slurm/validate_teacher_targets.sbatch" in script

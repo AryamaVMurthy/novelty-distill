@@ -21,6 +21,7 @@ def test_shared_inference_environment_mutations_are_serialized() -> None:
         "validate_generation_run.sbatch",
         "validate_score_run.sbatch",
         "merge_teacher_clusters.sbatch",
+        "bootstrap_generation_run.sbatch",
     ):
         script = (ROOT / "slurm" / name).read_text(encoding="utf-8")
         assert 'exec 8>"${scratch_root}/locks/venv-inference.lock"' in script, name

@@ -62,7 +62,8 @@ TRAIN_SIZE=20000 scripts/submit_teacher_scale.sh
 
 Each scale chain is resumable and produces one canonical generation bank, score bank, merged
 cluster artifact, teacher-target artifact, and final target-analysis gate. The 20k command is not a
-replacement for the 5k method-selection stage.
+replacement for the 5k method-selection stage. The 5k bank first imports the exact compatible 1k
+shards, and the 20k bank imports the 5k shards, so nested prompts are never regenerated.
 
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
