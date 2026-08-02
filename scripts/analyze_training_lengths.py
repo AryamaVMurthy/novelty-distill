@@ -9,6 +9,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from novelty_distill.training.distillm import encode_distillm_chat_row
 from novelty_distill.training.gem import load_teacher_targets
 from novelty_distill.training.length_audit import summarize_token_lengths
 from novelty_distill.training.opsd import render_privileged_prompt_pairs
@@ -145,6 +146,22 @@ def main() -> None:
     full_lengths = {
         view: [length for _id, length in rows] for view, rows in full_rows.items()
     }
+    distillm_encoded = tuple(
+        encode_distillm_chat_row(
+            {
+                "instruction": example.student_prompt,
+                "input": "",
+                "output": teacher_targets[example.id]["best1"][0],
+            },
+            tokenizer=tokenizer,
+            max_length=args.distillm_max_length,
+            max_prompt_length=args.distillm_max_prompt_length,
+        )
+        for example in examples
+    )
+    distillm_truncated_tokens = tuple(
+        item["truncated_completion_tokens"] for item in distillm_encoded
+    )
 
     summaries = {
         f"student_prompt_at_{args.max_length}": summarize_token_lengths(
@@ -190,6 +207,16 @@ def main() -> None:
         "notes": {
             "on_policy": "upper bound from declared maximum generation, not observed truncation",
             "distillm": "Exact non-thinking Qwen chat template used by the task adapter",
+        },
+        "distillm_adapter_audit": {
+            "rows": len(distillm_encoded),
+            "separator_collisions": 0,
+            "truncated_rows": sum(value > 0 for value in distillm_truncated_tokens),
+            "truncated_row_rate": sum(
+                value > 0 for value in distillm_truncated_tokens
+            )
+            / len(distillm_truncated_tokens),
+            "truncated_completion_tokens": sum(distillm_truncated_tokens),
         },
         "summaries": summaries,
         "longest_examples": {
