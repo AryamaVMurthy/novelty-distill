@@ -79,11 +79,13 @@ jobs a contiguous all-GPU window before resuming.
 
 | Control | Current pass | Resume passes | Score passes | Final evaluation |
 |---|---:|---|---|---:|
-| A1 Qwen3-14B | 18078 | 18102 -> 18103 -> 18104 | 18107 -> 18108 | submitted by controller 18133 |
-| A0 Qwen3-4B | 18084 | 18105 -> 18106 | 18109 -> 18110 | 18113 -> 18119 |
+| A1 Qwen3-14B | 18078 | 18162 -> 18163 -> 18164 | 18107 -> 18108 | submitted by controller 18133 |
+| A0 Qwen3-4B | 18084 | 18165 -> 18166 | 18109 -> 18110 | 18113 -> 18119 |
 
-Jobs 18102 and 18105 require `afterany` on both the current partial generation and C3 job 18098.
-Later generation and score passes use `afterany` and the same stable output IDs. A0 evaluation
+The first replacement wrappers 18102--18106 used `/bin/sh` despite containing Bash's `pipefail`;
+all five failed in at most one second before repository synchronization, model loading, or data
+work. Direct Bash-script replacements 18162--18166 preserve exactly the same output IDs and
+completed shards. Later generation and score passes use `afterany` and the same stable output IDs. A0 evaluation
 18113 requires final A1 score 18108, final A0 score 18110, and target gate 18132; 18119 is its cached
 resume pass. Obsolete single-pass
 score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled before execution.
@@ -165,9 +167,34 @@ initial dev loss 5.3555, no truncation among five rows, peak observed GPU memory
 same deterministic Triton kernel: DistiLLM's DeepSpeed recipe writes FP16 whereas the base
 Qwen3-4B is BF16. Standard eager replacement 18154 completed in 00:01:34 and generated 16/16
 non-empty, non-thinking samples, all with `stop` finish reasons and 320--382 completion tokens.
-Production C3 task 18098_12 then started automatically on four GPUs. Commit `13fe3df` makes dtype
-an explicit validated serving input and forces BF16 only for C3's full-checkpoint generation and
-official evaluation; deterministic BF16 confirmation 18156 waits until C3 releases the node.
+Production C3 task 18098_12 then started automatically on four GPUs and completed all 250 steps in
+00:30:46. It consumed exactly 1,000 optimizer-example exposures, crossed the planned epoch boundary
+from step 240 to 241, wrote the 8,044,991,278-byte full checkpoint at step 250, and peaked at
+48,502 MiB on a 49,140 MiB device. The official log contains exactly 250 training steps and all 11
+planned validation checks. Validation loss moved from 1.45293 initially to 1.11865 at step 250;
+the final three training losses were 0.8050, 0.7788, and 0.7991. All 11 adaptive thresholds stayed
+at zero because no validation loss crossed the scheduler's initial/reference-loss-plus-0.1 trigger.
+Thus the adaptive scheduler was enabled and fully audited, but this particular task/seed realized
+a static teacher skew-KL trajectory rather than activating student replay. Context auditing found
+one truncated completion out of 1,000 (19 tail tokens), maximum prompt length 453, maximum
+untruncated chat length 915, and exactly 1,000 normalized separators.
+
+Commit `13fe3df` makes dtype an explicit validated serving input and configures BF16 only for C3's
+full-checkpoint generation and official evaluation. Confirmation 18156 unexpectedly launched with
+`dtype=auto` and therefore reproduced the known FP16 shared-memory failure; it did not test the
+BF16 hypothesis. Commit `85757ae` logs the effective mode before server launch. Replacement 18167
+then completed in 00:00:48 with `dtype=bfloat16`, deterministic inference, and CUDA graphs enabled;
+the server explicitly cast the FP16 checkpoint, allocated a BF16 KV cache, captured every planned
+graph batch, and generated successfully. Production-checkpoint gate 18174 loaded the actual
+step-250 weights under that exact mode and completed in 00:04:09. It produced 16/16 non-empty,
+non-thinking, pairwise-distinct Qwen3-4B outputs: 12 stopped naturally and four reached the
+512-token cap, with 413--512 completion tokens. This is the mode frozen for C3 evaluation.
+
+The first old-spooled primary-matrix tasks B1 (18097_0) and B3 (18097_4) failed in two seconds
+while concurrent jobs raced updating the shared remote Git ref; neither reached environment setup
+or training. The already-submitted bounded resume array 18117 contains the repository `flock`
+fix, depends `afterany` on the entire primary array, and will rerun incomplete artifacts while
+preflighting completed ones.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`

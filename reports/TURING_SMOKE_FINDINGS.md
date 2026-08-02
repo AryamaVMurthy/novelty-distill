@@ -81,11 +81,24 @@ checkpoint. Deterministic load job 18141 showed why base-model serving evidence 
 the official DeepSpeed recipe saves this checkpoint as FP16 while the base Qwen3-4B artifact is
 BF16, and the FP16 batch-invariant Triton path hits the same Ada shared-memory limit. Standard
 eager gate 18154 completed in 00:01:34 and produced 16/16 non-empty, non-thinking completions; all
-ended naturally (`stop`) after 320--382 tokens. Commit `13fe3df` adds a validated serving-dtype
-override and configures only C3's full-checkpoint evaluation to load as BF16, preserving the
-deterministic final-evaluation contract while leaving every other method at native dtype. A
-deterministic BF16 confirmation job 18156 is queued after production C3 so it cannot displace the
-four-GPU run.
+ended naturally (`stop`) after 320--382 tokens. Production C3 then completed its 250-step,
+1,000-exposure run in 00:30:46. It wrote an 8,044,991,278-byte step-250 checkpoint and peaked at
+48,502 MiB. The audit found exactly 250 logged steps, 11 validation checks, one completion-tail
+truncation (19 tokens), and the planned 240-to-241 epoch transition. Validation loss was 1.45293
+initially and 1.11865 finally. Every adaptive threshold remained zero: the paper-aligned scheduler
+was enabled and observed, but its worsening-loss trigger never fired, so this task/seed's realized
+C3 trajectory was static teacher skew-KL rather than mixed student replay.
+
+Commit `13fe3df` adds a validated serving-dtype override and configures only C3's full-checkpoint
+evaluation to load as BF16. Confirmation 18156 accidentally retained `dtype=auto`, so its repeated
+FP16 shared-memory failure is not evidence about BF16. Commit `85757ae` now prints the effective
+serving mode before launch. Replacement 18167 completed in 00:00:48 with the intended
+`dtype=bfloat16`: SGLang cast the checkpoint, allocated a BF16 KV cache, captured CUDA graphs, and
+ran its deterministic batch-invariant kernels without exceeding Ada's shared-memory limit.
+Production gate 18174 then loaded the actual step-250 checkpoint under the same mode and completed
+in 00:04:09. All 16 outputs were non-empty, non-thinking, pairwise distinct, and attributed to
+Qwen3-4B; 12 ended with `stop` and four reached the 512-token cap. C3's frozen evaluation path is
+therefore a proven deterministic BF16 serving contract, not an inferred compatibility assumption.
 
 Teacher-generation jobs 17918 and 17922 independently produced the same eight-record projection
 for one fixed TOMATO prompt. All eight hypotheses were distinct within each run, and the canonical
