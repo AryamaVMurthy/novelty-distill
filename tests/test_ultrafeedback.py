@@ -1,5 +1,6 @@
 from novelty_distill.data.ultrafeedback import (
     prepare_ultrafeedback_record,
+    select_unique_content_indices,
     ultrafeedback_record_id,
 )
 
@@ -90,3 +91,17 @@ def test_content_identity_distinguishes_duplicate_instructions_and_ignores_order
         {**raw, "completions": list(reversed(completions))}
     )
     assert ultrafeedback_record_id(raw) != ultrafeedback_record_id(changed)
+
+
+def test_pilot_selection_deduplicates_exact_records_before_subsetting() -> None:
+    identities = ("duplicate", "unique-b", "duplicate", "unique-a")
+
+    selected = select_unique_content_indices(identities, size=3, seed=17)
+
+    assert len(selected) == 3
+    assert {identities[index] for index in selected} == {
+        "duplicate",
+        "unique-a",
+        "unique-b",
+    }
+    assert 2 not in selected

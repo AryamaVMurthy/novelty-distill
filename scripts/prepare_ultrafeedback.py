@@ -13,6 +13,7 @@ from novelty_distill.data.ultrafeedback import (
     ULTRAFEEDBACK_DATASET_ID,
     ULTRAFEEDBACK_REVISION,
     prepare_ultrafeedback_record,
+    select_unique_content_indices,
     ultrafeedback_record_id,
 )
 
@@ -60,18 +61,9 @@ def main() -> None:
         revision=ULTRAFEEDBACK_REVISION,
         split="train",
     )
-    identifiers = [ultrafeedback_record_id(row) for row in dataset]
-    if len(identifiers) != len(set(identifiers)):
-        raise ValueError("UltraFeedback content identities must be unique for stable pilot IDs")
-    if args.size > len(identifiers):
-        raise ValueError(f"requested {args.size} rows from {len(identifiers)}")
-    selected_indices = sorted(
-        range(len(identifiers)),
-        key=lambda index: (
-            hashlib.sha256(f"{args.seed}\0{identifiers[index]}".encode()).digest(),
-            identifiers[index],
-        ),
-    )[: args.size]
+    identities = tuple(ultrafeedback_record_id(row) for row in dataset)
+    unique_content_rows = len(set(identities))
+    selected_indices = select_unique_content_indices(identities, size=args.size, seed=args.seed)
 
     rows: list[str] = []
     targets: dict[str, dict[str, list[str]]] = {}
@@ -95,6 +87,9 @@ def main() -> None:
         "dataset": ULTRAFEEDBACK_DATASET_ID,
         "revision": ULTRAFEEDBACK_REVISION,
         "split": "train",
+        "source_rows": len(dataset),
+        "unique_content_rows": unique_content_rows,
+        "exact_duplicates_dropped": len(dataset) - unique_content_rows,
         "size": args.size,
         "seed": args.seed,
         "canonical_sha256": hashlib.sha256(canonical_content).hexdigest(),

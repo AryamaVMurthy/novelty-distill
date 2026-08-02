@@ -50,6 +50,33 @@ def ultrafeedback_record_id(raw: Mapping[str, Any]) -> str:
     return "ultrafeedback-" + hashlib.sha256(encoded).hexdigest()
 
 
+def select_unique_content_indices(
+    identities: tuple[str, ...], *, size: int, seed: int
+) -> tuple[int, ...]:
+    """Select a deterministic subset after dropping exact-content duplicates."""
+
+    if size <= 0:
+        raise ValueError("pilot size must be positive")
+    first_index_by_identity: dict[str, int] = {}
+    for index, identity in enumerate(identities):
+        if not identity:
+            raise ValueError("content identities must be non-empty")
+        first_index_by_identity.setdefault(identity, index)
+    if size > len(first_index_by_identity):
+        raise ValueError(
+            f"requested {size} rows from {len(first_index_by_identity)} unique records"
+        )
+    return tuple(
+        sorted(
+            first_index_by_identity.values(),
+            key=lambda index: (
+                hashlib.sha256(f"{seed}\0{identities[index]}".encode()).digest(),
+                identities[index],
+            ),
+        )[:size]
+    )
+
+
 def prepare_ultrafeedback_record(
     raw: Mapping[str, Any], *, seed: int
 ) -> tuple[CanonicalExample, dict[str, list[str]]]:
