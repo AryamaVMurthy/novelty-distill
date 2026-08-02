@@ -90,6 +90,12 @@ not a results report and does not promote any baseline.
   calibration, not evidence that 0.94 is a universal semantic boundary.
 - Finish reasons and completion-token diagnostics are preserved beside every score so truncation
   cannot masquerade as a method effect.
+- Training truncation is measured with the pinned student tokenizer before model comparison. The
+  prompt-preserving GKD adapter never discards the scientific prompt: it keeps the completion
+  prefix within the remaining context budget and records affected rows/tokens in run metadata.
+  The hardware-validated 2,048-token GKD limit affects 3/1,000 human targets; teacher-sampled and
+  on-policy GKD rows fit. SFT/OPSD use the validated 3,072-token limit with zero audited overflow.
+  DistiLLM's separate 896-token cap remains an explicitly reported method confound.
 - Raw prompt-level metrics and all eight training-teacher samples are retained for reannotation.
 - OPSD's pinned upstream collator is math-specific and therefore is not used as a task adapter. The
   task-faithful collator preserves the official trainer/loss, makes student prompts byte-identical

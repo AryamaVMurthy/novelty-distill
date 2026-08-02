@@ -71,6 +71,10 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
   any promoted result must be directionally stable across the curve and survive expert review.
 - Report length-stop rate, completion-token distribution, and training-target similarity beside
   every headline comparison to expose truncation and memorization.
+- Report each run's training-context audit. GKD preserves the full prompt and truncates only the
+  completion tail when required; its frozen 2,048-token limit affects 3/1,000 human targets and no
+  teacher-sampled/on-policy rows. SFT/OPSD use 3,072 with zero audited overflow. C3's 896-token cap
+  remains a declared hardware confound rather than being normalized away after results.
 - The 1k gate fixes optimizer exposure at 1,000 target rows. `diverse4` expands to 4,000 available
   rows, so B3/B4 at this gate are budget-matched samples from the four-reference pool, not a full
   four-pass exposure. Report both `training_rows` and `optimizer_example_exposures`; any promoted

@@ -98,6 +98,14 @@ score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled b
 | C3 DistiLLM | 18098 | index 12, four GPUs, 12-hour bound; after target gate 18132 and smoke 18092 |
 | Evaluation fan-out controller | 18133 | waits for B4 task 18097_5, 18117, 18098, A0/A1, and names target gate 18132 |
 
+Pre-production context gates 18134--18138 ran on the longest tokenizer-audited TOMATO record.
+Task-faithful OPSD at 3,072 tokens passed in 18134. GKD 3,072 failed closed on memory in 18135, and
+the first 2,048 retry 18136 exposed the upstream prompt-dropping truncation edge. Commit `141f31f`
+introduced a prompt-preserving ChatML adapter with the identical tensor contract; static retry
+18137 and on-policy smoke 18138 then completed with real optimizer steps and deployable adapters.
+Production contexts are frozen at SFT 3,072, GKD 2,048, OPSD 3,072, GEM 1,024, and DistiLLM 896.
+The GKD metadata records completion truncation counts/tokens for every run.
+
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
 edges release the other baselines and controls even if C3 fails, while controller 18133 separately
@@ -149,3 +157,8 @@ finish with a deployable adapter before that backend is considered research-read
   production allocation is therefore 12 hours instead of the default six-hour research-job bound.
   This is within the observed `u22` unlimited partition limit and the `high` QOS seven-day maximum;
   the four-GPU smoke still must prove a real update and deployable checkpoint before C3 releases.
+- The pinned-tokenizer corpus audit found no SFT/OPSD overflow at 3,072 and no prompt or on-policy
+  overflow at GKD 2,048. Three of 1,000 historical human targets still require prompt-preserving
+  completion-tail truncation at the hardware-safe GKD limit; this 0.3% rate and token count remain
+  mandatory diagnostics. DistiLLM's 896-token full-chat proxy exceeds its cap for 1/1,000 records
+  by 19 tokens, while all prompts fit its separate 480-token prompt cap.

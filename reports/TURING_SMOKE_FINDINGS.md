@@ -35,8 +35,21 @@ wraps every input as a mathematics problem and requests step-by-step reasoning w
 That smoke established trainer/loss deployability, but it is not valid TOMATO treatment evidence.
 The corrected adapter keeps the official trainer and loss, renders the E2/E3/E4 student prompt
 identically, and adds historical hypotheses/inspirations only to the privileged teacher prompt.
-A fresh main-model smoke must validate this corrected collator before E2/E3 production artifacts
-are accepted.
+Worst-record context stress job 18134 then completed in 00:00:59 at a 3,072-token teacher-prompt
+limit, with finite loss/gradient, peak observed GPU memory 10,496 MiB, and a loadable 132,187,888-byte
+adapter. E2/E3 production may use this corrected path; the earlier math-wrapped artifacts remain
+systems history only.
+
+The pinned tokenizer audit also found that 142/1,000 historical human full chats and 238/1,000
+privileged teacher prompts exceed 1,024 tokens, while every student prompt, on-policy prompt plus
+the maximum completion budget, and teacher-sampled SFT view fits. SFT and OPSD can use 3,072 tokens
+without any audit overflow. GKD at 3,072 OOMed on the single longest record in job 18135. At 2,048,
+the upstream ChatML collator dropped the entire prompt when the completion alone exceeded the
+limit, causing the zero-length failure in job 18136. The prompt-preserving collator fixes that
+task-adapter edge while retaining the official GKD trainer/loss. Worst-record static job 18137
+completed in 00:00:29 (peak 41,776 MiB), and on-policy job 18138 completed in 00:00:49 (peak
+38,556 MiB); both wrote loadable 132,187,888-byte adapters. Production GKD uses 2,048 tokens,
+leaving three explicitly measured human-target truncations out of 1,000 instead of 142.
 
 Teacher-generation jobs 17918 and 17922 independently produced the same eight-record projection
 for one fixed TOMATO prompt. All eight hypotheses were distinct within each run, and the canonical

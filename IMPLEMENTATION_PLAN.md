@@ -185,6 +185,11 @@ Remove title, DOI, source ID, authors, venue, and inspiration-paper title from s
 
 Use fixed subsets of 1k, 5k, and 20k training IDs. All baselines use exactly the same IDs.
 
+Run the pinned-tokenizer context audit before training. The validated 1k gate uses 3,072 tokens
+for SFT and OPSD, 2,048 for GKD, 1,024 for GEM, and 896/480 full/prompt caps for DistiLLM. GKD's
+task adapter must preserve the complete prompt and truncate only the completion tail, recording
+affected rows and tokens; the official trainer and distillation loss remain unchanged.
+
 ## Teacher generation
 
 Use Qwen3-14B to generate eight responses for every selected training prompt. Save them once, then derive index views:
