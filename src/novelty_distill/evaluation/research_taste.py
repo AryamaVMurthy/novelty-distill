@@ -14,6 +14,7 @@ from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
 from typing import Any, Literal
 
+import numpy as np
 from pydantic import BaseModel, ConfigDict, Field
 
 OpportunityPattern = Literal[
@@ -346,11 +347,212 @@ def compare_research_taste_records(
     }
 
 
+def bootstrap_research_taste_gap(
+    *,
+    candidate: Sequence[Mapping[str, Any]],
+    human: Sequence[Mapping[str, Any]],
+    teacher: Sequence[Mapping[str, Any]],
+    resamples: int,
+    seed: int,
+    confidence_level: float = 0.95,
+    batch_size: int = 500,
+) -> dict[str, Any]:
+    """Prompt-bootstrap candidate distance and its delta from the teacher gap."""
+
+    if resamples <= 0 or batch_size <= 0:
+        raise ValueError("bootstrap resamples and batch size must be positive")
+    if not 0 < confidence_level < 1:
+        raise ValueError("bootstrap confidence level must lie strictly between zero and one")
+
+    def grouped(
+        rows: Sequence[Mapping[str, Any]],
+    ) -> dict[str, tuple[ResearchTasteRecord, ...]]:
+        validated = tuple(ResearchTasteRecord.model_validate(row) for row in rows)
+        result: dict[str, list[ResearchTasteRecord]] = defaultdict(list)
+        keys: set[tuple[str, int]] = set()
+        for record in validated:
+            key = (record.prompt_id, record.sample_index)
+            if key in keys:
+                raise ValueError("duplicate prompt/sample research-taste record")
+            keys.add(key)
+            result[record.prompt_id].append(record)
+        return {prompt_id: tuple(records) for prompt_id, records in result.items()}
+
+    grouped_candidate = grouped(candidate)
+    grouped_human = grouped(human)
+    grouped_teacher = grouped(teacher)
+    prompt_ids = sorted(grouped_candidate)
+    if (
+        not prompt_ids
+        or set(prompt_ids) != set(grouped_human)
+        or set(prompt_ids) != set(grouped_teacher)
+    ):
+        raise ValueError("candidate, human, and teacher must share one prompt population")
+
+    def category_matrix(
+        values: Mapping[str, tuple[ResearchTasteRecord, ...]],
+        *,
+        field: str,
+        categories: Sequence[str],
+    ) -> np.ndarray:
+        category_index = {category: index for index, category in enumerate(categories)}
+        matrix = np.zeros((len(prompt_ids), len(categories)), dtype=np.float64)
+        for row_index, prompt_id in enumerate(prompt_ids):
+            records = values[prompt_id]
+            for record in records:
+                matrix[row_index, category_index[str(getattr(record, field))]] += 1
+            matrix[row_index] /= len(records)
+        return matrix
+
+    def diagnostic_matrix(
+        values: Mapping[str, tuple[ResearchTasteRecord, ...]], field: str
+    ) -> np.ndarray:
+        return np.asarray(
+            [
+                statistics.fmean(float(getattr(record, field)) for record in values[prompt_id])
+                for prompt_id in prompt_ids
+            ],
+            dtype=np.float64,
+        )
+
+    candidate_opp = category_matrix(
+        grouped_candidate, field="opportunity_pattern", categories=OPPORTUNITY_PATTERNS
+    )
+    human_opp = category_matrix(
+        grouped_human, field="opportunity_pattern", categories=OPPORTUNITY_PATTERNS
+    )
+    teacher_opp = category_matrix(
+        grouped_teacher, field="opportunity_pattern", categories=OPPORTUNITY_PATTERNS
+    )
+    candidate_method = category_matrix(
+        grouped_candidate, field="method_paradigm", categories=METHOD_PARADIGMS
+    )
+    human_method = category_matrix(
+        grouped_human, field="method_paradigm", categories=METHOD_PARADIGMS
+    )
+    teacher_method = category_matrix(
+        grouped_teacher, field="method_paradigm", categories=METHOD_PARADIGMS
+    )
+    candidate_diagnostics = {
+        field: diagnostic_matrix(grouped_candidate, field)
+        for field in (
+            "surface_stitching",
+            "surface_stitching_score",
+            "bottleneck_specificity",
+            "boilerplate_score",
+        )
+    }
+
+    def jsd(left: np.ndarray, right: np.ndarray) -> np.ndarray:
+        midpoint = (left + right) / 2
+
+        def kl(values: np.ndarray) -> np.ndarray:
+            ratio = np.ones_like(values)
+            np.divide(values, midpoint, out=ratio, where=values > 0)
+            return np.sum(
+                np.where(values > 0, values * np.log2(ratio), 0.0), axis=-1
+            )
+
+        return 0.5 * (kl(left) + kl(right))
+
+    def tvd(left: np.ndarray, right: np.ndarray) -> np.ndarray:
+        return 0.5 * np.sum(np.abs(left - right), axis=-1)
+
+    def entropy(values: np.ndarray) -> np.ndarray:
+        safe = np.where(values > 0, values, 1.0)
+        return -np.sum(values * np.log2(safe), axis=-1) / math.log2(values.shape[-1])
+
+    bridge_index = OPPORTUNITY_PATTERNS.index("fragmentation_or_bridge_opportunity")
+    synthesis_index = METHOD_PARADIGMS.index("explicit_synthesis_or_unification")
+
+    def calculate(
+        candidate_opp_values: np.ndarray,
+        human_opp_values: np.ndarray,
+        teacher_opp_values: np.ndarray,
+        candidate_method_values: np.ndarray,
+        human_method_values: np.ndarray,
+        teacher_method_values: np.ndarray,
+        diagnostics: Mapping[str, np.ndarray],
+    ) -> dict[str, np.ndarray]:
+        return {
+            "opportunity_jsd_vs_human": jsd(candidate_opp_values, human_opp_values),
+            "method_jsd_vs_human": jsd(candidate_method_values, human_method_values),
+            "opportunity_tvd_vs_human": tvd(candidate_opp_values, human_opp_values),
+            "method_tvd_vs_human": tvd(candidate_method_values, human_method_values),
+            "opportunity_normalized_entropy": entropy(candidate_opp_values),
+            "method_normalized_entropy": entropy(candidate_method_values),
+            "bridge_opportunity_rate": candidate_opp_values[..., bridge_index],
+            "synthesis_method_rate": candidate_method_values[..., synthesis_index],
+            "surface_stitching_rate": diagnostics["surface_stitching"],
+            "surface_stitching_score_mean": diagnostics["surface_stitching_score"],
+            "bottleneck_specificity_mean": diagnostics["bottleneck_specificity"],
+            "boilerplate_score_mean": diagnostics["boilerplate_score"],
+            "opportunity_human_jsd_delta_vs_teacher": jsd(
+                candidate_opp_values, human_opp_values
+            )
+            - jsd(teacher_opp_values, human_opp_values),
+            "method_human_jsd_delta_vs_teacher": jsd(
+                candidate_method_values, human_method_values
+            )
+            - jsd(teacher_method_values, human_method_values),
+        }
+
+    point = calculate(
+        candidate_opp.mean(axis=0),
+        human_opp.mean(axis=0),
+        teacher_opp.mean(axis=0),
+        candidate_method.mean(axis=0),
+        human_method.mean(axis=0),
+        teacher_method.mean(axis=0),
+        {field: np.asarray(values.mean()) for field, values in candidate_diagnostics.items()},
+    )
+    sampled: dict[str, list[np.ndarray]] = {name: [] for name in point}
+    rng = np.random.default_rng(seed)
+    for start in range(0, resamples, batch_size):
+        current = min(batch_size, resamples - start)
+        indices = rng.integers(0, len(prompt_ids), size=(current, len(prompt_ids)))
+        values = calculate(
+            candidate_opp[indices].mean(axis=1),
+            human_opp[indices].mean(axis=1),
+            teacher_opp[indices].mean(axis=1),
+            candidate_method[indices].mean(axis=1),
+            human_method[indices].mean(axis=1),
+            teacher_method[indices].mean(axis=1),
+            {
+                field: diagnostic_values[indices].mean(axis=1)
+                for field, diagnostic_values in candidate_diagnostics.items()
+            },
+        )
+        for name, metric_values in values.items():
+            sampled[name].append(np.asarray(metric_values))
+    alpha = (1 - confidence_level) / 2
+    metrics: dict[str, dict[str, float]] = {}
+    for name, point_value in point.items():
+        distribution = np.concatenate(
+            [values.reshape(-1) for values in sampled[name]], axis=0
+        )
+        metrics[name] = {
+            "estimate": float(np.asarray(point_value)),
+            "ci_low": float(np.quantile(distribution, alpha)),
+            "ci_high": float(np.quantile(distribution, 1 - alpha)),
+        }
+    return {
+        "unit": "prompt",
+        "resamples": resamples,
+        "seed": seed,
+        "confidence_level": confidence_level,
+        "metrics": metrics,
+    }
+
+
 def analyze_research_taste_matrix(
     methods: Mapping[str, Sequence[Mapping[str, Any]]],
     *,
     human_method: str,
     teacher_method: str,
+    bootstrap_resamples: int = 0,
+    bootstrap_seed: int = 17,
+    bootstrap_confidence_level: float = 0.95,
 ) -> dict[str, Any]:
     """Build all-sample and matched-one-shot secondary taste comparisons."""
 
@@ -427,6 +629,27 @@ def analyze_research_taste_matrix(
                 },
             },
         }
+        if bootstrap_resamples:
+            analyses[method]["all_samples"][
+                "paired_prompt_bootstrap"
+            ] = bootstrap_research_taste_gap(
+                candidate=records,
+                human=human_records,
+                teacher=teacher_records,
+                resamples=bootstrap_resamples,
+                seed=bootstrap_seed,
+                confidence_level=bootstrap_confidence_level,
+            )
+            analyses[method]["sample_zero"][
+                "paired_prompt_bootstrap"
+            ] = bootstrap_research_taste_gap(
+                candidate=zero_records,
+                human=human_zero,
+                teacher=teacher_zero,
+                resamples=bootstrap_resamples,
+                seed=bootstrap_seed,
+                confidence_level=bootstrap_confidence_level,
+            )
     return {
         "schema_version": 1,
         "status": "secondary_descriptive",

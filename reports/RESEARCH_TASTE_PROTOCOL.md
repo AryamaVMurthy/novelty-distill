@@ -76,6 +76,11 @@ method sample is annotated. For each method, report:
 - the change in human JSD relative to A1, where a negative value means closer to A3 than A1;
 - both the complete K-sample view and deterministic sample-index-zero one-shot sensitivity view.
 
+Uncertainty uses 10,000 prompt-level paired bootstrap resamples at seed 17. Each sampled prompt
+contributes its within-prompt category proportions, so K completions are not treated as independent
+units. Intervals are pointwise 95% percentile intervals and this secondary analysis does not add a
+new confirmatory p-value family.
+
 All comparisons require exactly the same temporal prompt population. K samples are repeated draws
 within a prompt and are never treated as independent research problems.
 

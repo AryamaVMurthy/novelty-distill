@@ -10,6 +10,10 @@ annotator_model: Qwen/Qwen3-32B-FP8
 annotator_revision: aa55da1ecc13d006e8b8e4f54579b1ea8c3db2df
 annotator_max_tokens: 192
 enable_thinking: false
+bootstrap:
+  resamples: 10000
+  seed: 17
+  confidence_level: 0.95
 opportunity_patterns:
   - puzzle_or_contradiction
   - explanation_gap

@@ -72,6 +72,13 @@ def _number(value: float) -> str:
     return f"{value:.4f}"
 
 
+def _interval(metric: dict[str, float]) -> str:
+    return (
+        f"{_number(metric['estimate'])} "
+        f"[{_number(metric['ci_low'])}, {_number(metric['ci_high'])}]"
+    )
+
+
 def _markdown(result: dict[str, Any], config: dict[str, Any]) -> str:
     lines = [
         "# Research-taste secondary analysis",
@@ -89,10 +96,21 @@ def _markdown(result: dict[str, Any], config: dict[str, Any]) -> str:
     for method, analysis in result["methods"].items():
         summary = analysis["summary_all_samples"]
         comparison = analysis["all_samples"]["vs_human"]
+        bootstrap = analysis["all_samples"].get("paired_prompt_bootstrap")
+        opportunity_jsd = (
+            _interval(bootstrap["metrics"]["opportunity_jsd_vs_human"])
+            if bootstrap
+            else _number(comparison["opportunity_pattern"]["jensen_shannon_divergence"])
+        )
+        method_jsd = (
+            _interval(bootstrap["metrics"]["method_jsd_vs_human"])
+            if bootstrap
+            else _number(comparison["method_paradigm"]["jensen_shannon_divergence"])
+        )
         lines.append(
             f"| {method} | "
-            f"{_number(comparison['opportunity_pattern']['jensen_shannon_divergence'])} | "
-            f"{_number(comparison['method_paradigm']['jensen_shannon_divergence'])} | "
+            f"{opportunity_jsd} | "
+            f"{method_jsd} | "
             f"{_number(summary['opportunity_normalized_entropy'])} | "
             f"{_number(summary['method_normalized_entropy'])} | "
             f"{_number(summary['bridge_opportunity_rate'])} | "
@@ -123,10 +141,14 @@ def main() -> None:
     if config.get("status") != "secondary_descriptive":
         raise ValueError("research-taste analysis must remain secondary_descriptive")
     inputs = _parse_inputs(args.input)
+    bootstrap = config["bootstrap"]
     result = analyze_research_taste_matrix(
         {method: _load_records(path) for method, path in inputs.items()},
         human_method=args.human_method,
         teacher_method=args.teacher_method,
+        bootstrap_resamples=bootstrap["resamples"],
+        bootstrap_seed=bootstrap["seed"],
+        bootstrap_confidence_level=bootstrap["confidence_level"],
     )
     result["source"] = config["source"]
     result["human_validation"] = config["human_validation"]

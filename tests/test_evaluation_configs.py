@@ -100,6 +100,11 @@ def test_research_taste_is_attributed_frozen_and_secondary() -> None:
     assert tuple(config["method_paradigms"]) == METHOD_PARADIGMS
     assert config["annotator_model"] == "Qwen/Qwen3-32B-FP8"
     assert config["enable_thinking"] is False
+    assert config["bootstrap"] == {
+        "resamples": 10000,
+        "seed": 17,
+        "confidence_level": 0.95,
+    }
     assert config["human_validation"] == {
         "required_for_headline_claims": True,
         "minimum_records": 150,

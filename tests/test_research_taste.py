@@ -8,6 +8,7 @@ from novelty_distill.evaluation.research_taste import (
     OPPORTUNITY_PATTERNS,
     ResearchTasteSpec,
     analyze_research_taste_matrix,
+    bootstrap_research_taste_gap,
     build_research_taste_payload,
     compare_label_distributions,
     compare_research_taste_records,
@@ -314,6 +315,79 @@ def test_research_taste_matrix_preserves_all_sample_and_one_shot_views() -> None
         ["opportunity_pattern"]
         < 0
     )
+
+    bootstrapped = analyze_research_taste_matrix(
+        {"A3": human, "A1": teacher, "B3": candidate},
+        human_method="A3",
+        teacher_method="A1",
+        bootstrap_resamples=50,
+        bootstrap_seed=17,
+    )
+    assert (
+        bootstrapped["methods"]["B3"]["all_samples"]["paired_prompt_bootstrap"]
+        ["resamples"]
+        == 50
+    )
+
+
+def test_prompt_bootstrap_is_paired_and_deterministic() -> None:
+    def row(
+        prompt_id: str,
+        opportunity: str,
+        method: str,
+    ) -> dict[str, object]:
+        return {
+            "prompt_id": prompt_id,
+            "sample_index": 0,
+            "opportunity_pattern": opportunity,
+            "method_paradigm": method,
+            "surface_stitching": opportunity
+            == "fragmentation_or_bridge_opportunity",
+            "surface_stitching_score": 2,
+            "bottleneck_specificity": 1,
+            "boilerplate_score": 2,
+        }
+
+    human = tuple(
+        row(f"p{index}", "explanation_gap", "formal_conceptual_derivation")
+        for index in range(8)
+    )
+    teacher = tuple(
+        row(
+            f"p{index}",
+            "fragmentation_or_bridge_opportunity",
+            "explicit_synthesis_or_unification",
+        )
+        for index in range(8)
+    )
+
+    first = bootstrap_research_taste_gap(
+        candidate=teacher,
+        human=human,
+        teacher=teacher,
+        resamples=200,
+        seed=17,
+    )
+    second = bootstrap_research_taste_gap(
+        candidate=teacher,
+        human=human,
+        teacher=teacher,
+        resamples=200,
+        seed=17,
+    )
+
+    assert first == second
+    assert first["unit"] == "prompt"
+    assert first["metrics"]["opportunity_jsd_vs_human"] == {
+        "estimate": 1.0,
+        "ci_low": 1.0,
+        "ci_high": 1.0,
+    }
+    assert first["metrics"]["opportunity_human_jsd_delta_vs_teacher"] == {
+        "estimate": 0.0,
+        "ci_low": 0.0,
+        "ci_high": 0.0,
+    }
 
 
 def _taste_shard_payload(texts: tuple[str, ...]) -> dict[str, object]:
