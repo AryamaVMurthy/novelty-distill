@@ -166,6 +166,7 @@ fi
 if [[ -z "${served_model_name}" ]]; then
   served_model_name="${model_path}"
 fi
+echo "serving_model=${model_path} model_dtype=${model_dtype} deterministic_inference=${deterministic_inference} disable_cuda_graph=${disable_cuda_graph}"
 
 if [[ -n "${calibration_config}" ]]; then
   input="${scratch_root}/data/tomato-open-calibration-8.jsonl"
