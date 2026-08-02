@@ -34,6 +34,9 @@ def test_tomato1k_configs_share_main_models_data_size_and_optimizer_budget() -> 
         1000
     }
     assert distillm.max_examples == 1000
+    assert sft.max_length == 3072
+    assert gkd.max_length == 2048
+    assert opsd.max_length == 3072
     assert distillm.max_length == 896
     assert distillm.num_gpus == 4
     effective_examples = {
