@@ -13,6 +13,7 @@ record. All active or pending jobs use `codex/implementation` and synchronize th
 | Generation pass 2 | 18033 | `afterany:18031`, same resumable directory |
 | Quality score pass 1 | 18035 | `afterok:18033` |
 | Quality score pass 2 | 18037 | `afterany:18035`, same resumable score directory |
+| Score diagnostics | 18123 | `afterok:18037`; strict JSON and Markdown judge diagnostics |
 | Cluster and target views | 18039 | `afterok:18037`; `data/teacher-targets-tomato1k-v1.json` |
 | Target provenance/findings gate | 18122 | `afterok:18039`; exact reconstruction, 1,000-ID validation, and descriptive findings |
 
