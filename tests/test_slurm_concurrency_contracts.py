@@ -11,6 +11,15 @@ def test_training_environment_mutations_are_serialized() -> None:
     assert script.index("uv pip install") < script.index("flock -u 8")
 
 
+def test_scale_training_matrix_renders_frozen_exposure_configs() -> None:
+    script = (ROOT / "slurm" / "train_smoke.sbatch").read_text(encoding="utf-8")
+
+    assert '"${matrix_mode}" == "tomato_scale"' in script
+    assert "scripts/render_scale_training_config.py" in script
+    assert '--train-size "${scale_train_size}"' in script
+    assert '--seed "${scale_seed}"' in script
+
+
 def test_shared_inference_environment_mutations_are_serialized() -> None:
     for name in (
         "sglang_smoke.sbatch",

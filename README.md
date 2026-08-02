@@ -65,6 +65,19 @@ cluster artifact, teacher-target artifact, and final target-analysis gate. The 2
 replacement for the 5k method-selection stage. The 5k bank first imports the exact compatible 1k
 shards, and the 20k bank imports the 5k shards, so nested prompts are never regenerated.
 
+Once the preregistered analysis has selected matrix indexes, launch only those promoted methods;
+index 5 (GEM) and index 12 (DistiLLM) are automatically split into their required allocations:
+
+```bash
+TRAIN_SIZE=5000 TARGET_GATE_JOB_ID=<5k-gate> PROMOTED_INDICES=<indexes> \
+  scripts/submit_promoted_training.sh
+TRAIN_SIZE=20000 TARGET_GATE_JOB_ID=<20k-gate> PROMOTED_INDICES=<indexes> \
+  scripts/submit_promoted_training.sh
+```
+
+The 5k default is seed 17. The 20k default is the frozen central seed set 17, 29, and 43; neither
+launcher chooses winners before the preceding analysis.
+
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
 submission helper stages the small batch script under `~/.cache/novelty-distill-submit` and calls

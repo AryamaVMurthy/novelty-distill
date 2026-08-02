@@ -24,6 +24,18 @@ training_backend="${TRAINING_BACKEND:-trl}"
 matrix_mode="${BASELINE_MATRIX:-0}"
 if [[ "${matrix_mode}" == "tomato1k" ]]; then
   run_suffix="${RUN_SUFFIX:-tomato1k-seed17}"
+elif [[ "${matrix_mode}" == "tomato_scale" ]]; then
+  scale_train_size="${TRAIN_SIZE:?tomato_scale requires TRAIN_SIZE}"
+  scale_seed="${TRAIN_SEED:?tomato_scale requires TRAIN_SEED}"
+  if [[ "${scale_train_size}" != 5000 && "${scale_train_size}" != 20000 ]]; then
+    echo "TRAIN_SIZE must be 5000 or 20000" >&2
+    exit 2
+  fi
+  if [[ "${scale_seed}" != 17 && "${scale_seed}" != 29 && "${scale_seed}" != 43 ]]; then
+    echo "TRAIN_SEED must be 17, 29, or 43" >&2
+    exit 2
+  fi
+  run_suffix="${RUN_SUFFIX:-tomato${scale_train_size}-seed${scale_seed}}"
 elif [[ "${matrix_mode}" == "ultrafeedback1k" ]]; then
   run_suffix="${RUN_SUFFIX:-ultrafeedback1k-seed17}"
 else
@@ -114,6 +126,38 @@ elif [[ "${matrix_mode}" == "tomato1k" ]]; then
   training_backend="${matrix_backends[$matrix_index]}"
   RUN_CONFIG="${matrix_configs[$matrix_index]}"
   echo "matrix=tomato1k index=${matrix_index} baseline_id=${BASELINE_ID} backend=${training_backend}"
+elif [[ "${matrix_mode}" == "tomato_scale" ]]; then
+  matrix_ids=(
+    B1 B2a B2b B2c B3 B4
+    C1-human C1-best1 C1-diverse4 C2-human C2-best1 C2-diverse4 C3
+    D1 D2 D3 E2 E3 E4
+  )
+  matrix_backends=(
+    trl trl trl trl trl gem
+    trl trl trl trl trl trl distillm
+    trl trl trl opsd opsd opsd
+  )
+  matrix_configs=(
+    configs/training/sft_tomato1k.yaml configs/training/sft_tomato1k.yaml
+    configs/training/sft_tomato1k.yaml configs/training/sft_tomato1k.yaml
+    configs/training/sft_tomato1k.yaml configs/training/gem_tomato1k.yaml
+    configs/training/gkd_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/gkd_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/gkd_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/distillm_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/gkd_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/opsd_tomato1k.yaml configs/training/opsd_tomato1k.yaml
+    configs/training/opsd_tomato1k.yaml
+  )
+  matrix_index="${SLURM_ARRAY_TASK_ID:?tomato_scale matrix requires a Slurm array task}"
+  if ((matrix_index < 0 || matrix_index >= ${#matrix_ids[@]})); then
+    echo "SLURM_ARRAY_TASK_ID must be between 0 and $((${#matrix_ids[@]} - 1))" >&2
+    exit 1
+  fi
+  BASELINE_ID="${matrix_ids[$matrix_index]}"
+  training_backend="${matrix_backends[$matrix_index]}"
+  RUN_CONFIG="${matrix_configs[$matrix_index]}"
+  echo "matrix=tomato_scale size=${scale_train_size} seed=${scale_seed} index=${matrix_index} baseline_id=${BASELINE_ID} backend=${training_backend}"
 fi
 if [[ "${training_backend}" == "opsd" ]]; then
   run_config="${RUN_CONFIG:-configs/training/opsd_smoke.yaml}"
@@ -191,6 +235,18 @@ fi
 uv pip sync --python "${venv_dir}/bin/python" "${environment_lock}"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 flock -u 8
+
+if [[ "${matrix_mode}" == "tomato_scale" ]]; then
+  rendered_config="${scratch_root}/tmp/config-${BASELINE_ID}-${run_suffix}.yaml"
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/render_scale_training_config.py" \
+    --base "${config_path}" \
+    --output "${rendered_config}" \
+    --backend "${training_backend}" \
+    --baseline-id "${BASELINE_ID}" \
+    --train-size "${scale_train_size}" \
+    --seed "${scale_seed}"
+  config_path="${rendered_config}"
+fi
 
 if [[ -n "${BASELINE_ID:-}" ]] && [[ "${training_backend}" == "trl" || "${training_backend}" == "opsd" ]]; then
   metadata_path="${scratch_root}/checkpoints/${BASELINE_ID}-${run_suffix}/run_metadata.json"

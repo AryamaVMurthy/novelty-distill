@@ -109,6 +109,17 @@ def test_scale_teacher_launcher_uses_four_gpu_arrays_and_global_gates() -> None:
     assert "slurm/validate_teacher_targets.sbatch" in script
 
 
+def test_promoted_training_launcher_separates_special_resource_backends() -> None:
+    script = Path("scripts/submit_promoted_training.sh").read_text(encoding="utf-8")
+
+    assert 'promoted_indices="${PROMOTED_INDICES:?' in script
+    assert '--array="${adapter_spec}%4"' in script
+    assert "--array=5" in script
+    assert "--array=12" in script
+    assert "--gres=gpu:4" in script
+    assert "BASELINE_MATRIX=tomato_scale" in script
+
+
 def test_final_controller_submits_research_taste_for_every_generation_family() -> None:
     script = Path("slurm/submit_evaluation_matrix.sbatch").read_text(encoding="utf-8")
 
