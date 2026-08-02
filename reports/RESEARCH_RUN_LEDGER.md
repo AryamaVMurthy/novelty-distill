@@ -5,7 +5,7 @@ This ledger freezes the submitted Turing job graph and completed systems evidenc
 record. All newly staged jobs use `codex/implementation` and synchronize through
 `.git/novelty-distill-sync.lock` before consuming repository code. Primary array 18097 was spooled
 before that lock was added; it runs one task at a time while controls occupy the other GPUs, and
-locked resume array 18117 covers any incomplete artifact.
+locked resume array 18195 covers any incomplete artifact.
 
 ## Production teacher targets
 
@@ -70,7 +70,7 @@ student could match one member while contradicting another. Unmatched students r
 complete-linkage clustered as separately named student modes.
 
 Training jobs 18092, 18097, and 18098 directly required successful gate 18132. The replacement
-evaluation graph instead culminates in final target replay 18188, so no final metric consumer can
+evaluation graph instead culminates in final target replay 18196, so no final metric consumer can
 run on a superseded artifact.
 
 ## Temporal controls
@@ -82,7 +82,7 @@ jobs a contiguous all-GPU window before resuming.
 
 | Control | Current pass | Resume passes | Score passes | Final evaluation |
 |---|---:|---|---|---:|
-| A1 Qwen3-14B | 18078 | 18162 -> 18163 -> 18164 | 18178 -> 18179 | submitted by controller 18189 |
+| A1 Qwen3-14B | 18078 | 18162 -> 18163 -> 18164 | 18178 -> 18179 | submitted by controller 18197 |
 | A0 Qwen3-4B | 18084 | 18165 -> 18166 | 18180 -> 18181 | 18184 -> 18185 |
 
 The first replacement wrappers 18102--18106 used `/bin/sh` despite containing Bash's `pipefail`;
@@ -92,7 +92,7 @@ completed shards. A pre-execution batch-script audit found the same `/bin/sh` de
 jobs 18107--18110 and evaluation job 18113; all were cancelled with zero runtime, along with its
 otherwise-correct downstream pass 18119. Direct-script replacements 18178--18181 score the same
 stable A1/A0 namespaces, and 18184--18185 evaluate A0 against A1 after both final score passes.
-Controller 18189 now waits for 18179 and 18185. Obsolete single-pass
+Controller 18197 now waits for 18179 and 18185. Obsolete single-pass
 score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled before execution.
 The active passes 18078 and 18084 were ended once their atomic shards reached 523/1,658 A1 prompts
 and 983/1,658 A0 prompts, respectively, so the requested four-GPU gate could start immediately.
@@ -105,10 +105,10 @@ Their resume jobs retain the same output IDs and begin at the first missing prom
 | DistiLLM deployability smoke | 18092 | four GPUs; after target gate 18132; must produce a loadable full checkpoint after real updates |
 | DistiLLM SGLang load gate | 18141 | after smoke 18092; C3 production cannot start until the full checkpoint generates successfully |
 | Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18132 and `afterany:18098` |
-| TRL/OPSD bounded resumes | 18117 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
+| TRL/OPSD bounded resumes | 18195 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
 | C3 DistiLLM | 18098 | index 12, four GPUs, 12-hour bound; after target gate 18132 and smoke 18092 |
-| Final target replay | 18188 | waits for 18117, final A1 score 18179, and final A0 evaluation 18185 |
-| Evaluation fan-out controller | 18189 | waits for 18188 and names its fresh target gate for every submitted evaluation chain |
+| Final target replay | 18196 | waits for 18195, final A1 score 18179, and final A0 evaluation 18185 |
+| Evaluation fan-out controller | 18197 | waits for 18196 and names its fresh target gate for every submitted evaluation chain |
 
 Completed TOMATO-1k production runs currently have the following measured systems costs. Training
 losses are intentionally omitted from this cross-backend table because CE, GEM, forward/reverse
@@ -165,7 +165,7 @@ the node's 386,630 MiB, leaving slightly less than D2's default 128 GiB request.
 reservation was conservatively reduced to 116 GiB (the identical live D1 workload's measured host
 RSS was about 1.6 GiB), after which concrete job 18194 started without restarting any active work.
 The node therefore has four useful GPU lanes rather than one scheduler-idle device. Pending resume
-array 18117 now uses the same 116 GiB reservation, allowing its two-task throttle to coexist with
+array 18195 now uses the same 116 GiB reservation, allowing its two-task throttle to coexist with
 both 64 GiB controls under the node's measured RAM ceiling; this changes only Slurm reservation
 accounting, not any batch, optimizer, context, or checkpoint setting.
 
@@ -257,29 +257,30 @@ non-thinking, pairwise-distinct Qwen3-4B outputs: 12 stopped naturally and four 
 
 The first old-spooled primary-matrix tasks B1 (18097_0) and B3 (18097_4) failed in two seconds
 while concurrent jobs raced updating the shared remote Git ref; neither reached environment setup
-or training. The already-submitted bounded resume array 18117 contains the repository `flock`
-fix, depends `afterany` on the entire primary array, and will rerun incomplete artifacts while
-preflighting completed ones.
+or training. Fresh bounded resume array 18195 contains both repository and per-environment `flock`
+protection, depends `afterany` on the entire primary array, and will rerun incomplete artifacts
+while preflighting completed ones. It supersedes pending array 18117 before any task ran.
 After D1 and D2 were safely running, the remaining unstarted old-spooled elements D3/E2/E3/E4
-(18097_15--18) were cancelled before execution. Array 18117 contains all four indices, so this
+(18097_15--18) were cancelled before execution. Array 18195 contains all four indices, so this
 removes the known unlocked-fetch race without omitting any baseline; the primary array's expected
 aggregate `CANCELLED` state reflects these superseded pending elements rather than a new run fault.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
-edges release the other baselines and controls even if C3 fails, while controller 18189 separately
+edges release the other baselines and controls even if C3 fails, while controller 18197 separately
 requires C3 success before evaluation fan-out.
 
-Controller 18189 replaces pending controllers 18120, 18125, 18130, and 18133. Controller 18133 was
-cancelled before execution after its spooled script was found to predate the verified C3 BF16
-serving contract. Gate 18188 reruns exact target validation only after every other controller
-prerequisite succeeds; this keeps its Slurm ID fresh when controller 18189 submits downstream
-dependencies and avoids relying on purged historical gate 18132. Controller 18189 submits A1 and
-historical A3 controls plus 19 trained model chains. Each trained
+Controller 18197 replaces pending controllers 18120, 18125, 18130, 18133, and 18189. Controller
+18133 was cancelled before execution after its spooled script was found to predate the verified C3
+BF16 serving contract; 18189 was replaced before execution so every fan-out child is spooled with
+the environment-lock repair. Gate 18196 reruns exact target validation only after every other
+controller prerequisite succeeds; this keeps its Slurm ID fresh when controller 18197 submits
+downstream dependencies and avoids relying on purged historical gate 18132. Controller 18197
+submits A1 and historical A3 controls plus 19 trained model chains. Each trained
 model chain has three resumable generation passes, two resumable judge passes, two cached anchored
-evaluation passes, and strict checkpoint preflight. The final CPU analysis requires all aligned evaluation artifacts,
-runs the frozen prompt-paired contrasts with per-metric Holm correction, and reports per-prompt
-favorable/tied/unfavorable directions over every declared clustering threshold.
+evaluation passes, and strict checkpoint preflight. The final CPU analysis requires all aligned
+evaluation artifacts, runs the frozen prompt-paired contrasts with per-metric Holm correction, and
+reports per-prompt favorable/tied/unfavorable directions over every declared clustering threshold.
 
 The registry contains 24 planned entries: four non-training controls, nineteen executable training
 variants, and E1. E1 is explicitly `fail_closed` because the pinned official OPSD implementation
