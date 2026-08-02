@@ -7,12 +7,16 @@ from pathlib import Path
 
 import yaml
 
-from novelty_distill.evaluation.contrasts import analyze_contrasts
+from novelty_distill.evaluation.contrasts import (
+    analyze_contrasts,
+    analyze_threshold_directions,
+)
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, required=True)
+    parser.add_argument("--threshold-input", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
@@ -25,6 +29,11 @@ def main() -> None:
         for line in args.input.read_text(encoding="utf-8").splitlines()
         if line.strip()
     )
+    threshold_rows = tuple(
+        json.loads(line)
+        for line in args.threshold_input.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    )
     config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
     if config.get("schema_version") != 1:
         raise ValueError("unsupported contrast configuration schema")
@@ -35,19 +44,34 @@ def main() -> None:
         bootstrap_samples=int(config["bootstrap_samples"]),
         seed=int(config["seed"]),
     )
+    threshold_directions = analyze_threshold_directions(
+        rows=threshold_rows,
+        contrasts=tuple(config["contrasts"]),
+        metric_directions=dict(config["threshold_metric_directions"]),
+    )
     payload = {
-        "schema_version": 1,
+        "schema_version": 2,
         "bootstrap_samples": config["bootstrap_samples"],
         "seed": config["seed"],
         "holm_family": "all declared contrasts within each metric",
         "results": results,
+        "threshold_direction_counts": threshold_directions,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
         encoding="utf-8",
     )
-    print(json.dumps({"metrics": len(results), "output": str(args.output)}, sort_keys=True))
+    print(
+        json.dumps(
+            {
+                "metrics": len(results),
+                "threshold_metrics": len(threshold_directions),
+                "output": str(args.output),
+            },
+            sort_keys=True,
+        )
+    )
 
 
 if __name__ == "__main__":

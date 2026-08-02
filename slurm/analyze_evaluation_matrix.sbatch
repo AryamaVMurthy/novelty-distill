@@ -57,12 +57,16 @@ test -s "${evaluation_root}/A1-temporal-k16-seed17000.json"
 test -s "${evaluation_root}/A3-temporal-k1.json"
 
 matrix_path="${output_dir}/prompt-metrics.jsonl"
+threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
 "${venv_dir}/bin/python" "${repo_dir}/scripts/collect_evaluation_metrics.py" \
   "${collector_inputs[@]}" \
-  --output "${matrix_path}"
+  --output "${matrix_path}" \
+  --threshold-output "${threshold_matrix_path}"
 "${venv_dir}/bin/python" "${repo_dir}/scripts/analyze_contrast_matrix.py" \
   --input "${matrix_path}" \
+  --threshold-input "${threshold_matrix_path}" \
   --config "${repo_dir}/configs/evaluation/primary_contrasts.yaml" \
   --output "${output_dir}/primary-contrasts.json"
 test -s "${output_dir}/prompt-metrics.jsonl.manifest.json"
+test -s "${output_dir}/threshold-prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/primary-contrasts.json"

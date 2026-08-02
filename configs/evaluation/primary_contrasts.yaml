@@ -10,6 +10,11 @@ metrics:
   - quality_adjusted_coverage
   - nearest_training_target_similarity_mean
   - length_stop_rate
+threshold_metric_directions:
+  teacher_mode_recall: higher
+  teacher_mode_precision: higher
+  cluster_jsd: lower
+  quality_adjusted_coverage: higher
 contrasts:
   - {id: B3-vs-B2a, reference: B2a, treatment: B3}
   - {id: B3-vs-B2b, reference: B2b, treatment: B3}
