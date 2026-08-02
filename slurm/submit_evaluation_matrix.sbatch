@@ -28,10 +28,11 @@ score_namespace="evaluation-scores"
 target_name="teacher-targets-tomato1k-v1.json"
 generation_passes="${GENERATION_PASSES:-3}"
 score_passes="${SCORE_PASSES:-2}"
+evaluation_passes="${EVALUATION_PASSES:-2}"
 
-for value in "${generation_passes}" "${score_passes}"; do
+for value in "${generation_passes}" "${score_passes}" "${evaluation_passes}"; do
   if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
-    echo "GENERATION_PASSES and SCORE_PASSES must be positive integers" >&2
+    echo "generation, score, and evaluation passes must be positive integers" >&2
     exit 2
   fi
 done
@@ -92,30 +93,54 @@ submit_job() {
   printf '%s\n' "${job_id}"
 }
 
-teacher_eval_job="$(
-  submit_job \
-    --time=06:00:00 \
-    --dependency="afterok:${teacher_score_job_id}:${target_job_id}" \
-    --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=${teacher_score_id},SCORE_NAMESPACE=${score_namespace},TARGET_NAME=${target_name},OUTPUT_NAME=A1-temporal-k16-seed17000" \
-    slurm/evaluate_student.sbatch
-)"
+teacher_eval_job=""
+for pass_index in $(seq 1 "${evaluation_passes}"); do
+  if [[ -z "${teacher_eval_job}" ]]; then
+    teacher_eval_dependency="afterok:${teacher_score_job_id}:${target_job_id}"
+  else
+    teacher_eval_dependency="afterany:${teacher_eval_job}"
+  fi
+  teacher_eval_job="$(
+    submit_job \
+      --time=06:00:00 \
+      --dependency="${teacher_eval_dependency}" \
+      --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=${teacher_score_id},SCORE_NAMESPACE=${score_namespace},TARGET_NAME=${target_name},OUTPUT_NAME=A1-temporal-k16-seed17000" \
+      slurm/evaluate_student.sbatch
+  )"
+done
 printf '{"baseline":"A1","evaluation":"%s"}\n' "${teacher_eval_job}"
 
 human_prepare_job="$(submit_job slurm/prepare_human_control.sbatch)"
-human_score_job="$(
-  submit_job \
-    --time=06:00:00 \
-    --dependency="afterok:${human_prepare_job}" \
-    --export="ALL,GENERATION_JOB_ID=A3-temporal-k1,GENERATION_NAME=evaluation-student,GENERATION_CONFIG=configs/generation/eval_historical.yaml,PROMPTS_PATH=${input_path},SCORE_NAMESPACE=${score_namespace},SCORE_CONCURRENCY=8" \
-    slurm/score_teacher.sbatch
-)"
-human_eval_job="$(
-  submit_job \
-    --time=06:00:00 \
-    --dependency="afterok:${teacher_score_job_id}:${human_score_job}:${target_job_id}" \
-    --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=A3-temporal-k1,SCORE_NAMESPACE=${score_namespace},TARGET_NAME=${target_name},OUTPUT_NAME=A3-temporal-k1,TEACHER_SAMPLES_PER_PROMPT=16,STUDENT_SAMPLES_PER_PROMPT=1" \
-    slurm/evaluate_student.sbatch
-)"
+human_score_job=""
+for pass_index in $(seq 1 "${score_passes}"); do
+  if [[ -z "${human_score_job}" ]]; then
+    human_score_dependency="afterok:${human_prepare_job}"
+  else
+    human_score_dependency="afterany:${human_score_job}"
+  fi
+  human_score_job="$(
+    submit_job \
+      --time=06:00:00 \
+      --dependency="${human_score_dependency}" \
+      --export="ALL,GENERATION_JOB_ID=A3-temporal-k1,GENERATION_NAME=evaluation-student,GENERATION_CONFIG=configs/generation/eval_historical.yaml,PROMPTS_PATH=${input_path},SCORE_NAMESPACE=${score_namespace},SCORE_CONCURRENCY=8" \
+      slurm/score_teacher.sbatch
+  )"
+done
+human_eval_job=""
+for pass_index in $(seq 1 "${evaluation_passes}"); do
+  if [[ -z "${human_eval_job}" ]]; then
+    human_eval_dependency="afterok:${teacher_score_job_id}:${human_score_job}:${target_job_id}"
+  else
+    human_eval_dependency="afterany:${human_eval_job}"
+  fi
+  human_eval_job="$(
+    submit_job \
+      --time=06:00:00 \
+      --dependency="${human_eval_dependency}" \
+      --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=A3-temporal-k1,SCORE_NAMESPACE=${score_namespace},TARGET_NAME=${target_name},OUTPUT_NAME=A3-temporal-k1,TEACHER_SAMPLES_PER_PROMPT=16,STUDENT_SAMPLES_PER_PROMPT=1" \
+      slurm/evaluate_student.sbatch
+  )"
+done
 printf '{"baseline":"A3","prepare":"%s","score":"%s","evaluation":"%s"}\n' \
   "${human_prepare_job}" "${human_score_job}" "${human_eval_job}"
 
@@ -161,18 +186,26 @@ submit_chain() {
         slurm/score_teacher.sbatch
     )"
   done
-  local evaluation_job
-  evaluation_job="$(
-    submit_job \
-      --time=06:00:00 \
-      --dependency="afterok:${teacher_score_job_id}:${score_job}:${target_job_id}" \
-      --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=${eval_id},SCORE_NAMESPACE=${score_namespace},TARGET_NAME=${target_name},OUTPUT_NAME=${eval_id}" \
-      slurm/evaluate_student.sbatch
-  )"
+  local evaluation_job=""
+  for pass_index in $(seq 1 "${evaluation_passes}"); do
+    local evaluation_dependency
+    if [[ -z "${evaluation_job}" ]]; then
+      evaluation_dependency="afterok:${teacher_score_job_id}:${score_job}:${target_job_id}"
+    else
+      evaluation_dependency="afterany:${evaluation_job}"
+    fi
+    evaluation_job="$(
+      submit_job \
+        --time=06:00:00 \
+        --dependency="${evaluation_dependency}" \
+        --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=${eval_id},SCORE_NAMESPACE=${score_namespace},TARGET_NAME=${target_name},OUTPUT_NAME=${eval_id}" \
+        slurm/evaluate_student.sbatch
+    )"
+  done
   evaluation_jobs+=("${evaluation_job}")
-  printf '{"baseline":"%s","generation_final":"%s","generation_passes":%s,"score_final":"%s","score_passes":%s,"evaluation":"%s"}\n' \
+  printf '{"baseline":"%s","generation_final":"%s","generation_passes":%s,"score_final":"%s","score_passes":%s,"evaluation_final":"%s","evaluation_passes":%s}\n' \
     "${baseline_id}" "${generation_job}" "${generation_passes}" "${score_job}" \
-    "${score_passes}" "${evaluation_job}"
+    "${score_passes}" "${evaluation_job}" "${evaluation_passes}"
 }
 
 for baseline_id in "${adapter_ids[@]}"; do

@@ -23,6 +23,7 @@ lora_name="${LORA_NAME:-}"
 lora_path="${LORA_PATH:-}"
 generation_passes="${GENERATION_PASSES:-3}"
 score_passes="${SCORE_PASSES:-2}"
+evaluation_passes="${EVALUATION_PASSES:-2}"
 
 for value in "${eval_id}" "${generation_name}" "${teacher_score_id}" "${target_name}"; do
   if [[ -z "${value}" || "${value}" == */* || "${value}" == *..* || "${value}" == *,* ]]; then
@@ -50,9 +51,9 @@ if ! [[ "${input_limit}" =~ ^[1-9][0-9]*$ ]]; then
   echo "INPUT_LIMIT must be a positive integer" >&2
   exit 2
 fi
-for value in "${generation_passes}" "${score_passes}"; do
+for value in "${generation_passes}" "${score_passes}" "${evaluation_passes}"; do
   if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
-    echo "GENERATION_PASSES and SCORE_PASSES must be positive integers" >&2
+    echo "generation, score, and evaluation passes must be positive integers" >&2
     exit 2
   fi
 done
@@ -111,13 +112,21 @@ for ((pass = 1; pass <= score_passes; pass++)); do
   )"
 done
 
-evaluation_job="$(
-  submit_job slurm/evaluate_student.sbatch \
-    --time=06:00:00 \
-    --dependency="afterok:${teacher_score_job_id}:${score_job}:${target_job_id}" \
-    --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=${eval_id},SCORE_NAMESPACE=evaluation-scores,TARGET_NAME=${target_name},OUTPUT_NAME=${eval_id}"
-)"
+evaluation_job=""
+for ((pass = 1; pass <= evaluation_passes; pass++)); do
+  if [[ -z "${evaluation_job}" ]]; then
+    evaluation_dependency="afterok:${teacher_score_job_id}:${score_job}:${target_job_id}"
+  else
+    evaluation_dependency="afterany:${evaluation_job}"
+  fi
+  evaluation_job="$(
+    submit_job slurm/evaluate_student.sbatch \
+      --time=06:00:00 \
+      --dependency="${evaluation_dependency}" \
+      --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=${eval_id},SCORE_NAMESPACE=evaluation-scores,TARGET_NAME=${target_name},OUTPUT_NAME=${eval_id}"
+  )"
+done
 
-printf '{"evaluation_id":"%s","generation_final":"%s","generation_passes":%s,"score_final":"%s","score_passes":%s,"evaluation":"%s"}\n' \
+printf '{"evaluation_id":"%s","generation_final":"%s","generation_passes":%s,"score_final":"%s","score_passes":%s,"evaluation_final":"%s","evaluation_passes":%s}\n' \
   "${eval_id}" "${generation_job}" "${generation_passes}" "${score_job}" \
-  "${score_passes}" "${evaluation_job}"
+  "${score_passes}" "${evaluation_job}" "${evaluation_passes}"
