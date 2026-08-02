@@ -20,6 +20,15 @@ def test_sglang_job_binds_local_checkpoint_or_adapter_bytes() -> None:
     assert script.count('"${artifact_identity_args[@]}"') == 3
 
 
+def test_sglang_job_forwards_deterministic_prompt_shard_coordinates() -> None:
+    script = Path("slurm/sglang_smoke.sbatch").read_text(encoding="utf-8")
+
+    assert 'generation_num_shards="${GENERATION_NUM_SHARDS:-1}"' in script
+    assert 'generation_shard_index="${GENERATION_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"' in script
+    assert script.count('--num-shards "${generation_num_shards}"') == 3
+    assert script.count('--shard-index "${generation_shard_index}"') == 3
+
+
 def test_distillm_matrix_evaluation_forces_bfloat16_serving() -> None:
     script = Path("slurm/submit_evaluation_matrix.sbatch").read_text(
         encoding="utf-8"

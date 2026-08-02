@@ -15,6 +15,7 @@ from novelty_distill.generation.sglang import (
     generate_prompt,
     load_prompts,
     pending_prompts,
+    shard_prompts,
 )
 
 
@@ -27,6 +28,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--timeout", type=float, default=600)
     parser.add_argument("--served-artifact-identity")
+    parser.add_argument("--num-shards", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     return parser.parse_args()
 
 
@@ -45,9 +48,21 @@ def main() -> None:
         spec=spec,
         served_artifact_identity=args.served_artifact_identity,
     )
-    remaining = pending_prompts(prompts, args.output_dir, spec)
+    assigned = shard_prompts(
+        prompts, num_shards=args.num_shards, shard_index=args.shard_index
+    )
+    remaining = pending_prompts(assigned, args.output_dir, spec)
     print(
-        json.dumps({"total": len(prompts), "pending": len(remaining)}, sort_keys=True),
+        json.dumps(
+            {
+                "global_total": len(prompts),
+                "shard_total": len(assigned),
+                "shard_index": args.shard_index,
+                "num_shards": args.num_shards,
+                "pending": len(remaining),
+            },
+            sort_keys=True,
+        ),
         flush=True,
     )
 

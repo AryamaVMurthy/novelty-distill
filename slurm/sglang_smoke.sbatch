@@ -29,6 +29,8 @@ input_limit="${INPUT_LIMIT:-1}"
 output_name="${OUTPUT_NAME:-sglang-smoke}"
 output_run_id="${OUTPUT_RUN_ID:-${SLURM_JOB_ID}}"
 generation_concurrency="${GENERATION_CONCURRENCY:-1}"
+generation_num_shards="${GENERATION_NUM_SHARDS:-1}"
+generation_shard_index="${GENERATION_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"
 disable_cuda_graph="${DISABLE_CUDA_GRAPH:-0}"
 deterministic_inference="${DETERMINISTIC_INFERENCE:-1}"
 lora_name="${LORA_NAME:-}"
@@ -45,6 +47,15 @@ if ! [[ "${input_limit}" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if ! [[ "${generation_concurrency}" =~ ^[1-9][0-9]*$ ]]; then
   echo "GENERATION_CONCURRENCY must be a positive integer" >&2
+  exit 1
+fi
+if ! [[ "${generation_num_shards}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "GENERATION_NUM_SHARDS must be a positive integer" >&2
+  exit 1
+fi
+if ! [[ "${generation_shard_index}" =~ ^[0-9]+$ ]] \
+  || ((generation_shard_index >= generation_num_shards)); then
+  echo "GENERATION_SHARD_INDEX must be within GENERATION_NUM_SHARDS" >&2
   exit 1
 fi
 if [[ "${disable_cuda_graph}" != 0 && "${disable_cuda_graph}" != 1 ]]; then
@@ -212,6 +223,8 @@ if [[ -z "${calibration_config}" ]]; then
     --input "${input_slice}" \
     --output-dir "${output_dir}" \
     --config "${repo_dir}/${generation_config}" \
+    --num-shards "${generation_num_shards}" \
+    --shard-index "${generation_shard_index}" \
     "${artifact_identity_args[@]}"
   generation_status=$?
   set -e
@@ -284,6 +297,8 @@ else
     --config "${repo_dir}/${generation_config}" \
     --base-url "http://127.0.0.1:${port}" \
     --concurrency "${generation_concurrency}" \
+    --num-shards "${generation_num_shards}" \
+    --shard-index "${generation_shard_index}" \
     "${artifact_identity_args[@]}"
   "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
     --input "${input_slice}" \
@@ -291,6 +306,8 @@ else
     --config "${repo_dir}/${generation_config}" \
     --base-url "http://127.0.0.1:${port}" \
     --concurrency "${generation_concurrency}" \
+    --num-shards "${generation_num_shards}" \
+    --shard-index "${generation_shard_index}" \
     "${artifact_identity_args[@]}"
   find "${output_dir}" -maxdepth 1 -type f -name '*.json' -print
 fi

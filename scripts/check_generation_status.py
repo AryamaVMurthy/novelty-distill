@@ -12,6 +12,7 @@ from novelty_distill.generation.sglang import (
     ensure_generation_run_manifest,
     load_prompts,
     pending_prompts,
+    shard_prompts,
 )
 
 
@@ -21,6 +22,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--served-artifact-identity")
+    parser.add_argument("--num-shards", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
     return parser.parse_args()
 
 
@@ -37,10 +40,20 @@ def main() -> None:
         spec=spec,
         served_artifact_identity=args.served_artifact_identity,
     )
-    remaining = pending_prompts(prompts, args.output_dir, spec)
+    assigned = shard_prompts(
+        prompts, num_shards=args.num_shards, shard_index=args.shard_index
+    )
+    remaining = pending_prompts(assigned, args.output_dir, spec)
     print(
         json.dumps(
-            {"complete": not remaining, "pending": len(remaining), "total": len(prompts)},
+            {
+                "complete": not remaining,
+                "pending": len(remaining),
+                "global_total": len(prompts),
+                "shard_total": len(assigned),
+                "shard_index": args.shard_index,
+                "num_shards": args.num_shards,
+            },
             sort_keys=True,
         )
     )

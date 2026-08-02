@@ -76,6 +76,22 @@ def load_prompts(path: Path) -> tuple[Prompt, ...]:
     return tuple(prompts)
 
 
+def shard_prompts(
+    prompts: Iterable[Prompt], *, num_shards: int, shard_index: int
+) -> tuple[Prompt, ...]:
+    """Return one deterministic disjoint position-based prompt shard."""
+
+    if num_shards <= 0:
+        raise ValueError("number of generation shards must be positive")
+    if not 0 <= shard_index < num_shards:
+        raise ValueError("generation shard index is outside the shard count")
+    return tuple(
+        prompt
+        for index, prompt in enumerate(prompts)
+        if index % num_shards == shard_index
+    )
+
+
 class GenerationRecord(BaseModel):
     """One auditable completion returned by SGLang."""
 

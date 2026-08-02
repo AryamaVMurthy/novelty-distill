@@ -16,8 +16,38 @@ from novelty_distill.generation.sglang import (
     model_artifact_identity,
     parse_chat_completion_response,
     pending_prompts,
+    shard_prompts,
     write_prompt_shard,
 )
+
+
+def test_prompt_shards_are_disjoint_complete_and_deterministic() -> None:
+    prompts = tuple(Prompt(id=f"p{index}", text=f"prompt {index}") for index in range(11))
+
+    shards = tuple(shard_prompts(prompts, num_shards=4, shard_index=index) for index in range(4))
+
+    assert [len(shard) for shard in shards] == [3, 3, 3, 2]
+    assert tuple(prompt for shard in shards for prompt in shard) != prompts
+    assert {prompt.id for shard in shards for prompt in shard} == {
+        prompt.id for prompt in prompts
+    }
+    assert sum(len(shard) for shard in shards) == len(prompts)
+    assert shard_prompts(prompts, num_shards=4, shard_index=2) == shards[2]
+
+
+@pytest.mark.parametrize(
+    ("num_shards", "shard_index"),
+    ((0, 0), (2, -1), (2, 2)),
+)
+def test_prompt_sharding_rejects_invalid_coordinates(
+    num_shards: int, shard_index: int
+) -> None:
+    with pytest.raises(ValueError, match="shard"):
+        shard_prompts(
+            (Prompt(id="p0", text="prompt"),),
+            num_shards=num_shards,
+            shard_index=shard_index,
+        )
 
 
 def test_qwen_payload_disables_thinking_and_fixes_sampling_controls() -> None:
