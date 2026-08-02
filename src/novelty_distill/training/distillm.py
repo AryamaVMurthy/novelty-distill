@@ -9,7 +9,7 @@ import sys
 import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import TypedDict
+from typing import Any, TypedDict
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -25,7 +25,14 @@ class DistiLLMRawRow(TypedDict):
     output: str
 
 
+class DistiLLMEncodedRow(TypedDict):
+    prompt_ids: list[int]
+    completion_ids: list[int]
+    truncated_completion_tokens: int
+
+
 TeacherTargets = Mapping[str, Mapping[str, Sequence[str]]]
+DISTILLM_SEPARATOR_ID = 65535
 
 
 class DistiLLMRunSpec(BaseModel):
@@ -104,37 +111,70 @@ def build_distillm_raw_rows(
     return tuple(rows)
 
 
-def build_distillm_preprocess_command(
-    spec: DistiLLMRunSpec,
+def encode_distillm_chat_row(
+    row: DistiLLMRawRow,
     *,
-    python_executable: Path,
-    official_checkout: Path,
-    student_model_path: Path,
-    raw_dir: Path,
-    processed_dir: Path,
-) -> tuple[str, ...]:
-    """Use DistiLLM's official uint32 Qwen indexed-data preprocessor."""
+    tokenizer: Any,
+    max_length: int,
+    max_prompt_length: int,
+) -> DistiLLMEncodedRow:
+    """Render one task-faithful Qwen row for the official indexed-data loader."""
 
-    return (
-        str(python_executable),
-        str(official_checkout / "tools" / "process_data_dolly.py"),
-        "--model-path",
-        str(student_model_path),
-        "--model-type",
-        "qwen",
-        "--data-dir",
-        str(raw_dir),
-        "--processed-data-dir",
-        str(processed_dir),
-        "--data-process-workers",
-        "1",
-        "--dev-num",
-        str(spec.dev_examples),
-        "--max-length",
-        str(spec.max_length),
-        "--max-prompt-length",
-        str(spec.max_prompt_length),
+    if row["input"]:
+        raise ValueError("TOMATO DistiLLM rows must keep all context in the instruction")
+    prompt_messages = [{"role": "user", "content": row["instruction"]}]
+    full_messages = [
+        *prompt_messages,
+        {"role": "assistant", "content": row["output"]},
+    ]
+    rendered_prompt = tokenizer.apply_chat_template(
+        prompt_messages,
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=False,
     )
+    rendered_full = tokenizer.apply_chat_template(
+        full_messages,
+        tokenize=False,
+        add_generation_prompt=False,
+        enable_thinking=False,
+    )
+    prompt_ids = list(
+        tokenizer(
+            rendered_prompt,
+            truncation=False,
+            padding=False,
+            add_special_tokens=False,
+        )["input_ids"]
+    )
+    full_ids = list(
+        tokenizer(
+            rendered_full,
+            truncation=False,
+            padding=False,
+            add_special_tokens=False,
+        )["input_ids"]
+    )
+    if full_ids[: len(prompt_ids)] != prompt_ids:
+        raise ValueError("Qwen full chat does not preserve the generation prompt prefix")
+    if len(prompt_ids) > max_prompt_length:
+        raise ValueError(
+            f"DistiLLM prompt length {len(prompt_ids)} exceeds {max_prompt_length}"
+        )
+    completion_ids = full_ids[len(prompt_ids) :]
+    completion_budget = max_length - len(prompt_ids)
+    kept_completion = completion_ids[:completion_budget]
+    if not kept_completion:
+        raise ValueError("DistiLLM row has no assistant completion tokens")
+    if DISTILLM_SEPARATOR_ID in prompt_ids or DISTILLM_SEPARATOR_ID in kept_completion:
+        raise ValueError(
+            "Qwen content contains DistiLLM's legacy separator token 65535"
+        )
+    return {
+        "prompt_ids": prompt_ids,
+        "completion_ids": kept_completion,
+        "truncated_completion_tokens": len(completion_ids) - len(kept_completion),
+    }
 
 
 def build_distillm_training_command(
@@ -346,6 +386,77 @@ def normalize_distillm_qwen_sentinels(processed_dir: Path) -> int:
     return replacements
 
 
+def write_distillm_indexed_data(
+    rows: Sequence[DistiLLMRawRow],
+    *,
+    tokenizer: Any,
+    processed_dir: Path,
+    official_checkout: Path,
+    dev_examples: int,
+    max_length: int,
+    max_prompt_length: int,
+) -> dict[str, int | float | str]:
+    """Write task-faithful rows with DistiLLM's official mmap-index builder."""
+
+    import numpy as np
+    import torch
+
+    sys.path.insert(0, str(official_checkout))
+    try:
+        from data_utils.indexed_dataset import make_builder
+    finally:
+        sys.path.pop(0)
+
+    encoded = tuple(
+        encode_distillm_chat_row(
+            row,
+            tokenizer=tokenizer,
+            max_length=max_length,
+            max_prompt_length=max_prompt_length,
+        )
+        for row in rows
+    )
+    qwen_dir = processed_dir / "qwen"
+    qwen_dir.mkdir(parents=True, exist_ok=True)
+    splits = {
+        "valid": (rows[:dev_examples], encoded[:dev_examples]),
+        "train": (rows[dev_examples:], encoded[dev_examples:]),
+    }
+    for split, (split_rows, split_encoded) in splits.items():
+        builder = make_builder(
+            str(qwen_dir / f"{split}_0.bin"), impl="mmap", dtype=np.uint32
+        )
+        for item in split_encoded:
+            builder.add_item(
+                torch.IntTensor(
+                    [
+                        *item["prompt_ids"],
+                        -1,
+                        *item["completion_ids"],
+                    ]
+                )
+            )
+        builder.finalize(str(qwen_dir / f"{split}_0.idx"))
+        _write_raw_jsonl(split_rows, qwen_dir / f"{split}.jsonl")
+
+    truncated_tokens = [item["truncated_completion_tokens"] for item in encoded]
+    return {
+        "data_adapter": "qwen_official_chat_nonthinking",
+        "rows": len(rows),
+        "max_prompt_tokens": max(len(item["prompt_ids"]) for item in encoded),
+        "max_untruncated_chat_tokens": max(
+            len(item["prompt_ids"])
+            + len(item["completion_ids"])
+            + item["truncated_completion_tokens"]
+            for item in encoded
+        ),
+        "truncated_rows": sum(value > 0 for value in truncated_tokens),
+        "truncated_row_rate": sum(value > 0 for value in truncated_tokens) / len(rows),
+        "truncated_completion_tokens": sum(truncated_tokens),
+        "separator_id": DISTILLM_SEPARATOR_ID,
+    }
+
+
 def execute_distillm_training(
     spec: DistiLLMRunSpec,
     *,
@@ -357,6 +468,7 @@ def execute_distillm_training(
     """Run official Qwen preprocessing followed by official adaptive skew-FKL training."""
 
     from huggingface_hub import snapshot_download
+    from transformers import AutoTokenizer
 
     from novelty_distill.config import load_baseline_registry
     from novelty_distill.official import (
@@ -399,18 +511,15 @@ def execute_distillm_training(
         "CODE_BASE": "HF",
         "WANDB_DISABLED": "true",
     }
-    subprocess.run(
-        build_distillm_preprocess_command(
-            spec,
-            python_executable=Path(sys.executable),
-            official_checkout=checkout,
-            student_model_path=student_path,
-            raw_dir=raw_dir,
-            processed_dir=processed_dir,
-        ),
-        check=True,
-        cwd=checkout,
-        env=environment,
+    tokenizer = AutoTokenizer.from_pretrained(student_path, padding_side="right")
+    context_audit = write_distillm_indexed_data(
+        rows,
+        tokenizer=tokenizer,
+        processed_dir=processed_dir,
+        official_checkout=checkout,
+        dev_examples=spec.dev_examples,
+        max_length=spec.max_length,
+        max_prompt_length=spec.max_prompt_length,
     )
     sentinel_replacements = normalize_distillm_qwen_sentinels(processed_dir / "qwen")
     if sentinel_replacements != len(rows):
@@ -460,6 +569,7 @@ def execute_distillm_training(
             "official_manifest": file_provenance(manifest_path),
         },
         "normalized_qwen_separators": sentinel_replacements,
+        "context_audit": context_audit,
         "training_rows": len(rows),
         "optimizer_example_exposures": spec.max_steps * spec.batch_size * spec.num_gpus,
         "epoch_plan": distillm_epoch_plan(spec),

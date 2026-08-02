@@ -104,6 +104,10 @@ not a results report and does not promote any baseline.
   validation loss is checked. Production C3 uses ten 25-step validation stages and reconstructs
   the scheduler history from the official log; it fails closed if training ends before step 250 or
   if the logged thresholds contradict the scheduler rule.
+- DistiLLM's legacy Dolly/Qwen prompt is not used for Qwen3. The project task adapter applies the
+  pinned tokenizer's official non-thinking user/assistant template, then reuses the upstream mmap
+  index builder and unchanged trainer/loss. It fails on prompt truncation or separator-ID collision
+  and records any completion-tail truncation in run metadata.
 - Raw prompt-level metrics and all eight training-teacher samples are retained for reannotation.
 - OPSD's pinned upstream collator is math-specific and therefore is not used as a task adapter. The
   task-faithful collator preserves the official trainer/loss, makes student prompts byte-identical

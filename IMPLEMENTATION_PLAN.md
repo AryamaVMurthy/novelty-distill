@@ -201,6 +201,11 @@ validation stages when validation loss worsens. C3 therefore validates every 25 
 intermediate validation would silently reduce the advertised adaptive replay method to static KD.
 The official log is a release artifact: all 250 steps, validation losses, threshold history, and
 the reconstructed terminal replay probability must be present in run metadata.
+DistiLLM's upstream Dolly preprocessor uses a legacy Qwen chat string that is not valid Qwen3
+role formatting. The task adapter therefore renders the same official non-thinking Qwen3 chat
+template used by evaluation and writes it with DistiLLM's official mmap-index builder. It preserves
+the complete prompt, records completion-tail truncation, and rejects any collision with the
+upstream loader's legacy separator ID before training.
 
 ## Teacher generation
 

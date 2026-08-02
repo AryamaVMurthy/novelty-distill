@@ -189,7 +189,7 @@ def main() -> None:
         },
         "notes": {
             "on_policy": "upper bound from declared maximum generation, not observed truncation",
-            "distillm": "Qwen chat-template proxy; official preprocessing enforces the named caps",
+            "distillm": "Exact non-thinking Qwen chat template used by the task adapter",
         },
         "summaries": summaries,
         "longest_examples": {

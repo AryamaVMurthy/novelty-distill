@@ -9,12 +9,56 @@ from novelty_distill.training.distillm import (
     DistiLLMRunSpec,
     _latest_distillm_checkpoint,
     audit_distillm_log,
-    build_distillm_preprocess_command,
     build_distillm_raw_rows,
     build_distillm_training_command,
     distillm_epoch_plan,
+    encode_distillm_chat_row,
     normalize_distillm_qwen_sentinels,
 )
+
+
+def test_distillm_chat_adapter_uses_qwen_template_and_preserves_prompt() -> None:
+    class CharacterTokenizer:
+        eos_token_id = 99
+
+        def apply_chat_template(self, messages, **kwargs):
+            assert kwargs["tokenize"] is False
+            assert kwargs["enable_thinking"] is False
+            return "PP" if len(messages) == 1 else "PPabcdefgh"
+
+        def __call__(self, text, **kwargs):
+            assert kwargs["add_special_tokens"] is False
+            return {"input_ids": [ord(character) for character in text]}
+
+    encoded = encode_distillm_chat_row(
+        {"instruction": "problem", "input": "", "output": "answer"},
+        tokenizer=CharacterTokenizer(),
+        max_length=6,
+        max_prompt_length=4,
+    )
+
+    assert encoded["prompt_ids"] == [ord("P"), ord("P")]
+    assert encoded["completion_ids"] == [ord(character) for character in "abcd"]
+    assert encoded["truncated_completion_tokens"] == 4
+
+
+def test_distillm_chat_adapter_rejects_legacy_separator_token_collision() -> None:
+    class CollidingTokenizer:
+        eos_token_id = 99
+
+        def apply_chat_template(self, messages, **kwargs):
+            return "prompt" if len(messages) == 1 else "promptanswer"
+
+        def __call__(self, text, **kwargs):
+            return {"input_ids": [65535] if text == "prompt" else [65535, 1]}
+
+    with pytest.raises(ValueError, match="separator token"):
+        encode_distillm_chat_row(
+            {"instruction": "problem", "input": "", "output": "answer"},
+            tokenizer=CollidingTokenizer(),
+            max_length=6,
+            max_prompt_length=4,
+        )
 
 
 def test_distillm_log_audit_records_adaptive_threshold_trajectory(
@@ -119,16 +163,8 @@ def test_distillm_raw_rows_use_static_best_teacher_target() -> None:
     )
 
 
-def test_distillm_commands_delegate_preprocessing_and_training_to_official_repo() -> None:
+def test_distillm_training_command_delegates_to_official_repo() -> None:
     spec = _spec()
-    preprocess = build_distillm_preprocess_command(
-        spec,
-        python_executable=Path("/env/bin/python"),
-        official_checkout=Path("/official/distillm"),
-        student_model_path=Path("/models/student"),
-        raw_dir=Path("/data/raw"),
-        processed_dir=Path("/data/processed"),
-    )
     training = build_distillm_training_command(
         spec,
         python_executable=Path("/env/bin/python"),
@@ -139,8 +175,6 @@ def test_distillm_commands_delegate_preprocessing_and_training_to_official_repo(
         output_dir=Path("/output"),
     )
 
-    assert preprocess[1] == "/official/distillm/tools/process_data_dolly.py"
-    assert preprocess[preprocess.index("--model-type") + 1] == "qwen"
     assert training[:7] == (
         "/env/bin/python",
         "-m",

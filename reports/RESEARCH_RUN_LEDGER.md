@@ -126,6 +126,12 @@ validation interval would never call that scheduler. C3 now runs the paper-align
 validation cadence and fails closed unless the official log contains every optimizer step and a
 consistent validation-loss/threshold trajectory. This preserves an adaptive-replay test rather
 than silently relabeling static skew-KL as DistiLLM.
+Finally, the pinned Dolly preprocessor was found to emit a legacy Qwen string without Qwen3's
+`user`/`assistant` roles. C3 now uses a task adapter that renders Qwen3's official non-thinking
+chat template and delegates indexed-file construction to DistiLLM's official mmap builder. The
+adapter preserves the prompt, records completion-tail truncation, and rejects content containing
+the upstream loader's hard-coded separator token ID 65535 rather than risking a false prompt
+boundary.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
