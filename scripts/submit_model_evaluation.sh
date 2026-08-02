@@ -1,5 +1,5 @@
 #!/bin/bash
-# Submit one resumable generation -> judge -> joint-evaluation chain on TOMATO temporal test.
+# Submit one resumable generation -> judge -> teacher-anchored evaluation chain on TOMATO test.
 
 set -euo pipefail
 
