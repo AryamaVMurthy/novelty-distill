@@ -34,3 +34,24 @@ def test_evaluation_configs_fix_identical_sampling_across_models() -> None:
     assert {
         tuple(getattr(spec, field) for field in controls) for spec in (student, adapter, teacher)
     } == {tuple(getattr(student, field) for field in controls)}
+
+
+def test_production_teacher_uses_calibrated_concise_official_decoding() -> None:
+    production = _load("teacher.yaml")
+    evaluation = _load("eval_qwen3_14b.yaml")
+
+    controls = (
+        "temperature",
+        "top_p",
+        "top_k",
+        "min_p",
+        "max_new_tokens",
+        "response_instruction",
+    )
+    assert tuple(getattr(production, field) for field in controls) == tuple(
+        getattr(evaluation, field) for field in controls
+    )
+    assert production.temperature == 0.7
+    assert production.top_p == 0.8
+    assert production.samples_per_prompt == 8
+    assert production.enable_thinking is False
