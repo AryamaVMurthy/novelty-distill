@@ -43,6 +43,9 @@ def test_summarize_score_payloads_exposes_ceiling_and_within_prompt_spread() -> 
     assert summary["dimensions"]["clarity"]["ceiling_rate"] == pytest.approx(0.25)
     assert summary["generation"]["length_stop_rate"] == pytest.approx(0.5)
     assert summary["generation"]["completion_tokens_median"] == pytest.approx(10.5)
+    assert summary["generation"]["within_prompt_quality_length_pearson"] == pytest.approx(
+        -(0.5**0.5)
+    )
     markdown = render_score_summary_markdown(summary)
     assert "# Scored generation diagnostics" in markdown
     assert "not a novelty score" in markdown

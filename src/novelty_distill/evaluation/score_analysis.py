@@ -36,6 +36,8 @@ def summarize_score_payloads(payloads: Iterable[Mapping[str, Any]]) -> dict[str,
     completion_tokens: list[int] = []
     within_prompt_ranges: list[float] = []
     within_prompt_unique_scores: list[int] = []
+    centered_qualities: list[float] = []
+    centered_tokens: list[float] = []
     for prompt_id, records in prompt_records.items():
         prompt_qualities: list[float] = []
         for record in records:
@@ -62,6 +64,11 @@ def summarize_score_payloads(payloads: Iterable[Mapping[str, Any]]) -> dict[str,
             completion_tokens.append(tokens)
         within_prompt_ranges.append(max(prompt_qualities) - min(prompt_qualities))
         within_prompt_unique_scores.append(len(set(prompt_qualities)))
+        prompt_tokens = [int(record["completion_tokens"]) for record in records]
+        quality_mean = statistics.fmean(prompt_qualities)
+        token_mean = statistics.fmean(prompt_tokens)
+        centered_qualities.extend(value - quality_mean for value in prompt_qualities)
+        centered_tokens.extend(value - token_mean for value in prompt_tokens)
 
     return {
         "num_prompts": len(prompt_records),
@@ -100,6 +107,10 @@ def summarize_score_payloads(payloads: Iterable[Mapping[str, Any]]) -> dict[str,
             "completion_tokens_mean": statistics.fmean(completion_tokens),
             "completion_tokens_median": statistics.median(completion_tokens),
             "completion_tokens_max": max(completion_tokens),
+            "quality_length_pearson": _pearson(qualities, completion_tokens),
+            "within_prompt_quality_length_pearson": _pearson(
+                centered_qualities, centered_tokens
+            ),
         },
     }
 
@@ -157,6 +168,11 @@ def render_score_summary_markdown(summary: Mapping[str, Any]) -> str:
                 f"{_number(generation['completion_tokens_median'])} / "
                 f"{int(generation['completion_tokens_max'])}."
             ),
+            (
+                "- Quality–length Pearson correlation (global / prompt-centered): "
+                f"{_optional_number(generation['quality_length_pearson'])} / "
+                f"{_optional_number(generation['within_prompt_quality_length_pearson'])}."
+            ),
             "",
         ]
     )
@@ -165,3 +181,25 @@ def render_score_summary_markdown(summary: Mapping[str, Any]) -> str:
 
 def _number(value: Any) -> str:
     return f"{float(value):.6g}"
+
+
+def _optional_number(value: Any) -> str:
+    return "NA" if value is None else _number(value)
+
+
+def _pearson(left: list[float], right: list[float | int]) -> float | None:
+    if len(left) != len(right) or not left:
+        raise ValueError("Pearson inputs must have the same non-zero length")
+    left_mean = statistics.fmean(left)
+    right_mean = statistics.fmean(right)
+    left_centered = [value - left_mean for value in left]
+    right_centered = [value - right_mean for value in right]
+    denominator = math.sqrt(
+        sum(value * value for value in left_centered)
+        * sum(value * value for value in right_centered)
+    )
+    if denominator == 0:
+        return None
+    return sum(
+        a * b for a, b in zip(left_centered, right_centered, strict=True)
+    ) / denominator
