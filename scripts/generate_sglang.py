@@ -11,6 +11,7 @@ import yaml
 from novelty_distill.generation.sglang import (
     GenerationSpec,
     Prompt,
+    ensure_generation_run_manifest,
     generate_prompt,
     load_prompts,
     pending_prompts,
@@ -36,6 +37,12 @@ def main() -> None:
         spec = GenerationSpec.model_validate(yaml.safe_load(handle))
 
     prompts = load_prompts(args.input)
+    ensure_generation_run_manifest(
+        input_path=args.input,
+        output_dir=args.output_dir,
+        prompts=prompts,
+        spec=spec,
+    )
     remaining = pending_prompts(prompts, args.output_dir, spec)
     print(json.dumps({"total": len(prompts), "pending": len(remaining)}, sort_keys=True))
 

@@ -246,6 +246,64 @@ def pending_prompts(
     return tuple(pending)
 
 
+def ensure_generation_run_manifest(
+    *,
+    input_path: Path,
+    output_dir: Path,
+    prompts: Iterable[Prompt],
+    spec: GenerationSpec,
+) -> Path:
+    """Freeze the input prompts and generation controls for a resumable run."""
+
+    prompt_tuple = tuple(prompts)
+    manifest = {
+        "schema_version": 1,
+        "input_sha256": hashlib.sha256(input_path.read_bytes()).hexdigest(),
+        "config_hash": generation_fingerprint(spec),
+        "generation": spec.model_dump(mode="json"),
+        "prompts": [
+            {
+                "id": prompt.id,
+                "text_sha256": hashlib.sha256(prompt.text.encode()).hexdigest(),
+            }
+            for prompt in prompt_tuple
+        ],
+    }
+    destination = output_dir / "_metadata" / "run-manifest.json"
+    if destination.exists():
+        with destination.open(encoding="utf-8") as handle:
+            if json.load(handle) != manifest:
+                raise ValueError(f"generation run changed for existing {destination}")
+        return destination
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary_name: str | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            dir=destination.parent,
+            prefix=f".{destination.name}.",
+            suffix=".tmp",
+            delete=False,
+        ) as handle:
+            temporary_name = handle.name
+            json.dump(manifest, handle, ensure_ascii=False, sort_keys=True)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary_name, destination)
+        directory_fd = os.open(destination.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        if temporary_name is not None and os.path.exists(temporary_name):
+            os.unlink(temporary_name)
+    return destination
+
+
 PostJSON = Callable[[str, dict[str, Any], float], Mapping[str, Any]]
 
 

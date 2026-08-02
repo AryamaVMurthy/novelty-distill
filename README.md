@@ -38,6 +38,13 @@ scripts/turing_submit.sh slurm/score_teacher.sbatch --export=ALL,CALIBRATION_RUN
 scripts/turing_submit.sh slurm/cluster_teacher.sbatch --export=ALL,CALIBRATION_RUN_ID=qwen3-14b-v1
 ```
 
+After calibration promotes `configs/generation/teacher.yaml`, the resumable 1,000-prompt teacher
+run uses the same SGLang job with a stable output ID:
+
+```bash
+scripts/turing_submit.sh slurm/sglang_smoke.sbatch --export=ALL,GENERATION_CONFIG=configs/generation/teacher.yaml,OUTPUT_NAME=teacher,OUTPUT_RUN_ID=teacher-1k-v1,INPUT_LIMIT=1000,GENERATION_CONCURRENCY=8
+```
+
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
 submission helper briefly allocates node01 before calling `sbatch`.

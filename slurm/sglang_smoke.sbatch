@@ -25,6 +25,8 @@ model_revision="${MODEL_REVISION:-70d244cc86ccca08cf5af4e1e306ecf908b1ad5e}"
 generation_config="${GENERATION_CONFIG:-configs/generation/smoke.yaml}"
 input_limit="${INPUT_LIMIT:-1}"
 output_name="${OUTPUT_NAME:-sglang-smoke}"
+output_run_id="${OUTPUT_RUN_ID:-${SLURM_JOB_ID}}"
+generation_concurrency="${GENERATION_CONCURRENCY:-1}"
 calibration_config="${CALIBRATION_CONFIG:-}"
 calibration_run_id="${CALIBRATION_RUN_ID:-}"
 server_log="${scratch_root}/logs/sglang-${SLURM_JOB_ID}.log"
@@ -34,6 +36,14 @@ port="${PORT:-$((20000 + SLURM_JOB_ID % 20000))}"
 if ! [[ "${input_limit}" =~ ^[1-9][0-9]*$ ]]; then
   echo "INPUT_LIMIT must be a positive integer" >&2
   exit 1
+fi
+if ! [[ "${generation_concurrency}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "GENERATION_CONCURRENCY must be a positive integer" >&2
+  exit 1
+fi
+if [[ "${output_name}" == */* || "${output_name}" == *..* || "${output_run_id}" == */* || "${output_run_id}" == *..* ]]; then
+  echo "OUTPUT_NAME and OUTPUT_RUN_ID must be path-safe names" >&2
+  exit 2
 fi
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
@@ -159,7 +169,7 @@ if [[ -n "${calibration_config}" ]]; then
     --base-url "http://127.0.0.1:${port}"
 else
   input="${scratch_root}/data/tomato-open-train-1000.jsonl"
-  output_dir="${scratch_root}/generations/${output_name}/${SLURM_JOB_ID}"
+  output_dir="${scratch_root}/generations/${output_name}/${output_run_id}"
   if [[ ! -f "${input}" ]]; then
     echo "missing prepared smoke data: ${input}" >&2
     exit 1
@@ -172,13 +182,13 @@ else
     --output-dir "${output_dir}" \
     --config "${repo_dir}/${generation_config}" \
     --base-url "http://127.0.0.1:${port}" \
-    --concurrency 1
+    --concurrency "${generation_concurrency}"
   "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
     --input "${input_slice}" \
     --output-dir "${output_dir}" \
     --config "${repo_dir}/${generation_config}" \
     --base-url "http://127.0.0.1:${port}" \
-    --concurrency 1
+    --concurrency "${generation_concurrency}"
   find "${output_dir}" -maxdepth 1 -type f -name '*.json' -print
 fi
 

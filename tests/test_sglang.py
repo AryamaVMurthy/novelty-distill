@@ -1,10 +1,13 @@
 from pathlib import Path
 
+import pytest
+
 from novelty_distill.generation.sglang import (
     GenerationRecord,
     GenerationSpec,
     Prompt,
     build_chat_completion_payload,
+    ensure_generation_run_manifest,
     generate_prompt,
     generation_fingerprint,
     load_prompt_shard,
@@ -101,6 +104,38 @@ def test_atomic_prompt_shards_make_generation_resumable(tmp_path: Path) -> None:
     assert load_prompt_shard(shard, spec) == records
     prompts = (Prompt(id="unsafe/id", text="done"), Prompt(id="tomato-8", text="pending"))
     assert pending_prompts(prompts, tmp_path, spec) == (prompts[1],)
+
+
+def test_generation_manifest_rejects_changed_prompt_text(tmp_path: Path) -> None:
+    spec = GenerationSpec(
+        model="Qwen/Qwen3-14B",
+        revision="40c069824f4251a91eefaf281ebe4c544efd3e18",
+        temperature=0.8,
+        top_p=0.95,
+        max_new_tokens=512,
+        samples_per_prompt=2,
+        seed=17,
+    )
+    input_path = tmp_path / "prompts.jsonl"
+    input_path.write_text('{"id":"p1","student_prompt":"first"}\n', encoding="utf-8")
+    output_dir = tmp_path / "generation"
+
+    manifest = ensure_generation_run_manifest(
+        input_path=input_path,
+        output_dir=output_dir,
+        prompts=(Prompt(id="p1", text="first"),),
+        spec=spec,
+    )
+
+    assert manifest == output_dir / "_metadata" / "run-manifest.json"
+    input_path.write_text('{"id":"p1","student_prompt":"changed"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="changed"):
+        ensure_generation_run_manifest(
+            input_path=input_path,
+            output_dir=output_dir,
+            prompts=(Prompt(id="p1", text="changed"),),
+            spec=spec,
+        )
 
 
 def test_generate_prompt_calls_one_seeded_request_per_sample_then_resumes(tmp_path: Path) -> None:
