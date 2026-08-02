@@ -57,3 +57,4 @@ def test_contrast_report_renders_inference_and_threshold_direction_counts() -> N
     assert "0.700: 2/0/1" in report
     assert "not human-validated scientific novelty labels" in report
     assert "finite-sample plug-in estimate" in report
+    assert "pointwise, not simultaneous" in report

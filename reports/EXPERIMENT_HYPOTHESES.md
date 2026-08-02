@@ -38,7 +38,9 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
 
 - Aggregate at the prompt level; K=16 samples are repeated observations, not 16 independent tasks.
 - Report paired bootstrap confidence intervals and standardized paired effects for promoted
-  contrasts. Adjust confirmatory contrast p-values with Holm's method.
+  contrasts. Adjust confirmatory contrast p-values with Holm's method. The reported 95% bootstrap
+  intervals are pointwise rather than simultaneous confidence intervals; the Holm adjustment
+  applies to p-values only.
 - Holm adjustment is applied to all 17 declared contrasts separately within each metric, not to
   the complete cross-metric set. A favorable result selected after scanning multiple outcomes is
   exploratory unless its metric and contrast were declared as the specific claim in advance.

@@ -26,8 +26,9 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
             "All estimates are treatment minus reference over paired prompts. Confidence intervals "
             f"and sign-flip p-values use {int(payload['bootstrap_samples']):,} Monte Carlo samples "
             f"with seed {int(payload['seed'])}; Holm correction is applied across every declared "
-            "contrast within each metric. These are operational judge/embedding outcomes, not "
-            "human-validated scientific novelty labels."
+            "contrast within each metric. The 95% confidence intervals are pointwise, not "
+            "simultaneous; multiplicity correction applies to p-values only. These are "
+            "operational judge/embedding outcomes, not human-validated scientific novelty labels."
         ),
         "",
         "## Descriptive method levels",
