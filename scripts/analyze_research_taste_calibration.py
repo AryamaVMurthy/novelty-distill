@@ -9,7 +9,10 @@ from typing import Any
 
 import yaml
 
-from novelty_distill.evaluation.taste_calibration import analyze_human_taste_agreement
+from novelty_distill.evaluation.taste_calibration import (
+    analyze_human_taste_agreement,
+    normalize_human_packet_row,
+)
 from novelty_distill.provenance import repository_commit
 
 
@@ -41,7 +44,7 @@ def _read_jsonl(path: Path) -> tuple[dict[str, Any], ...]:
                 payload = json.loads(line)
                 if not isinstance(payload, dict):
                     raise ValueError(f"human label row is not an object: {path}")
-                records.append(payload)
+                records.append(normalize_human_packet_row(payload))
     if not records:
         raise ValueError(f"human label file is empty: {path}")
     return tuple(records)

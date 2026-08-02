@@ -305,6 +305,10 @@ passes for A0, A1, A3, and every executable trained method. These attributed Che
 taxonomy results are stored and analyzed separately as `secondary_descriptive`; they cannot modify
 the primary contrast family and require the declared two-human agreement gate before any headline
 claim. The complete contract is in `reports/RESEARCH_TASTE_PROTOCOL.md`.
+Commit `c5cb924` adds the deterministic source-blinded 150-record calibration packet, hidden source
+key, and fail-closed two-human agreement analysis. The final CPU job prepares those artifacts but
+does not promote automatic labels without Cohen's kappa >= 0.80 on both axes for every automatic--
+human and human--human comparison.
 Early resumable A0 annotation passes 18227 -> 18228 were submitted `afterok:18165` to consume the
 GPU released when the nearly complete A0 generation pass exits. Short array 18229 runs the missing
 B1 and B3 SFT artifacts sequentially on that GPU first; 18227 now waits `afterany:18229`. The locked

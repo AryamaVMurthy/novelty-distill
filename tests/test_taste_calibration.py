@@ -3,6 +3,7 @@ import pytest
 from novelty_distill.evaluation.taste_calibration import (
     analyze_human_taste_agreement,
     cohen_kappa,
+    normalize_human_packet_row,
     select_blinded_taste_calibration,
 )
 
@@ -158,3 +159,21 @@ def test_human_agreement_rejects_missing_or_extra_calibration_ids() -> None:
             minimum_annotators=2,
             minimum_kappa=0.8,
         )
+
+
+def test_edited_blinded_packet_rows_are_valid_human_label_inputs() -> None:
+    row = {
+        "calibration_id": "c1",
+        "task": "A hidden task",
+        "candidate_idea": "A hidden idea",
+        "opportunity_pattern": "explanation_gap",
+        "method_paradigm": "formal_conceptual_derivation",
+    }
+
+    assert normalize_human_packet_row(row) == {
+        "calibration_id": "c1",
+        "opportunity_pattern": "explanation_gap",
+        "method_paradigm": "formal_conceptual_derivation",
+    }
+    with pytest.raises(ValueError, match="unexpected human label fields"):
+        normalize_human_packet_row({**row, "method": "A1"})

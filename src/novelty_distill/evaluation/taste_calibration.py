@@ -42,6 +42,32 @@ class HumanTasteLabel(BaseModel):
     method_paradigm: MethodParadigm
 
 
+def normalize_human_packet_row(row: Mapping[str, Any]) -> dict[str, str]:
+    """Accept an edited blinded packet row while rejecting unrecognized fields."""
+
+    allowed = {
+        "calibration_id",
+        "task",
+        "candidate_idea",
+        "opportunity_pattern",
+        "method_paradigm",
+    }
+    unknown = sorted(set(row) - allowed)
+    if unknown:
+        raise ValueError(f"unexpected human label fields: {unknown}")
+    label = HumanTasteLabel.model_validate(
+        {
+            key: row.get(key)
+            for key in (
+                "calibration_id",
+                "opportunity_pattern",
+                "method_paradigm",
+            )
+        }
+    )
+    return label.model_dump(mode="json")
+
+
 _STRATA = ("human", "teacher", "base", "trained")
 
 
