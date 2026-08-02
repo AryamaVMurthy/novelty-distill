@@ -90,9 +90,21 @@ threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
   --config "${repo_dir}/configs/evaluation/research_taste.yaml" \
   --output "${output_dir}/research-taste-secondary.json" \
   --markdown "${output_dir}/research-taste-findings.md"
+"${venv_dir}/bin/python" "${repo_dir}/scripts/prepare_research_taste_calibration.py" \
+  "${taste_inputs[@]}" \
+  --prompts "${scratch_root}/data/tomato-open-test-1658.jsonl" \
+  --generation-config "${repo_dir}/configs/generation/eval_qwen3_4b.yaml" \
+  --size 150 \
+  --seed 17 \
+  --packet "${output_dir}/research-taste-human-calibration.jsonl" \
+  --key "${output_dir}/research-taste-human-calibration-key.json" \
+  --instructions "${output_dir}/research-taste-human-calibration-instructions.md"
 test -s "${output_dir}/prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/threshold-prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/primary-contrasts.json"
 test -s "${output_dir}/findings.md"
 test -s "${output_dir}/research-taste-secondary.json"
 test -s "${output_dir}/research-taste-findings.md"
+test -s "${output_dir}/research-taste-human-calibration.jsonl"
+test -s "${output_dir}/research-taste-human-calibration-key.json"
+test -s "${output_dir}/research-taste-human-calibration-instructions.md"

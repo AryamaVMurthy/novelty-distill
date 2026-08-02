@@ -69,4 +69,7 @@ def test_final_analysis_keeps_taste_results_separate_from_primary_contrasts() ->
     assert "scripts/analyze_research_taste.py" in script
     assert "research-taste-secondary.json" in script
     assert "research-taste-findings.md" in script
+    assert "scripts/prepare_research_taste_calibration.py" in script
+    assert "research-taste-human-calibration.jsonl" in script
+    assert "research-taste-human-calibration-key.json" in script
     assert "primary-contrasts.json" in script

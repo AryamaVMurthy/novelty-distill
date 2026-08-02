@@ -104,6 +104,11 @@ pinned Qwen3-32B-FP8 annotator. Before any headline research-taste claim, at lea
 be independently labeled by at least two human annotators. The automated labeler must achieve
 Cohen's kappa of at least 0.80 on both taxonomy axes. Calibration records must be stratified across
 A3, A1, A0, and trained sources without revealing method identities to annotators.
+Every pair of human annotators must meet the same threshold; a high model--human score cannot pass
+the gate when the human labeling contract itself is unreliable. The deterministic 150-record
+packet, hidden source key, and analysis tooling are produced by
+`scripts/prepare_research_taste_calibration.py` and
+`scripts/analyze_research_taste_calibration.py`.
 
 If the gate fails, automatic taste results remain explicitly descriptive appendix material. The
 frozen primary quality and semantic-mode analyses remain valid and unchanged.
