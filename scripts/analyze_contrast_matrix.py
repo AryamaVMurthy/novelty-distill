@@ -11,6 +11,7 @@ from novelty_distill.evaluation.contrasts import (
     analyze_contrasts,
     analyze_threshold_directions,
 )
+from novelty_distill.evaluation.reporting import render_contrast_markdown
 
 
 def parse_args() -> argparse.Namespace:
@@ -19,6 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--threshold-input", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--markdown", type=Path, required=True)
     return parser.parse_args()
 
 
@@ -62,12 +64,15 @@ def main() -> None:
         json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
         encoding="utf-8",
     )
+    args.markdown.parent.mkdir(parents=True, exist_ok=True)
+    args.markdown.write_text(render_contrast_markdown(payload), encoding="utf-8")
     print(
         json.dumps(
             {
                 "metrics": len(results),
                 "threshold_metrics": len(threshold_directions),
                 "output": str(args.output),
+                "markdown": str(args.markdown),
             },
             sort_keys=True,
         )

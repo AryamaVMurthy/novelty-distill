@@ -66,7 +66,9 @@ threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
   --input "${matrix_path}" \
   --threshold-input "${threshold_matrix_path}" \
   --config "${repo_dir}/configs/evaluation/primary_contrasts.yaml" \
-  --output "${output_dir}/primary-contrasts.json"
+  --output "${output_dir}/primary-contrasts.json" \
+  --markdown "${output_dir}/findings.md"
 test -s "${output_dir}/prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/threshold-prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/primary-contrasts.json"
+test -s "${output_dir}/findings.md"
