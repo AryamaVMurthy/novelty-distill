@@ -143,7 +143,9 @@ correctly rejected the 223-token Qwen3 prompt. After raising only this systems-s
 46,472 MiB, exactly two normalized separators, a complete step log, and a 3,441,191,930-byte full
 student weight file. Its two 512-token pilot completion truncations are smoke-only; the production
 896-token rate remains the exact 1/1,000, 19-token audit above. Per-invocation byte offsets now
-isolate official log audits while preserving all earlier retry history.
+isolate official log audits while preserving all earlier retry history. Regression 18146 reran the
+same optimizer step at commit `9c17194` and confirmed that the current invocation contains exactly
+one validation check and one logged training step despite the preserved historical log.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
