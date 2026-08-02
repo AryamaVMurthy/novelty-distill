@@ -18,6 +18,7 @@ set -euo pipefail
 module load u22/cuda/12.4
 
 generation_job_id="${GENERATION_JOB_ID:?set GENERATION_JOB_ID to the teacher SGLang job}"
+generation_name="${GENERATION_NAME:-teacher-smoke}"
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
@@ -92,7 +93,7 @@ if [[ "${ready}" != 1 ]]; then
 fi
 
 "${venv_dir}/bin/python" "${repo_dir}/scripts/score_teacher_generations.py" \
-  --generation-dir "${scratch_root}/generations/teacher-smoke/${generation_job_id}" \
+  --generation-dir "${scratch_root}/generations/${generation_name}/${generation_job_id}" \
   --generation-config "${repo_dir}/configs/generation/teacher.yaml" \
   --prompts "${scratch_root}/data/tomato-open-train-1000.jsonl" \
   --output-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
