@@ -1,0 +1,142 @@
+#!/usr/bin/env python3
+"""Analyze secondary research-taste distributions across aligned methods."""
+
+import argparse
+import json
+from pathlib import Path
+from typing import Any
+
+import yaml
+
+from novelty_distill.evaluation.research_taste import (
+    ResearchTasteRecord,
+    analyze_research_taste_matrix,
+)
+from novelty_distill.evaluation.taste_shards import load_research_taste_shard
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", action="append", required=True, metavar="METHOD=DIR")
+    parser.add_argument("--human-method", default="A3")
+    parser.add_argument("--teacher-method", default="A1")
+    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--markdown", type=Path, required=True)
+    return parser.parse_args()
+
+
+def _parse_inputs(values: list[str]) -> dict[str, Path]:
+    inputs: dict[str, Path] = {}
+    for value in values:
+        if "=" not in value:
+            raise ValueError(f"research-taste input must be METHOD=DIR, got {value!r}")
+        method, raw_path = value.split("=", 1)
+        if not method.strip() or method in inputs:
+            raise ValueError(f"invalid or duplicate research-taste method {method!r}")
+        inputs[method] = Path(raw_path)
+    return inputs
+
+
+def _load_records(path: Path) -> tuple[dict[str, Any], ...]:
+    records: list[dict[str, Any]] = []
+    shard_paths = sorted(path.glob("*.json"))
+    if not shard_paths:
+        raise ValueError(f"no research-taste shards found in {path}")
+    for shard_path in shard_paths:
+        preview = json.loads(shard_path.read_text(encoding="utf-8"))
+        raw_records = preview.get("records") if isinstance(preview, dict) else None
+        if not isinstance(raw_records, list) or not raw_records:
+            raise ValueError(f"research-taste shard has no records: {shard_path}")
+        payload = load_research_taste_shard(
+            shard_path, samples_per_prompt=len(raw_records)
+        )
+        for raw_record in payload["records"]:
+            record = ResearchTasteRecord.model_validate(
+                {
+                    key: value
+                    for key, value in raw_record.items()
+                    if key
+                    not in {
+                        "text",
+                        "request_id",
+                        "model",
+                    }
+                }
+            )
+            records.append(record.model_dump(mode="json"))
+    return tuple(records)
+
+
+def _number(value: float) -> str:
+    return f"{value:.4f}"
+
+
+def _markdown(result: dict[str, Any], config: dict[str, Any]) -> str:
+    lines = [
+        "# Research-taste secondary analysis",
+        "",
+        "This is a descriptive secondary analysis and does not alter the frozen primary outcomes.",
+        "The taxonomy is attributed to Chen, Zhao, and Cohan (2026), arXiv:2607.01233.",
+        "Headline claims require the human-agreement gate declared in the configuration.",
+        "",
+        "## All-sample distributions",
+        "",
+        "| Method | Opp. JSD vs human | Method JSD vs human | Opp. entropy | "
+        "Method entropy | Bridge rate | Synthesis rate |",
+        "|---|---:|---:|---:|---:|---:|---:|",
+    ]
+    for method, analysis in result["methods"].items():
+        summary = analysis["summary_all_samples"]
+        comparison = analysis["all_samples"]["vs_human"]
+        lines.append(
+            f"| {method} | "
+            f"{_number(comparison['opportunity_pattern']['jensen_shannon_divergence'])} | "
+            f"{_number(comparison['method_paradigm']['jensen_shannon_divergence'])} | "
+            f"{_number(summary['opportunity_normalized_entropy'])} | "
+            f"{_number(summary['method_normalized_entropy'])} | "
+            f"{_number(summary['bridge_opportunity_rate'])} | "
+            f"{_number(summary['synthesis_method_rate'])} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Interpretation contract",
+            "",
+            "- Negative human-JSD delta versus A1 means a method is closer to the human taste "
+            "distribution than the teacher; it does not by itself establish higher idea quality.",
+            "- The all-sample view measures K-sample behavior. The sample-zero view provides a "
+            "matched one-shot sensitivity analysis.",
+            "- Category entropy and semantic-mode coverage measure different forms of diversity.",
+            "- The automatic labels remain descriptive until the declared human validation passes.",
+            "",
+            f"Configuration status: `{config['status']}`.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def main() -> None:
+    args = parse_args()
+    config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    if config.get("status") != "secondary_descriptive":
+        raise ValueError("research-taste analysis must remain secondary_descriptive")
+    inputs = _parse_inputs(args.input)
+    result = analyze_research_taste_matrix(
+        {method: _load_records(path) for method, path in inputs.items()},
+        human_method=args.human_method,
+        teacher_method=args.teacher_method,
+    )
+    result["source"] = config["source"]
+    result["human_validation"] = config["human_validation"]
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.markdown.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text(
+        json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    args.markdown.write_text(_markdown(result, config), encoding="utf-8")
+
+
+if __name__ == "__main__":
+    main()

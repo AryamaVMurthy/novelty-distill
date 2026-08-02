@@ -29,10 +29,13 @@ target_name="teacher-targets-tomato1k-v1.json"
 generation_passes="${GENERATION_PASSES:-3}"
 score_passes="${SCORE_PASSES:-2}"
 evaluation_passes="${EVALUATION_PASSES:-2}"
+taste_passes="${TASTE_PASSES:-2}"
 
-for value in "${generation_passes}" "${score_passes}" "${evaluation_passes}"; do
+for value in \
+  "${generation_passes}" "${score_passes}" "${evaluation_passes}" "${taste_passes}"
+do
   if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
-    echo "generation, score, and evaluation passes must be positive integers" >&2
+    echo "generation, score, evaluation, and taste passes must be positive integers" >&2
     exit 2
   fi
 done
@@ -61,6 +64,7 @@ adapter_ids=(
   D1 D2 D3 E2 E3 E4
 )
 evaluation_jobs=()
+taste_jobs=()
 for baseline_id in "${adapter_ids[@]}"; do
   adapter_path="${scratch_root}/checkpoints/${baseline_id}-tomato1k-seed17/final"
   test -f "${adapter_path}/adapter_config.json"
@@ -93,6 +97,33 @@ submit_job() {
   printf '%s\n' "${job_id}"
 }
 
+submit_taste_chain() {
+  local generation_id="$1"
+  local generation_name="$2"
+  local generation_config="$3"
+  local upstream_job="$4"
+  local taste_job=""
+  local pass_index
+  for pass_index in $(seq 1 "${taste_passes}"); do
+    local taste_job_dependency
+    if [[ -z "${taste_job}" ]]; then
+      taste_job_dependency="afterok:${upstream_job}"
+    else
+      taste_job_dependency="afterany:${taste_job}"
+    fi
+    taste_job="$(
+      submit_job \
+        --time=06:00:00 \
+        --dependency="${taste_job_dependency}" \
+        --export="ALL,GENERATION_JOB_ID=${generation_id},GENERATION_NAME=${generation_name},GENERATION_CONFIG=${generation_config},PROMPTS_PATH=${input_path},TASTE_NAMESPACE=research-taste,TASTE_CONCURRENCY=8" \
+        slurm/annotate_research_taste.sbatch
+    )"
+  done
+  taste_jobs+=("${taste_job}")
+  printf '{"research_taste":"%s","final":"%s","passes":%s}\n' \
+    "${generation_id}" "${taste_job}" "${taste_passes}"
+}
+
 teacher_eval_job=""
 for pass_index in $(seq 1 "${evaluation_passes}"); do
   if [[ -z "${teacher_eval_job}" ]]; then
@@ -109,6 +140,8 @@ for pass_index in $(seq 1 "${evaluation_passes}"); do
   )"
 done
 printf '{"baseline":"A1","evaluation":"%s"}\n' "${teacher_eval_job}"
+submit_taste_chain A1-temporal-k16-seed17000 evaluation-teacher \
+  configs/generation/eval_qwen3_14b.yaml "${teacher_score_job_id}"
 
 human_prepare_job="$(submit_job slurm/prepare_human_control.sbatch)"
 human_score_job=""
@@ -143,6 +176,10 @@ for pass_index in $(seq 1 "${evaluation_passes}"); do
 done
 printf '{"baseline":"A3","prepare":"%s","score":"%s","evaluation":"%s"}\n' \
   "${human_prepare_job}" "${human_score_job}" "${human_eval_job}"
+submit_taste_chain A3-temporal-k1 evaluation-student \
+  configs/generation/eval_historical.yaml "${human_prepare_job}"
+submit_taste_chain A0-temporal-k16-seed17000 evaluation-student \
+  configs/generation/eval_qwen3_4b.yaml "${control_eval_job_id}"
 
 submit_chain() {
   local baseline_id="$1"
@@ -203,6 +240,8 @@ submit_chain() {
         slurm/evaluate_student.sbatch
     )"
   done
+  submit_taste_chain \
+    "${eval_id}" evaluation-student "${generation_config}" "${generation_job}"
   evaluation_jobs+=("${evaluation_job}")
   printf '{"baseline":"%s","generation_final":"%s","generation_passes":%s,"score_final":"%s","score_passes":%s,"evaluation_final":"%s","evaluation_passes":%s}\n' \
     "${baseline_id}" "${generation_job}" "${generation_passes}" "${score_job}" \
@@ -220,10 +259,11 @@ submit_chain B4 "${gem_path}" configs/generation/eval_qwen3_4b.yaml
 submit_chain C3 "${distillm_path}" configs/generation/eval_qwen3_4b.yaml "" bfloat16
 
 evaluation_dependency="$(IFS=:; printf '%s' "${evaluation_jobs[*]}")"
+taste_dependency="$(IFS=:; printf '%s' "${taste_jobs[*]}")"
 analysis_job="$(
   submit_job \
-    --dependency="afterok:${control_eval_job_id}:${teacher_eval_job}:${human_eval_job}:${evaluation_dependency}" \
+    --dependency="afterok:${control_eval_job_id}:${teacher_eval_job}:${human_eval_job}:${evaluation_dependency}:${taste_dependency}" \
     slurm/analyze_evaluation_matrix.sbatch
 )"
-printf '{"analysis":"%s","evaluations":%s}\n' \
-  "${analysis_job}" "${#evaluation_jobs[@]}"
+printf '{"analysis":"%s","evaluations":%s,"research_taste":%s}\n' \
+  "${analysis_job}" "${#evaluation_jobs[@]}" "${#taste_jobs[@]}"

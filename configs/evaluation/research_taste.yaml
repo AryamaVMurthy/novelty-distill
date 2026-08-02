@@ -1,0 +1,33 @@
+schema_version: 1
+status: secondary_descriptive
+source:
+  title: Measuring the Gap Between Human and LLM Research Ideas
+  authors: [Ziyu Chen, Yilun Zhao, Arman Cohan]
+  arxiv: "2607.01233"
+  year: 2026
+  publication_status: preprint
+annotator_model: Qwen/Qwen3-32B-FP8
+annotator_revision: aa55da1ecc13d006e8b8e4f54579b1ea8c3db2df
+annotator_max_tokens: 192
+enable_thinking: false
+opportunity_patterns:
+  - puzzle_or_contradiction
+  - explanation_gap
+  - assumption_or_scope_mismatch
+  - measurement_evidence_gap
+  - fragmentation_or_bridge_opportunity
+  - failure_or_risk_gap
+  - resource_or_operational_constraint
+method_paradigms:
+  - explicit_synthesis_or_unification
+  - assumption_relaxation_or_scope_extension
+  - failure_mitigation_or_robustification
+  - formal_conceptual_derivation
+  - measurement_or_empirical_mapping
+  - constructive_artifact_or_system
+  - optimization_search_or_resource_strategy
+human_validation:
+  required_for_headline_claims: true
+  minimum_records: 150
+  minimum_annotators: 2
+  minimum_cohen_kappa: 0.80

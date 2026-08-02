@@ -2,6 +2,10 @@ from pathlib import Path
 
 import yaml
 
+from novelty_distill.evaluation.research_taste import (
+    METHOD_PARADIGMS,
+    OPPORTUNITY_PATTERNS,
+)
 from novelty_distill.generation.sglang import GenerationSpec
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -82,3 +86,23 @@ def test_primary_teacher_cluster_threshold_is_nondegenerate_before_student_evalu
     assert config["cosine_threshold"] in config["cosine_thresholds"]
     assert max(config["cosine_thresholds"]) == 0.95
     assert config["clustering_linkage"] == "complete"
+
+
+def test_research_taste_is_attributed_frozen_and_secondary() -> None:
+    config = yaml.safe_load(
+        (ROOT / "configs/evaluation/research_taste.yaml").read_text(encoding="utf-8")
+    )
+
+    assert config["status"] == "secondary_descriptive"
+    assert config["source"]["arxiv"] == "2607.01233"
+    assert config["source"]["publication_status"] == "preprint"
+    assert tuple(config["opportunity_patterns"]) == OPPORTUNITY_PATTERNS
+    assert tuple(config["method_paradigms"]) == METHOD_PARADIGMS
+    assert config["annotator_model"] == "Qwen/Qwen3-32B-FP8"
+    assert config["enable_thinking"] is False
+    assert config["human_validation"] == {
+        "required_for_headline_claims": True,
+        "minimum_records": 150,
+        "minimum_annotators": 2,
+        "minimum_cohen_kappa": 0.80,
+    }

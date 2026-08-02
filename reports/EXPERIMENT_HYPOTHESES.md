@@ -102,6 +102,17 @@ teacher calibration already showed that better feasibility can coexist with fewe
 Accordingly, the final report must preserve raw prompt-level metrics and seek expert annotation for
 any central semantic-coverage claim.
 
+## Secondary research-taste analysis
+
+After training began but before any temporal student metric was available, Chen, Zhao, and Cohan's
+2026 preprint on human--LLM research-taste gaps motivated a separate descriptive analysis. It does
+not modify the primary outcomes or declared contrast family. The analysis labels each idea by its
+opportunity pattern and method paradigm, then reports entropy and TVD/JSD from the A3 human and A1
+teacher distributions. Both all-K and deterministic sample-zero views are required. Automatic
+results cannot support a headline claim until the independent human-agreement gate passes. The
+complete frozen contract, attribution, and limitations are in
+`reports/RESEARCH_TASTE_PROTOCOL.md`.
+
 ## Primary source log
 
 - Agarwal et al., *On-Policy Distillation of Language Models* (GKD), ICLR 2024:
@@ -118,3 +129,5 @@ any central semantic-coverage claim.
   <https://openreview.net/forum?id=lsHZNNoC7r>
 - Zhao et al., *Self-Distilled Reasoner: On-Policy Self-Distillation for Large Language Models*:
   <https://arxiv.org/abs/2601.18734>
+- Chen et al., *Measuring the Gap Between Human and LLM Research Ideas*, arXiv preprint, 2026:
+  <https://arxiv.org/abs/2607.01233>

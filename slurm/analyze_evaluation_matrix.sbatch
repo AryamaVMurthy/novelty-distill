@@ -21,6 +21,7 @@ scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/data"
 evaluation_root="${scratch_root}/evaluations/tomato"
+taste_root="${scratch_root}/research-taste"
 output_dir="${evaluation_root}/analysis-seed17"
 
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
@@ -51,14 +52,24 @@ collector_inputs=(
   --input "A1=${evaluation_root}/A1-temporal-k16-seed17000.json"
   --input "A3=${evaluation_root}/A3-temporal-k1.json"
 )
+taste_inputs=(
+  --input "A0=${taste_root}/A0-temporal-k16-seed17000"
+  --input "A1=${taste_root}/A1-temporal-k16-seed17000"
+  --input "A3=${taste_root}/A3-temporal-k1"
+)
 for baseline_id in "${baseline_ids[@]}"; do
   eval_id="${baseline_id}-tomato1k-seed17-temporal-k16"
   test -s "${evaluation_root}/${eval_id}.json"
   collector_inputs+=(--input "${baseline_id}=${evaluation_root}/${eval_id}.json")
+  test -d "${taste_root}/${eval_id}"
+  taste_inputs+=(--input "${baseline_id}=${taste_root}/${eval_id}")
 done
 test -s "${evaluation_root}/A0-temporal-k16-seed17000.json"
 test -s "${evaluation_root}/A1-temporal-k16-seed17000.json"
 test -s "${evaluation_root}/A3-temporal-k1.json"
+test -d "${taste_root}/A0-temporal-k16-seed17000"
+test -d "${taste_root}/A1-temporal-k16-seed17000"
+test -d "${taste_root}/A3-temporal-k1"
 
 matrix_path="${output_dir}/prompt-metrics.jsonl"
 threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
@@ -72,7 +83,16 @@ threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
   --config "${repo_dir}/configs/evaluation/primary_contrasts.yaml" \
   --output "${output_dir}/primary-contrasts.json" \
   --markdown "${output_dir}/findings.md"
+"${venv_dir}/bin/python" "${repo_dir}/scripts/analyze_research_taste.py" \
+  "${taste_inputs[@]}" \
+  --human-method A3 \
+  --teacher-method A1 \
+  --config "${repo_dir}/configs/evaluation/research_taste.yaml" \
+  --output "${output_dir}/research-taste-secondary.json" \
+  --markdown "${output_dir}/research-taste-findings.md"
 test -s "${output_dir}/prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/threshold-prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/primary-contrasts.json"
 test -s "${output_dir}/findings.md"
+test -s "${output_dir}/research-taste-secondary.json"
+test -s "${output_dir}/research-taste-findings.md"
