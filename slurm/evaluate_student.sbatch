@@ -69,6 +69,7 @@ uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
   --student-score-dir "${scratch_root}/${score_namespace}/${student_score_id}" \
   --training-targets "${scratch_root}/data/${target_name}" \
   --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+  --embedding-cache-dir "${scratch_root}/cache/embeddings" \
   --output "${scratch_root}/evaluations/tomato/${output_name}.json" \
   --teacher-samples-per-prompt "${teacher_samples_per_prompt}" \
   --student-samples-per-prompt "${student_samples_per_prompt}"

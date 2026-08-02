@@ -21,6 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--score-dir", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--annotation-config", type=Path, required=True)
+    parser.add_argument("--embedding-cache-dir", type=Path)
     return parser.parse_args()
 
 
@@ -52,6 +53,7 @@ def main() -> None:
         revision=annotation["embedding_revision"],
         max_length=annotation["embedding_max_length"],
         batch_size=int(annotation["embedding_batch_size"]),
+        cache_dir=args.embedding_cache_dir,
     )
     embedding_cursor = 0
     for score_path, records in prompt_batches:

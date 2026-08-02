@@ -72,6 +72,7 @@ if [[ -n "${calibration_run_id}" ]]; then
     "${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
       --score-dir "${score_dir}" \
       --output "${clustered}" \
+      --embedding-cache-dir "${scratch_root}/cache/embeddings" \
       --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
     "${venv_dir}/bin/python" "${repo_dir}/scripts/derive_teacher_targets.py" \
       --input "${clustered}" \
@@ -94,6 +95,7 @@ else
   "${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
     --score-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
     --output "${scratch_root}/data/teacher-generations-${generation_job_id}.jsonl" \
+    --embedding-cache-dir "${scratch_root}/cache/embeddings" \
     --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
 
   "${venv_dir}/bin/python" "${repo_dir}/scripts/derive_teacher_targets.py" \

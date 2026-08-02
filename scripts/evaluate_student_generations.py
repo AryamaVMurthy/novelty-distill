@@ -13,7 +13,10 @@ from typing import Any
 
 import yaml
 
-from novelty_distill.evaluation.embeddings import embed_texts
+from novelty_distill.evaluation.embeddings import (
+    embed_texts,
+    embedding_cache_fingerprint,
+)
 from novelty_distill.evaluation.student_evaluation import (
     summarize_generation_diagnostics,
     summarize_student_prompt,
@@ -28,6 +31,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--training-targets", type=Path, required=True)
     parser.add_argument("--annotation-config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--embedding-cache-dir", type=Path)
     parser.add_argument("--samples-per-prompt", type=int, default=16)
     parser.add_argument("--teacher-samples-per-prompt", type=int)
     parser.add_argument("--student-samples-per-prompt", type=int)
@@ -148,6 +152,7 @@ def main() -> None:
         revision=annotation["embedding_revision"],
         max_length=int(annotation["embedding_max_length"]),
         batch_size=int(annotation["embedding_batch_size"]),
+        cache_dir=args.embedding_cache_dir,
     )
     embedding_by_text = dict(zip(all_texts, embedded, strict=True))
 
@@ -215,6 +220,12 @@ def main() -> None:
             "revision": annotation["embedding_revision"],
             "instruction": instruction,
             "max_length": annotation["embedding_max_length"],
+            "cache_fingerprint": embedding_cache_fingerprint(
+                model_id=annotation["embedding_model"],
+                revision=annotation["embedding_revision"],
+                max_length=int(annotation["embedding_max_length"]),
+                batch_size=int(annotation["embedding_batch_size"]),
+            ),
         },
         "inputs": {
             "teacher_score_sha256": _tree_hash(args.teacher_score_dir),
