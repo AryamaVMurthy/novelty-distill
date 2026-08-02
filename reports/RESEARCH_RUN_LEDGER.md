@@ -41,15 +41,15 @@ predated the deterministic target-view findings report.
 
 The original A0/A1 generation jobs write stable prompt shards but cannot finish 1,658 prompts with
 16 samples each inside one six-hour allocation at the observed rates. Their replacement graph
-preserves those partial shards and deliberately gives the four-GPU DistiLLM smoke job an all-GPU
-window before resuming.
+preserves those partial shards and deliberately gives the four-GPU DistiLLM smoke and C3 production
+jobs a contiguous all-GPU window before resuming.
 
 | Control | Current pass | Resume passes | Score passes | Final evaluation |
 |---|---:|---|---|---:|
 | A1 Qwen3-14B | 18078 | 18102 -> 18103 -> 18104 | 18107 -> 18108 | submitted by controller 18125 |
 | A0 Qwen3-4B | 18084 | 18105 -> 18106 | 18109 -> 18110 | 18113 -> 18119 |
 
-Jobs 18102 and 18105 require both `afterany` on the current partial generation and `afterok:18092`.
+Jobs 18102 and 18105 require `afterany` on both the current partial generation and C3 job 18098.
 Later generation and score passes use `afterany` and the same stable output IDs. A0 evaluation
 18113 requires final A1 score 18108, final A0 score 18110, and target gate 18122; 18119 is its cached
 resume pass. Obsolete single-pass
@@ -60,14 +60,15 @@ score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled b
 | Work | Job | Contract |
 |---|---:|---|
 | DistiLLM deployability smoke | 18092 | four GPUs; must produce a loadable full checkpoint after real optimizer updates |
-| Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18122 and DistiLLM smoke 18092 |
+| Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18122 and `afterany:18098` |
 | TRL/OPSD bounded resumes | 18117 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
 | C3 DistiLLM | 18098 | index 12, four GPUs; after target gate 18122 and smoke 18092 |
 | Evaluation fan-out controller | 18125 | waits for B4 task 18097_5, 18117, 18098, A0/A1, and validated targets 18122 |
 
-Job 18097 deliberately waits for 18092 as well as the target gate. Otherwise a one-GPU training
-task could occupy the only GPU released by teacher scoring/clustering and starve the four-GPU
-DistiLLM proof when the current temporal-control jobs release the remaining devices.
+Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
+all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
+edges release the other baselines and controls even if C3 fails, while controller 18125 separately
+requires C3 success before evaluation fan-out.
 
 Controller 18125 replaces pending controller 18120, whose immutable export still named cancelled
 cluster job 18039. Its internal target dependency is validation gate 18122. It submits A1 and
