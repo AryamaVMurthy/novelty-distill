@@ -149,8 +149,9 @@ submit_chain() {
   local model_path="$2"
   local generation_config="$3"
   local lora_path="${4:-}"
+  local model_dtype="${5:-auto}"
   local eval_id="${baseline_id}-tomato1k-seed17-temporal-k16"
-  local generation_export="ALL,MODEL_PATH=${model_path},MODEL_REVISION=${model_revision},SERVED_MODEL_NAME=Qwen/Qwen3-4B,GENERATION_CONFIG=${generation_config},INPUT_PATH=${input_path},OUTPUT_NAME=evaluation-student,OUTPUT_RUN_ID=${eval_id},INPUT_LIMIT=1658,GENERATION_CONCURRENCY=8"
+  local generation_export="ALL,MODEL_PATH=${model_path},MODEL_REVISION=${model_revision},SERVED_MODEL_NAME=Qwen/Qwen3-4B,MODEL_DTYPE=${model_dtype},GENERATION_CONFIG=${generation_config},INPUT_PATH=${input_path},OUTPUT_NAME=evaluation-student,OUTPUT_RUN_ID=${eval_id},INPUT_LIMIT=1658,GENERATION_CONCURRENCY=8"
   if [[ -n "${lora_path}" ]]; then
     generation_export+=",LORA_NAME=student-adapter,LORA_PATH=${lora_path}"
   fi
@@ -216,7 +217,7 @@ for baseline_id in "${adapter_ids[@]}"; do
     "${scratch_root}/checkpoints/${baseline_id}-tomato1k-seed17/final"
 done
 submit_chain B4 "${gem_path}" configs/generation/eval_qwen3_4b.yaml
-submit_chain C3 "${distillm_path}" configs/generation/eval_qwen3_4b.yaml
+submit_chain C3 "${distillm_path}" configs/generation/eval_qwen3_4b.yaml "" bfloat16
 
 evaluation_dependency="$(IFS=:; printf '%s' "${evaluation_jobs[*]}")"
 analysis_job="$(

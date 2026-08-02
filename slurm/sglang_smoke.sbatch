@@ -23,6 +23,7 @@ venv_dir="${scratch_root}/venvs/inference"
 model_path="${MODEL_PATH:-Qwen/Qwen3-1.7B}"
 model_revision="${MODEL_REVISION:-70d244cc86ccca08cf5af4e1e306ecf908b1ad5e}"
 served_model_name="${SERVED_MODEL_NAME:-}"
+model_dtype="${MODEL_DTYPE:-auto}"
 generation_config="${GENERATION_CONFIG:-configs/generation/smoke.yaml}"
 input_limit="${INPUT_LIMIT:-1}"
 output_name="${OUTPUT_NAME:-sglang-smoke}"
@@ -52,6 +53,10 @@ if [[ "${disable_cuda_graph}" != 0 && "${disable_cuda_graph}" != 1 ]]; then
 fi
 if [[ "${deterministic_inference}" != 0 && "${deterministic_inference}" != 1 ]]; then
   echo "DETERMINISTIC_INFERENCE must be 0 or 1" >&2
+  exit 2
+fi
+if [[ "${model_dtype}" != auto && "${model_dtype}" != bfloat16 && "${model_dtype}" != float16 ]]; then
+  echo "MODEL_DTYPE must be auto, bfloat16, or float16" >&2
   exit 2
 fi
 if [[ "${output_name}" == */* || "${output_name}" == *..* || "${output_run_id}" == */* || "${output_run_id}" == *..* ]]; then
@@ -202,6 +207,7 @@ server_args=(
   --model-path "${model_path}"
   --revision "${model_revision}"
   --served-model-name "${served_model_name}"
+  --dtype "${model_dtype}"
   --host 127.0.0.1
   --port "${port}"
   --mem-fraction-static 0.75

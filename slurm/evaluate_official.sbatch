@@ -20,6 +20,7 @@ module load u22/cuda/12.4
 eval_suite="${EVAL_SUITE:-noveltybench}"
 model_path="${MODEL_PATH:-Qwen/Qwen3-4B}"
 model_revision="${MODEL_REVISION:-1cfa9a7208912126459214e8b04321603b3df60c}"
+model_dtype="${MODEL_DTYPE:-auto}"
 served_model="novelty-model"
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
@@ -28,6 +29,10 @@ inference_venv="${scratch_root}/venvs/inference"
 server_log="${scratch_root}/logs/eval-sglang-${SLURM_JOB_ID}.log"
 server_pid=""
 port="${PORT:-$((20000 + SLURM_JOB_ID % 20000))}"
+if [[ "${model_dtype}" != auto && "${model_dtype}" != bfloat16 && "${model_dtype}" != float16 ]]; then
+  echo "MODEL_DTYPE must be auto, bfloat16, or float16" >&2
+  exit 2
+fi
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
@@ -38,6 +43,7 @@ export FLASHINFER_WORKSPACE_BASE="${scratch_root}/cache/flashinfer-workspace"
 export XDG_CACHE_HOME="${scratch_root}/cache/xdg"
 export TORCH_EXTENSIONS_DIR="${scratch_root}/cache/torch-extensions"
 export TRITON_CACHE_DIR="${scratch_root}/cache/triton"
+export TVM_FFI_CACHE_DIR="${scratch_root}/cache/tvm-ffi"
 export CUDA_CACHE_PATH="${scratch_root}/cache/cuda"
 export TMPDIR="${scratch_root}/tmp"
 
@@ -54,7 +60,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "${scratch_root}/logs" "${scratch_root}/tmp" "${scratch_root}/evaluations"
+mkdir -p \
+  "${scratch_root}/logs" \
+  "${scratch_root}/tmp" \
+  "${scratch_root}/evaluations" \
+  "${TVM_FFI_CACHE_DIR}"
 git -C "${repo_dir}" diff --quiet
 git -C "${repo_dir}" fetch origin "${repo_ref}"
 git -C "${repo_dir}" switch "${repo_ref}"
@@ -64,6 +74,7 @@ uv pip sync --python "${inference_venv}/bin/python" "${repo_dir}/environments/in
 server_args=(
   --model-path "${model_path}"
   --served-model-name "${served_model}"
+  --dtype "${model_dtype}"
   --host 127.0.0.1
   --port "${port}"
   --mem-fraction-static 0.55

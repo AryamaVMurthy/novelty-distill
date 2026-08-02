@@ -10,6 +10,7 @@ eval_id="${EVAL_ID:?set EVAL_ID}"
 model_path="${MODEL_PATH:-Qwen/Qwen3-4B}"
 model_revision="${MODEL_REVISION:-1cfa9a7208912126459214e8b04321603b3df60c}"
 served_model_name="${SERVED_MODEL_NAME:-Qwen/Qwen3-4B}"
+model_dtype="${MODEL_DTYPE:-auto}"
 generation_config="${GENERATION_CONFIG:-configs/generation/eval_qwen3_4b.yaml}"
 generation_name="${GENERATION_NAME:-evaluation-student}"
 input_path="${INPUT_PATH:-/scratch/aryama.murthy/novelty-distill/data/tomato-open-test-1658.jsonl}"
@@ -37,6 +38,10 @@ for value in "${model_path}" "${model_revision}" "${served_model_name}" "${gener
     exit 2
   fi
 done
+if [[ "${model_dtype}" != auto && "${model_dtype}" != bfloat16 && "${model_dtype}" != float16 ]]; then
+  echo "MODEL_DTYPE must be auto, bfloat16, or float16" >&2
+  exit 2
+fi
 for job_id in "${teacher_score_job_id}" "${target_job_id}"; do
   if ! [[ "${job_id}" =~ ^[0-9]+$ ]]; then
     echo "teacher score and target dependencies must be numeric Slurm job IDs" >&2
@@ -77,7 +82,7 @@ submit_job() {
   printf '%s\n' "${job_id}"
 }
 
-generation_export="ALL,MODEL_PATH=${model_path},MODEL_REVISION=${model_revision},SERVED_MODEL_NAME=${served_model_name},GENERATION_CONFIG=${generation_config},INPUT_PATH=${input_path},OUTPUT_NAME=${generation_name},OUTPUT_RUN_ID=${eval_id},INPUT_LIMIT=${input_limit},GENERATION_CONCURRENCY=8"
+generation_export="ALL,MODEL_PATH=${model_path},MODEL_REVISION=${model_revision},SERVED_MODEL_NAME=${served_model_name},MODEL_DTYPE=${model_dtype},GENERATION_CONFIG=${generation_config},INPUT_PATH=${input_path},OUTPUT_NAME=${generation_name},OUTPUT_RUN_ID=${eval_id},INPUT_LIMIT=${input_limit},GENERATION_CONCURRENCY=8"
 if [[ -n "${lora_name}" ]]; then
   generation_export+=",LORA_NAME=${lora_name},LORA_PATH=${lora_path}"
 fi
