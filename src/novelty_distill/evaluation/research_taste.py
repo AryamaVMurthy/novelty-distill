@@ -7,6 +7,7 @@ the diagnostic cannot silently change the primary experiment.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import statistics
@@ -126,6 +127,17 @@ Surface stitching means a superficial A-plus-B combination without a precise rea
 must interact. Bottleneck specificity is high only when a concrete mechanism or limiting factor is
 identified. Boilerplate is high when wording could apply to many unrelated research problems.
 """
+
+
+def research_taste_protocol_hash() -> str:
+    """Fingerprint the exact taxonomy instructions and strict response schema."""
+
+    payload = {
+        "system_prompt": _SYSTEM_PROMPT,
+        "schema": ResearchTasteAnnotation.model_json_schema(),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def build_research_taste_payload(

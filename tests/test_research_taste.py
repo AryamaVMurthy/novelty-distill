@@ -13,6 +13,7 @@ from novelty_distill.evaluation.research_taste import (
     compare_label_distributions,
     compare_research_taste_records,
     parse_research_taste_response,
+    research_taste_protocol_hash,
     summarize_research_taste,
 )
 from novelty_distill.evaluation.taste_shards import (
@@ -393,6 +394,7 @@ def test_prompt_bootstrap_is_paired_and_deterministic() -> None:
 def _taste_shard_payload(texts: tuple[str, ...]) -> dict[str, object]:
     return {
         "schema_version": 1,
+        "protocol_hash": research_taste_protocol_hash(),
         "prompt_id": "p1",
         "text_hashes": [hashlib.sha256(text.encode()).hexdigest() for text in texts],
         "annotator": _spec().model_dump(mode="json"),
@@ -449,3 +451,13 @@ def test_research_taste_shard_rejects_duplicate_request_ids(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="duplicate annotator request"):
         load_research_taste_shard(path, samples_per_prompt=2)
+
+
+def test_research_taste_shard_rejects_changed_taxonomy_protocol(tmp_path) -> None:
+    payload = _taste_shard_payload(("idea one",))
+    payload["protocol_hash"] = "0" * 64
+    path = tmp_path / "p1.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="protocol hash"):
+        load_research_taste_shard(path, samples_per_prompt=1)

@@ -9,6 +9,7 @@ from typing import Any
 from novelty_distill.evaluation.research_taste import (
     JudgedResearchTaste,
     ResearchTasteSpec,
+    research_taste_protocol_hash,
 )
 from novelty_distill.generation.sglang import GenerationSpec, load_prompt_shard
 
@@ -47,6 +48,8 @@ def load_research_taste_shard(
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict) or payload.get("schema_version") != 1:
         raise ValueError(f"unsupported research-taste shard schema in {path}")
+    if payload.get("protocol_hash") != research_taste_protocol_hash():
+        raise ValueError(f"research-taste protocol hash mismatch in {path}")
     prompt_id = payload.get("prompt_id")
     if not isinstance(prompt_id, str) or not prompt_id:
         raise ValueError(f"invalid research-taste prompt ID in {path}")

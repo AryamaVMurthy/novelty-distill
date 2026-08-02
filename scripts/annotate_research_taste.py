@@ -19,6 +19,7 @@ from novelty_distill.evaluation.research_taste import (
     ResearchTasteSpec,
     build_research_taste_payload,
     parse_research_taste_response,
+    research_taste_protocol_hash,
 )
 from novelty_distill.evaluation.taste_shards import validate_research_taste_shard
 from novelty_distill.generation.sglang import (
@@ -135,6 +136,7 @@ def main() -> None:
                 output_path,
                 {
                     "schema_version": 1,
+                    "protocol_hash": research_taste_protocol_hash(),
                     "prompt_id": prompt_id,
                     "text_hashes": text_hashes,
                     "annotator": annotator.model_dump(mode="json"),
