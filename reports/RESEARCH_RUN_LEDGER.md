@@ -296,6 +296,9 @@ SHA-256 over inference-relevant configuration, tokenizer, index, and weight file
 stored in the run manifest and must match on every resume, preventing shards from an older model at
 the same path from being silently reused. Remote A0/A1 model controls retain their already-frozen
 repository revisions and legacy manifests; no local artifact exists to hash for those runs.
+The node01 audit produced identities `7fc74fcd...b50f8` for the C1-best1 adapter,
+`6dc6fb9c...1e949c` for B4, and `c6dee08e...1f72b` for C3. Streaming the two approximately 8 GB
+full checkpoints took 5.2 and 5.7 seconds, so this gate is negligible beside model startup.
 
 The registry contains 24 planned entries: four non-training controls, nineteen executable training
 variants, and E1. E1 is explicitly `fail_closed` because the pinned official OPSD implementation
