@@ -132,6 +132,10 @@ chat template and delegates indexed-file construction to DistiLLM's official mma
 adapter preserves the prompt, records completion-tail truncation, and rejects content containing
 the upstream loader's hard-coded separator token ID 65535 rather than risking a false prompt
 boundary.
+Exact pinned-tokenizer audit 18143 then passed all 1,000 task-adapter rows: zero separator
+collisions, maximum prompt length 453 under the 480-token cap, and one best-1 completion truncated
+by 19 tokens at the 896-token full-chat cap. Job 18142 was a shell-wrapper failure before the audit
+started; it produced no data or model artifact.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
