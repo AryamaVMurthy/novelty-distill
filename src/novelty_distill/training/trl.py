@@ -17,6 +17,7 @@ from novelty_distill.data.training_rows import (
     to_chat_row,
     to_prompt_completion_row,
 )
+from novelty_distill.training.provenance import file_provenance
 
 TRLTrainingRow = ChatTrainingRow | PromptCompletionRow
 TeacherTargets = Mapping[str, Mapping[str, Sequence[str]]]
@@ -186,6 +187,14 @@ def execute_trl_training(
 
     input_path = _resolve_under(scratch_root, spec.input)
     output_dir = _resolve_under(scratch_root, spec.output_dir)
+    training_artifacts = {
+        "input": file_provenance(input_path),
+        "registry": file_provenance(registry_path),
+    }
+    if baseline.trajectory_source == "teacher" and spec.teacher_targets is not None:
+        training_artifacts["teacher_targets"] = file_provenance(
+            _resolve_under(scratch_root, spec.teacher_targets)
+        )
     examples = load_canonical_examples(input_path, limit=spec.max_examples)
     rows = build_trl_rows(
         baseline,
@@ -318,6 +327,7 @@ def execute_trl_training(
     metadata: dict[str, object] = {
         "baseline_id": baseline.id,
         "backend": baseline.backend,
+        "run_spec": spec.model_dump(mode="json"),
         "model": spec.model,
         "revision": spec.revision,
         "teacher_model": spec.teacher_model,
@@ -328,6 +338,7 @@ def execute_trl_training(
         "target_view": baseline.target_view,
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
+        "training_artifacts": training_artifacts,
         "training_rows": len(rows),
         "optimizer_example_exposures": (
             spec.max_steps

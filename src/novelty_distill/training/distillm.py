@@ -14,6 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from novelty_distill.config import BaselineConfig
 from novelty_distill.data.tomato import CanonicalExample
+from novelty_distill.training.provenance import file_provenance
 
 
 class DistiLLMRawRow(TypedDict):
@@ -364,6 +365,7 @@ def execute_distillm_training(
     metadata: dict[str, object] = {
         "baseline_id": baseline.id,
         "backend": baseline.backend,
+        "run_spec": spec.model_dump(mode="json"),
         "official_commit": repositories["distillm"].commit,
         "student_model": spec.student_model,
         "student_revision": spec.student_revision,
@@ -375,6 +377,12 @@ def execute_distillm_training(
         "skew_alpha": spec.skew_alpha,
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
+        "training_artifacts": {
+            "input": file_provenance(input_path),
+            "teacher_targets": file_provenance(target_path),
+            "registry": file_provenance(registry_path),
+            "official_manifest": file_provenance(manifest_path),
+        },
         "normalized_qwen_separators": sentinel_replacements,
         "training_rows": len(rows),
         "optimizer_example_exposures": spec.max_steps * spec.batch_size * spec.num_gpus,

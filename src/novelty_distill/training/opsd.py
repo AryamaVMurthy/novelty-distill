@@ -14,6 +14,7 @@ from novelty_distill.config import BaselineConfig
 from novelty_distill.data.tomato import CanonicalExample
 from novelty_distill.data.training_rows import OPSDTrainingRow, to_opsd_row
 from novelty_distill.official import checkout_official_repository, load_official_repositories
+from novelty_distill.training.provenance import file_provenance
 from novelty_distill.training.trl import load_canonical_examples
 
 
@@ -289,6 +290,7 @@ def execute_opsd_training(
     metadata: dict[str, object] = {
         "baseline_id": baseline.id,
         "backend": baseline.backend,
+        "run_spec": spec.model_dump(mode="json"),
         "official_commit": repositories["opsd"].commit,
         "model": spec.model,
         "revision": spec.revision,
@@ -297,6 +299,11 @@ def execute_opsd_training(
         "teacher_context": baseline.teacher_context,
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
+        "training_artifacts": {
+            "input": file_provenance(input_path),
+            "registry": file_provenance(registry_path),
+            "official_manifest": file_provenance(manifest_path),
+        },
         "training_rows": len(rows),
         "optimizer_example_exposures": (
             spec.max_steps

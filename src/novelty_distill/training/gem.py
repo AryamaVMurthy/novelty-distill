@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from novelty_distill.config import BaselineConfig
 from novelty_distill.data.tomato import CanonicalExample
+from novelty_distill.training.provenance import file_provenance
 
 
 class GEMTokenizedRow(TypedDict):
@@ -218,6 +219,7 @@ def execute_gem_training(
     metadata: dict[str, object] = {
         "baseline_id": baseline.id,
         "backend": baseline.backend,
+        "run_spec": spec.model_dump(mode="json"),
         "official_commit": repositories["gem"].commit,
         "model": spec.model,
         "revision": spec.revision,
@@ -226,6 +228,13 @@ def execute_gem_training(
         "gem_beta": spec.gem_beta,
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
+        "training_artifacts": {
+            "input": file_provenance(input_path),
+            "teacher_targets": file_provenance(targets_path),
+            "tokenized_input": file_provenance(tokenized_path),
+            "registry": file_provenance(registry_path),
+            "official_manifest": file_provenance(manifest_path),
+        },
         "training_rows": len(rows),
         "optimizer_example_exposures": (
             spec.max_steps
