@@ -18,6 +18,11 @@ set -euo pipefail
 module load u22/cuda/12.4
 
 generation_job_id="${GENERATION_JOB_ID:?set GENERATION_JOB_ID to the teacher SGLang job}"
+target_name="${TARGET_NAME:-teacher-targets.json}"
+if [[ "${target_name}" == */* || "${target_name}" == *..* ]]; then
+  echo "TARGET_NAME must be a filename without '..'" >&2
+  exit 2
+fi
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
@@ -49,5 +54,5 @@ uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
 "${venv_dir}/bin/python" "${repo_dir}/scripts/derive_teacher_targets.py" \
   --input "${scratch_root}/data/teacher-generations-${generation_job_id}.jsonl" \
-  --output "${scratch_root}/data/teacher-targets.json" \
+  --output "${scratch_root}/data/${target_name}" \
   --seed 17
