@@ -15,6 +15,7 @@ from novelty_distill.data.ultrafeedback import (
     prepare_ultrafeedback_record,
     select_unique_content_indices,
     ultrafeedback_record_id,
+    ultrafeedback_record_is_usable,
 )
 
 
@@ -61,9 +62,15 @@ def main() -> None:
         revision=ULTRAFEEDBACK_REVISION,
         split="train",
     )
-    identities = tuple(ultrafeedback_record_id(row) for row in dataset)
+    usable_indices = tuple(
+        index for index, row in enumerate(dataset) if ultrafeedback_record_is_usable(row)
+    )
+    identities = tuple(ultrafeedback_record_id(dataset[index]) for index in usable_indices)
     unique_content_rows = len(set(identities))
-    selected_indices = select_unique_content_indices(identities, size=args.size, seed=args.seed)
+    selected_usable_indices = select_unique_content_indices(
+        identities, size=args.size, seed=args.seed
+    )
+    selected_indices = tuple(usable_indices[index] for index in selected_usable_indices)
 
     rows: list[str] = []
     targets: dict[str, dict[str, list[str]]] = {}
@@ -88,6 +95,8 @@ def main() -> None:
         "revision": ULTRAFEEDBACK_REVISION,
         "split": "train",
         "source_rows": len(dataset),
+        "usable_rows": len(usable_indices),
+        "unusable_rows_dropped": len(dataset) - len(usable_indices),
         "unique_content_rows": unique_content_rows,
         "exact_duplicates_dropped": len(dataset) - unique_content_rows,
         "size": args.size,

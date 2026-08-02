@@ -77,15 +77,9 @@ def select_unique_content_indices(
     )
 
 
-def prepare_ultrafeedback_record(
-    raw: Mapping[str, Any], *, seed: int
-) -> tuple[CanonicalExample, dict[str, list[str]]]:
-    """Convert one official record and derive random, best, all, and diverse views."""
-
-    instruction = str(raw.get("instruction", "")).strip()
-    source = str(raw.get("source", "")).strip()
-    if not instruction or not source:
-        raise ValueError("UltraFeedback instruction and source must be non-empty")
+def _load_completions(
+    raw: Mapping[str, Any],
+) -> tuple[UltraFeedbackCompletion, ...]:
     raw_completions = raw.get("completions")
     if not isinstance(raw_completions, list) or len(raw_completions) != 4:
         raise ValueError("UltraFeedback record must contain exactly four completions")
@@ -98,6 +92,31 @@ def prepare_ultrafeedback_record(
     models = tuple(str(value) for value in raw.get("models", ()))
     if len(set(models)) != 4 or set(models) != {completion.model for completion in completions}:
         raise ValueError("UltraFeedback model and completion identities must align")
+    return completions
+
+
+def ultrafeedback_record_is_usable(raw: Mapping[str, Any]) -> bool:
+    """Return whether an official row has four aligned, non-empty completions."""
+
+    try:
+        _load_completions(raw)
+    except (TypeError, ValueError):
+        return False
+    return bool(str(raw.get("instruction", "")).strip()) and bool(
+        str(raw.get("source", "")).strip()
+    )
+
+
+def prepare_ultrafeedback_record(
+    raw: Mapping[str, Any], *, seed: int
+) -> tuple[CanonicalExample, dict[str, list[str]]]:
+    """Convert one official record and derive random, best, all, and diverse views."""
+
+    instruction = str(raw.get("instruction", "")).strip()
+    source = str(raw.get("source", "")).strip()
+    if not instruction or not source:
+        raise ValueError("UltraFeedback instruction and source must be non-empty")
+    completions = _load_completions(raw)
 
     record_id = ultrafeedback_record_id(raw)
     best = min(

@@ -2,6 +2,7 @@ from novelty_distill.data.ultrafeedback import (
     prepare_ultrafeedback_record,
     select_unique_content_indices,
     ultrafeedback_record_id,
+    ultrafeedback_record_is_usable,
 )
 
 
@@ -105,3 +106,19 @@ def test_pilot_selection_deduplicates_exact_records_before_subsetting() -> None:
         "unique-b",
     }
     assert 2 not in selected
+
+
+def test_pilot_filter_rejects_empty_official_completions() -> None:
+    raw = {
+        "source": "test-source",
+        "instruction": "Explain the result.",
+        "models": ["model-z", "model-a", "model-c", "model-b"],
+        "completions": [
+            _completion("model-z", "", 3),
+            _completion("model-a", "alpha beta", 9),
+            _completion("model-c", "red green blue", 7),
+            _completion("model-b", "alpha beta delta", 5),
+        ],
+    }
+
+    assert not ultrafeedback_record_is_usable(raw)
