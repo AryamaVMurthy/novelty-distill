@@ -23,6 +23,7 @@ generation_name="${GENERATION_NAME:-teacher-smoke}"
 generation_config="${GENERATION_CONFIG:-configs/generation/teacher.yaml}"
 prompts_path="${PROMPTS_PATH:-}"
 score_namespace="${SCORE_NAMESPACE:-teacher-scores}"
+score_concurrency="${SCORE_CONCURRENCY:-8}"
 if [[ -z "${calibration_run_id}" && -z "${generation_job_id}" ]]; then
   echo "set GENERATION_JOB_ID or CALIBRATION_RUN_ID" >&2
   exit 2
@@ -33,6 +34,10 @@ if [[ -n "${calibration_run_id}" && ("${calibration_run_id}" == */* || "${calibr
 fi
 if [[ "${score_namespace}" == */* || "${score_namespace}" == *..* ]]; then
   echo "SCORE_NAMESPACE must be a path-safe name" >&2
+  exit 2
+fi
+if ! [[ "${score_concurrency}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "SCORE_CONCURRENCY must be a positive integer" >&2
   exit 2
 fi
 repo_ref="${REPO_REF:-codex/implementation}"
@@ -128,6 +133,7 @@ if [[ -n "${calibration_run_id}" ]]; then
       --prompts "${scratch_root}/data/tomato-open-calibration-8.jsonl" \
       --output-dir "${score_root}/${condition}" \
       --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+      --concurrency "${score_concurrency}" \
       --base-url "http://127.0.0.1:${port}"
     conditions=$((conditions + 1))
   done
@@ -140,5 +146,6 @@ else
     --prompts "${prompts_path}" \
     --output-dir "${scratch_root}/${score_namespace}/${generation_job_id}" \
     --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+    --concurrency "${score_concurrency}" \
     --base-url "http://127.0.0.1:${port}"
 fi

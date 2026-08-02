@@ -7,6 +7,8 @@ import json
 import os
 import tempfile
 from collections.abc import Mapping
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +36,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--annotation-config", type=Path, required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:30000")
     parser.add_argument("--timeout", type=float, default=600)
+    parser.add_argument("--concurrency", type=int, default=1)
     return parser.parse_args()
 
 
@@ -66,6 +69,8 @@ def _post(url: str, payload: dict[str, Any], timeout: float) -> Mapping[str, Any
 
 def main() -> None:
     args = parse_args()
+    if args.concurrency <= 0:
+        raise ValueError("concurrency must be positive")
     generation_payload = yaml.safe_load(args.generation_config.read_text(encoding="utf-8"))
     generation_spec = GenerationSpec.model_validate(generation_payload)
     annotation = yaml.safe_load(args.annotation_config.read_text(encoding="utf-8"))
@@ -81,55 +86,54 @@ def main() -> None:
                 prompts[row["id"]] = row["student_prompt"]
 
     endpoint = f"{args.base_url.rstrip('/')}/v1/chat/completions"
-    completed = 0
-    for generation_path in sorted(args.generation_dir.glob("*.json")):
-        records = load_prompt_shard(generation_path, generation_spec)
-        prompt_id = records[0].prompt_id
-        if prompt_id not in prompts:
-            raise ValueError(f"generation prompt {prompt_id} is absent from the prompt dataset")
-        output_path = args.output_dir / generation_path.name
-        text_hashes = [hashlib.sha256(record.text.encode()).hexdigest() for record in records]
-        if output_path.exists():
-            existing = json.loads(output_path.read_text(encoding="utf-8"))
-            if (
-                existing.get("prompt_id") != prompt_id
-                or existing.get("text_hashes") != text_hashes
-                or existing.get("judge") != judge_spec.model_dump(mode="json")
-            ):
-                raise ValueError(f"stale or incompatible score shard {output_path}")
-            completed += 1
-            continue
 
-        scored = []
-        for record in records:
-            payload = build_quality_judge_payload(
-                prompt=render_generation_prompt(prompts[prompt_id], generation_spec),
-                response=record.text,
-                spec=judge_spec,
-            )
-            quality = parse_quality_judge_response(
-                _post(endpoint, payload, args.timeout), judge_spec
-            )
-            scored.append(
-                {
-                    "prompt_id": prompt_id,
-                    "sample_index": record.sample_index,
-                    "text": record.text,
-                    **quality.model_dump(mode="json"),
-                }
-            )
-        _atomic_json(
-            output_path,
-            {
-                "schema_version": 1,
-                "prompt_id": prompt_id,
-                "text_hashes": text_hashes,
-                "judge": judge_spec.model_dump(mode="json"),
-                "records": scored,
-            },
+    def score_record(record: Any, *, prompt_id: str) -> dict[str, Any]:
+        payload = build_quality_judge_payload(
+            prompt=render_generation_prompt(prompts[prompt_id], generation_spec),
+            response=record.text,
+            spec=judge_spec,
         )
-        completed += 1
-        print(json.dumps({"scored_prompt": prompt_id, "completed": completed}, sort_keys=True))
+        quality = parse_quality_judge_response(_post(endpoint, payload, args.timeout), judge_spec)
+        return {
+            "prompt_id": prompt_id,
+            "sample_index": record.sample_index,
+            "text": record.text,
+            **quality.model_dump(mode="json"),
+        }
+
+    completed = 0
+    with ThreadPoolExecutor(max_workers=args.concurrency) as executor:
+        for generation_path in sorted(args.generation_dir.glob("*.json")):
+            records = load_prompt_shard(generation_path, generation_spec)
+            prompt_id = records[0].prompt_id
+            if prompt_id not in prompts:
+                raise ValueError(f"generation prompt {prompt_id} is absent from the prompt dataset")
+            output_path = args.output_dir / generation_path.name
+            text_hashes = [hashlib.sha256(record.text.encode()).hexdigest() for record in records]
+            if output_path.exists():
+                existing = json.loads(output_path.read_text(encoding="utf-8"))
+                if (
+                    existing.get("prompt_id") != prompt_id
+                    or existing.get("text_hashes") != text_hashes
+                    or existing.get("judge") != judge_spec.model_dump(mode="json")
+                ):
+                    raise ValueError(f"stale or incompatible score shard {output_path}")
+                completed += 1
+                continue
+
+            scored = list(executor.map(partial(score_record, prompt_id=prompt_id), records))
+            _atomic_json(
+                output_path,
+                {
+                    "schema_version": 1,
+                    "prompt_id": prompt_id,
+                    "text_hashes": text_hashes,
+                    "judge": judge_spec.model_dump(mode="json"),
+                    "records": scored,
+                },
+            )
+            completed += 1
+            print(json.dumps({"scored_prompt": prompt_id, "completed": completed}, sort_keys=True))
     if completed == 0:
         raise ValueError(f"no generation shards found in {args.generation_dir}")
 
