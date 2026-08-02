@@ -45,6 +45,9 @@ class TRLRunSpec(BaseModel):
     max_length: int = Field(gt=0)
     max_new_tokens: int = Field(default=64, gt=0)
     temperature: float = Field(default=0.8, gt=0)
+    top_p: float = Field(default=0.95, gt=0, le=1)
+    top_k: int = Field(default=0, ge=0)
+    min_p: float = Field(default=0, ge=0, le=1)
     student_thinking: bool = False
     attention_implementation: Literal["sdpa", "flash_attention_2"]
     gradient_checkpointing: bool
@@ -265,6 +268,25 @@ class PromptPreservingChatMLCollator:
         }
 
 
+def configure_gkd_generation(
+    trainer: Any, spec: TRLRunSpec
+) -> dict[str, float | int | bool]:
+    """Pin official GKD on-policy generation to the frozen sampling contract."""
+
+    controls: dict[str, float | int | bool] = {
+        "temperature": spec.temperature,
+        "top_p": spec.top_p,
+        "top_k": spec.top_k,
+        "min_p": spec.min_p,
+        "max_new_tokens": spec.max_new_tokens,
+        "student_thinking": spec.student_thinking,
+    }
+    generation_config = trainer.generation_config
+    for name in ("temperature", "top_p", "top_k", "min_p", "max_new_tokens"):
+        setattr(generation_config, name, controls[name])
+    return controls
+
+
 def _left_pad(sequences: Sequence[Any], *, value: int, torch: Any) -> Any:
     if not sequences:
         raise ValueError("cannot pad an empty GKD batch")
@@ -368,6 +390,7 @@ def execute_trl_training(
         "data_seed": spec.seed,
     }
     gkd_context_audit: dict[str, int | float] | None = None
+    gkd_generation_controls: dict[str, float | int | bool] | None = None
     if baseline.backend == "trl_sft":
         from trl import SFTConfig, SFTTrainer
 
@@ -447,6 +470,7 @@ def execute_trl_training(
                 enable_thinking=spec.student_thinking,
             ),
         )
+        gkd_generation_controls = configure_gkd_generation(trainer, spec)
         if os.environ.get("NOVELTY_GKD_DIAGNOSTIC") == "1":
             probe = trainer.data_collator([rows[0]])
             print(
@@ -498,6 +522,7 @@ def execute_trl_training(
         "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
         "metrics": train_result.metrics,
         "gkd_context_audit": gkd_context_audit,
+        "gkd_generation_controls": gkd_generation_controls,
         "final_dir": str(final_dir),
     }
     metadata_path = output_dir / "run_metadata.json"

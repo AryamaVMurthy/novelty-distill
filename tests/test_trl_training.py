@@ -4,11 +4,40 @@ from novelty_distill.config import load_baseline_registry
 from novelty_distill.data.tomato import prepare_tomato_record
 from novelty_distill.training.trl import (
     build_trl_rows,
+    configure_gkd_generation,
     encode_prompt_preserving_chatml_example,
     load_canonical_examples,
     load_trl_run_spec,
     override_trl_baseline,
 )
+
+
+def test_gkd_generation_uses_frozen_teacher_sampling_controls() -> None:
+    class GenerationConfig:
+        temperature = 99.0
+        top_p = 0.95
+        top_k = 0
+        min_p = None
+
+    class Trainer:
+        generation_config = GenerationConfig()
+
+    spec = load_trl_run_spec(Path("configs/training/gkd_tomato1k.yaml"))
+
+    controls = configure_gkd_generation(Trainer(), spec)
+
+    assert controls == {
+        "temperature": 0.7,
+        "top_p": 0.8,
+        "top_k": 20,
+        "min_p": 0.0,
+        "max_new_tokens": 512,
+        "student_thinking": False,
+    }
+    assert Trainer.generation_config.temperature == 0.7
+    assert Trainer.generation_config.top_p == 0.8
+    assert Trainer.generation_config.top_k == 20
+    assert Trainer.generation_config.min_p == 0.0
 
 
 def test_gkd_collator_preserves_prompt_and_truncates_completion_tail() -> None:
@@ -156,6 +185,9 @@ def test_gkd_smoke_run_pins_both_shared_tokenizer_models() -> None:
     assert spec.max_length == 1024
     assert spec.max_new_tokens == 64
     assert spec.temperature == 0.8
+    assert spec.top_p == 0.8
+    assert spec.top_k == 20
+    assert spec.min_p == 0.0
     assert spec.student_thinking is False
 
 
@@ -185,3 +217,4 @@ def test_research_run_checkpoints_before_the_six_hour_boundary() -> None:
 
     assert sft.save_steps == 25
     assert gkd.save_steps == 25
+    assert (gkd.temperature, gkd.top_p, gkd.top_k, gkd.min_p) == (0.7, 0.8, 20, 0.0)
