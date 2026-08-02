@@ -75,6 +75,8 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
   completion tail when required; its frozen 2,048-token limit affects 3/1,000 human targets and no
   teacher-sampled/on-policy rows. SFT/OPSD use 3,072 with zero audited overflow. C3's 896-token cap
   remains a declared hardware confound rather than being normalized away after results.
+- Use Qwen non-thinking chat rendering for every GKD prompt, matching teacher generation and
+  evaluation; do not interpret a thinking-mode mismatch as evidence for on-policy distillation.
 - The 1k gate fixes optimizer exposure at 1,000 target rows. `diverse4` expands to 4,000 available
   rows, so B3/B4 at this gate are budget-matched samples from the four-reference pool, not a full
   four-pass exposure. Report both `training_rows` and `optimizer_example_exposures`; any promoted

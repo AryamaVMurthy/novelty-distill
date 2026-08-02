@@ -104,7 +104,8 @@ the first 2,048 retry 18136 exposed the upstream prompt-dropping truncation edge
 introduced a prompt-preserving ChatML adapter with the identical tensor contract; static retry
 18137 and on-policy smoke 18138 then completed with real optimizer steps and deployable adapters.
 Production contexts are frozen at SFT 3,072, GKD 2,048, OPSD 3,072, GEM 1,024, and DistiLLM 896.
-The GKD metadata records completion truncation counts/tokens for every run.
+The GKD metadata records completion truncation counts/tokens and the explicit non-thinking prompt
+mode for every run.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`

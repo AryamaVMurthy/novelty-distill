@@ -96,6 +96,10 @@ not a results report and does not promote any baseline.
   The hardware-validated 2,048-token GKD limit affects 3/1,000 human targets; teacher-sampled and
   on-policy GKD rows fit. SFT/OPSD use the validated 3,072-token limit with zero audited overflow.
   DistiLLM's separate 896-token cap remains an explicitly reported method confound.
+- GKD's prompt-preserving adapter renders Qwen with `enable_thinking=False`, matching teacher-data
+  generation and final evaluation. This prevents an on-policy-only hidden reasoning mode from
+  confounding the static/on-policy comparison; the choice is stored in every TRL run spec and
+  metadata artifact.
 - Raw prompt-level metrics and all eight training-teacher samples are retained for reannotation.
 - OPSD's pinned upstream collator is math-specific and therefore is not used as a task adapter. The
   task-faithful collator preserves the official trainer/loss, makes student prompts byte-identical

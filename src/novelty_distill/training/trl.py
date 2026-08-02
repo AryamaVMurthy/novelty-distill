@@ -45,6 +45,7 @@ class TRLRunSpec(BaseModel):
     max_length: int = Field(gt=0)
     max_new_tokens: int = Field(default=64, gt=0)
     temperature: float = Field(default=0.8, gt=0)
+    student_thinking: bool = False
     attention_implementation: Literal["sdpa", "flash_attention_2"]
     gradient_checkpointing: bool
     use_peft: bool
@@ -156,7 +157,11 @@ def build_trl_rows(
 
 
 def encode_prompt_preserving_chatml_example(
-    example: Mapping[str, Any], *, tokenizer: Any, max_length: int
+    example: Mapping[str, Any],
+    *,
+    tokenizer: Any,
+    max_length: int,
+    enable_thinking: bool = False,
 ) -> dict[str, list[int] | int]:
     """Encode ChatML while preserving the full prompt and completion prefix."""
 
@@ -164,10 +169,16 @@ def encode_prompt_preserving_chatml_example(
     if not isinstance(messages, list) or len(messages) < 2:
         raise ValueError("GKD examples require at least user and assistant messages")
     formatted_prompt = tokenizer.apply_chat_template(
-        messages[:-1], tokenize=False, add_generation_prompt=True
+        messages[:-1],
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=enable_thinking,
     )
     formatted_message = tokenizer.apply_chat_template(
-        messages, tokenize=False, add_generation_prompt=False
+        messages,
+        tokenize=False,
+        add_generation_prompt=False,
+        enable_thinking=enable_thinking,
     )
     prompt_ids = list(
         tokenizer(
@@ -210,16 +221,22 @@ def encode_prompt_preserving_chatml_example(
 class PromptPreservingChatMLCollator:
     """Official-GKD tensor schema with an explicit prompt-preserving truncation policy."""
 
-    def __init__(self, tokenizer: Any, *, max_length: int) -> None:
+    def __init__(
+        self, tokenizer: Any, *, max_length: int, enable_thinking: bool = False
+    ) -> None:
         self.tokenizer = tokenizer
         self.max_length = max_length
+        self.enable_thinking = enable_thinking
 
     def __call__(self, examples: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
         import torch
 
         encoded = tuple(
             encode_prompt_preserving_chatml_example(
-                example, tokenizer=self.tokenizer, max_length=self.max_length
+                example,
+                tokenizer=self.tokenizer,
+                max_length=self.max_length,
+                enable_thinking=self.enable_thinking,
             )
             for example in examples
         )
@@ -401,7 +418,10 @@ def execute_trl_training(
         )
         encoded_audit = tuple(
             encode_prompt_preserving_chatml_example(
-                row, tokenizer=tokenizer, max_length=spec.max_length
+                row,
+                tokenizer=tokenizer,
+                max_length=spec.max_length,
+                enable_thinking=spec.student_thinking,
             )
             for row in rows
         )
@@ -422,7 +442,9 @@ def execute_trl_training(
             processing_class=tokenizer,
             peft_config=peft_config,
             data_collator=PromptPreservingChatMLCollator(
-                tokenizer, max_length=spec.max_length
+                tokenizer,
+                max_length=spec.max_length,
+                enable_thinking=spec.student_thinking,
             ),
         )
         if os.environ.get("NOVELTY_GKD_DIAGNOSTIC") == "1":
@@ -455,6 +477,7 @@ def execute_trl_training(
         "revision": spec.revision,
         "teacher_model": spec.teacher_model,
         "teacher_revision": spec.teacher_revision,
+        "student_thinking": spec.student_thinking,
         "lmbda": baseline.lmbda,
         "beta": baseline.beta,
         "trajectory_source": baseline.trajectory_source,

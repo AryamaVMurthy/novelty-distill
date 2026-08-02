@@ -15,6 +15,7 @@ def test_gkd_collator_preserves_prompt_and_truncates_completion_tail() -> None:
     class CharacterTokenizer:
         def apply_chat_template(self, messages, **kwargs):
             assert kwargs["tokenize"] is False
+            assert kwargs["enable_thinking"] is False
             return "PP" if len(messages) == 1 else "PPabcdefgh"
 
         def __call__(self, text, **kwargs):
@@ -155,6 +156,7 @@ def test_gkd_smoke_run_pins_both_shared_tokenizer_models() -> None:
     assert spec.max_length == 1024
     assert spec.max_new_tokens == 64
     assert spec.temperature == 0.8
+    assert spec.student_thinking is False
 
 
 def test_teacher_seqkd_config_requires_the_versioned_target_artifact() -> None:
