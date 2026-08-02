@@ -376,6 +376,8 @@ def execute_distillm_training(
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
         "normalized_qwen_separators": sentinel_replacements,
+        "training_rows": len(rows),
+        "optimizer_example_exposures": spec.max_steps * spec.batch_size * spec.num_gpus,
         "max_steps": spec.max_steps,
         "num_gpus": spec.num_gpus,
         "seed": spec.seed,

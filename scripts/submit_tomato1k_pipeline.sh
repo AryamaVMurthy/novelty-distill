@@ -82,7 +82,7 @@ if [[ "${submit_training}" == 1 ]]; then
     submit_job slurm/train_smoke.sbatch \
       --time=06:00:00 \
       --mem=128G \
-      --array=0-11,13-18%1 \
+      --array=0-11,13-18%2 \
       --dependency="afterok:${cluster_job}" \
       --export=ALL,BASELINE_MATRIX=tomato1k
   )"

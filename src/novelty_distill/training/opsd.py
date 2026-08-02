@@ -290,6 +290,12 @@ def execute_opsd_training(
         "teacher_context": baseline.teacher_context,
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
+        "training_rows": len(rows),
+        "optimizer_example_exposures": (
+            spec.max_steps
+            * spec.per_device_train_batch_size
+            * spec.gradient_accumulation_steps
+        ),
         "max_steps": spec.max_steps,
         "seed": spec.seed,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),

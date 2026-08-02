@@ -41,6 +41,11 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
   effect isolated to one prompt is exploratory.
 - Report length-stop rate, completion-token distribution, and training-target similarity beside
   every headline comparison to expose truncation and memorization.
+- The 1k gate fixes optimizer exposure at 1,000 target rows. `diverse4` expands to 4,000 available
+  rows, so B3/B4 at this gate are budget-matched samples from the four-reference pool, not a full
+  four-pass exposure. Report both `training_rows` and `optimizer_example_exposures`; any promoted
+  four-reference finding requires a full-pool exposure sensitivity with repeated single-target
+  controls at the same 4,000-row budget.
 - Keep reverse-KL/JSD and optional controls at one training seed until the pipeline passes; promote
   central comparisons to seeds 17, 29, and 43 only after the frozen 1k gate.
 - Do not pool results across the 4B/14B and 1.7B/8B model pairs. The latter is a replication, not
