@@ -30,6 +30,18 @@ The completion-token distribution has mean 355.5487, median 353, and maximum 512
 `stop` finishes and 15 `length` finishes, for a length-stop rate of 0.001875. These are generation
 integrity and lexical-uniqueness diagnostics; they do not establish semantic diversity or quality.
 
+Quality score pass 1 completed successfully in 01:29:07 and pass 2 completed its strict preflight
+in 00:00:49. The frozen score tree contains exactly 1,000 schema-v2 shards and 8,000 records, all
+with unique request IDs, under tree SHA-256
+`3c2986fe0a6ca2a985737a177f2e6fc3ed3ac3e669c553f0dfa7a5b437989e7f`.
+Diagnostics job 18123 completed in 00:00:02. Aggregate quality is 0.827656 (population SD 0.104174),
+the mean within-prompt range is 0.19215, and the aggregate ceiling rate is 0.0585. Instruction
+compliance is saturated at a 0.9925 rating-5 rate, whereas feasibility and soundness retain
+headroom with means 3.733625 and 3.71425. Global and prompt-centered quality--length correlations
+are 0.078351 and 0.111392. These results establish judge resolution and expose dimension-specific
+ceilings; they do not validate the rubric against human scientific judgments. Full frozen values
+are recorded in `reports/TEACHER_SCORE_FINDINGS.md`.
+
 The original pending cluster job 18039 was first extended from 01:00:00 to 03:00:00, then replaced
 and cancelled before execution by current staged job 18124 so production uses the persistent atomic
 embedding cache. The observed seven-condition calibration cluster job processed 56 prompts in
