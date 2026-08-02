@@ -228,7 +228,8 @@ def main() -> None:
         "primary_cosine_threshold": primary_threshold,
         "semantic_clustering": {
             "teacher_partition": "complete_linkage",
-            "student_assignment": "nearest_teacher_if_cosine_at_least_threshold",
+            "student_assignment": "best_teacher_mode_by_minimum_member_cosine",
+            "student_admission_requires_all_teacher_mode_members": True,
             "unmatched_student_partition": "complete_linkage",
             "teacher_modes_are_fixed_across_methods": True,
         },

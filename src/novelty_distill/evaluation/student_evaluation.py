@@ -63,7 +63,7 @@ def anchor_student_clusters(
     student_embeddings: Iterable[Iterable[float]],
     threshold: float,
 ) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    """Freeze teacher modes, then assign students without letting them merge those modes."""
+    """Freeze teacher modes, then admit students using the same complete-link boundary."""
 
     teacher = _normalize(
         tuple(tuple(float(value) for value in row) for row in teacher_embeddings)
@@ -76,13 +76,22 @@ def anchor_student_clusters(
     if len({len(row) for row in (*teacher, *student)}) != 1:
         raise ValueError("teacher and student embeddings must share one dimension")
     teacher_labels = cluster_cosine_embeddings(teacher, threshold=threshold)
+    teacher_mode_indices: dict[str, list[int]] = {}
+    for teacher_index, label in enumerate(teacher_labels):
+        teacher_mode_indices.setdefault(label, []).append(teacher_index)
     student_labels = [""] * len(student)
     unmatched_indices: list[int] = []
     for student_index, embedding in enumerate(student):
-        similarities = tuple(_dot(embedding, target) for target in teacher)
-        nearest_index = max(range(len(teacher)), key=lambda index: similarities[index])
-        if similarities[nearest_index] >= threshold:
-            student_labels[student_index] = teacher_labels[nearest_index]
+        complete_link_scores = tuple(
+            (
+                label,
+                min(_dot(embedding, teacher[index]) for index in member_indices),
+            )
+            for label, member_indices in teacher_mode_indices.items()
+        )
+        best_label, best_score = max(complete_link_scores, key=lambda item: item[1])
+        if best_score >= threshold:
+            student_labels[student_index] = best_label
         else:
             unmatched_indices.append(student_index)
     if unmatched_indices:

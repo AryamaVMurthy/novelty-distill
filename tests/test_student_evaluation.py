@@ -90,6 +90,17 @@ def test_teacher_anchoring_prevents_student_bridge_from_merging_teacher_modes() 
     assert student == ("cluster-000",)
 
 
+def test_teacher_mode_admission_enforces_complete_linkage_against_every_member() -> None:
+    teacher, student = anchor_student_clusters(
+        teacher_embeddings=((1.0, 0.0), (0.8, 0.6)),
+        student_embeddings=((0.8, -0.6),),
+        threshold=0.79,
+    )
+
+    assert teacher == ("cluster-000", "cluster-000")
+    assert student == ("student-novel-000",)
+
+
 def test_generation_diagnostics_expose_length_stops_and_token_distribution() -> None:
     diagnostics = summarize_generation_diagnostics(
         finish_reasons=("stop", "length", "stop", "length"),

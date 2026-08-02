@@ -8,10 +8,12 @@ It distinguishes predictions motivated by prior work from findings produced by t
 All comparisons use the same temporal-test prompt IDs and K=16 generation controls. The primary
 prompt-level outcomes are judge quality and feasibility, teacher ModeRecall@16, ModePrecision@16,
 ClusterJSD, quality-adjusted coverage, and nearest-training-target similarity. Teacher samples are
-clustered first to freeze one teacher-mode partition per prompt. Student samples join their nearest
-teacher mode only when cosine similarity reaches the threshold; unmatched students are clustered
-as novel student modes. This prevents a student bridge from merging teacher modes differently by
-method. Before any student evaluation, the production teacher-only gate showed that the original
+clustered first to freeze one teacher-mode partition per prompt. For each student sample, every
+teacher mode is scored by its minimum cosine similarity to any member; the sample joins the
+best-scoring mode only when that complete-link score reaches the threshold. Unmatched students are
+clustered as novel student modes. This prevents a student bridge from merging teacher modes or
+violating the within-mode boundary differently by method. Before any student evaluation, the
+production teacher-only gate showed that the original
 connected-component threshold 0.82 collapsed to 1.001 modes per prompt. Moving connected
 components to 0.95 yielded 3.558 modes but a deterministic qualitative audit found bridge-induced
 phase behavior and obvious paraphrase splitting. The frozen primary partition therefore uses
