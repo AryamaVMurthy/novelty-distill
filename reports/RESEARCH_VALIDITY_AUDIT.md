@@ -91,6 +91,10 @@ not a results report and does not promote any baseline.
 - Finish reasons and completion-token diagnostics are preserved beside every score so truncation
   cannot masquerade as a method effect.
 - Raw prompt-level metrics and all eight training-teacher samples are retained for reannotation.
+- OPSD's pinned upstream collator is math-specific and therefore is not used as a task adapter. The
+  task-faithful collator preserves the official trainer/loss, makes student prompts byte-identical
+  for E2/E3/E4, and changes only the E2/E3 teacher-side privileged context. This prevents the
+  privileged-context contrast from being confounded by a boxed-answer mathematics instruction.
 - A central semantic-coverage claim requires a blinded expert subset, ideally using pairwise or
   odd-one-out judgments of mechanism/intervention equivalence. Until that exists, conclusions are
   explicitly limited to the fixed Qwen judge and Qwen embedding operational definitions.

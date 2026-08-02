@@ -116,6 +116,44 @@ def render_matched_prompt_pairs(
     return tuple(pairs)
 
 
+def render_privileged_prompt_pairs(
+    features: Sequence[Mapping[str, str]],
+    *,
+    tokenizer: Any,
+    student_thinking: bool,
+    teacher_thinking: bool,
+) -> tuple[tuple[str, str], ...]:
+    """Render one unchanged student task and one teacher-only privileged extension."""
+
+    pairs: list[tuple[str, str]] = []
+    for feature in features:
+        problem = str(feature["problem"]).strip()
+        solution = str(feature["solution"]).strip()
+        if not problem or not solution:
+            raise ValueError("privileged OPSD rows require non-empty problem and context")
+        student_prompt = tokenizer.apply_chat_template(
+            [{"role": "user", "content": problem}],
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=student_thinking,
+        )
+        teacher_content = (
+            f"{problem}\n\n"
+            "Private context available only to the teacher:\n"
+            f"{solution}\n\n"
+            "Use this private context as evidence when answering the original request. "
+            "Do not mention the private context or the fact that it was supplied."
+        )
+        teacher_prompt = tokenizer.apply_chat_template(
+            [{"role": "user", "content": teacher_content}],
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=teacher_thinking,
+        )
+        pairs.append((student_prompt, teacher_prompt))
+    return tuple(pairs)
+
+
 def opsd_dataset_kwargs() -> dict[str, bool]:
     """Keep the raw columns required by the official OPSD data collator."""
 
@@ -167,6 +205,81 @@ class MatchedContextCollator:
             "teacher_prompt_length": batch_length,
             "teacher_prompt_lengths_per_example": lengths_tensor.clone(),
         }
+
+
+class PrivilegedContextCollator:
+    """Task-faithful TOMATO adapter for the official fixed-teacher OPSD trainer."""
+
+    def __init__(
+        self,
+        tokenizer: Any,
+        *,
+        max_length: int,
+        student_thinking: bool,
+        teacher_thinking: bool,
+    ) -> None:
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        self.student_thinking = student_thinking
+        self.teacher_thinking = teacher_thinking
+
+    def __call__(self, features: Sequence[Mapping[str, str]]) -> dict[str, Any]:
+        pairs = render_privileged_prompt_pairs(
+            features,
+            tokenizer=self.tokenizer,
+            student_thinking=self.student_thinking,
+            teacher_thinking=self.teacher_thinking,
+        )
+        student = _encode_prompt_batch(
+            tuple(prompt for prompt, _teacher in pairs),
+            tokenizer=self.tokenizer,
+            max_length=self.max_length,
+        )
+        teacher = _encode_prompt_batch(
+            tuple(prompt for _student, prompt in pairs),
+            tokenizer=self.tokenizer,
+            max_length=self.max_length,
+        )
+        return {
+            "student_prompts": student["input_ids"],
+            "student_prompt_attention_mask": student["attention_mask"],
+            "student_prompt_length": student["batch_length"],
+            "student_prompt_lengths_per_example": student["lengths"],
+            "teacher_prompts": teacher["input_ids"],
+            "teacher_prompt_attention_mask": teacher["attention_mask"],
+            "teacher_prompt_length": teacher["batch_length"],
+            "teacher_prompt_lengths_per_example": teacher["lengths"],
+        }
+
+
+def _encode_prompt_batch(
+    prompts: Sequence[str], *, tokenizer: Any, max_length: int
+) -> dict[str, Any]:
+    import torch
+
+    unpadded = tokenizer(
+        list(prompts),
+        padding=False,
+        truncation=True,
+        max_length=max_length,
+    )
+    lengths = [len(input_ids) for input_ids in unpadded["input_ids"]]
+    if not lengths:
+        raise ValueError("OPSD collator requires a non-empty batch")
+    batch_length = max(lengths)
+    encoded = tokenizer(
+        list(prompts),
+        padding="max_length",
+        truncation=True,
+        max_length=batch_length,
+        return_tensors="pt",
+    )
+    return {
+        "input_ids": encoded["input_ids"],
+        "attention_mask": encoded["attention_mask"],
+        "batch_length": batch_length,
+        "lengths": torch.tensor(lengths),
+    }
 
 
 def execute_opsd_training(
@@ -258,12 +371,18 @@ def execute_opsd_training(
         lora_dropout=0.0,
         target_modules="all-linear",
     )
-    data_collator = None
     if baseline.teacher_context == "ordinary":
         data_collator = MatchedContextCollator(
             tokenizer,
             max_length=spec.max_length,
             enable_thinking=spec.student_thinking,
+        )
+    else:
+        data_collator = PrivilegedContextCollator(
+            tokenizer,
+            max_length=spec.max_length,
+            student_thinking=spec.student_thinking,
+            teacher_thinking=spec.teacher_thinking,
         )
     trainer = OPSDTrainer(
         model=spec.model,
@@ -296,6 +415,12 @@ def execute_opsd_training(
         "lmbda": baseline.lmbda,
         "beta": baseline.beta,
         "teacher_context": baseline.teacher_context,
+        "data_collator": (
+            "tomato_matched_context"
+            if baseline.teacher_context == "ordinary"
+            else "tomato_privileged_context"
+        ),
+        "student_prompt_contract": "ordinary_tomato_chat_prompt",
         "dataset_revision": examples[0].dataset_revision,
         "example_ids": [example.id for example in examples],
         "training_artifacts": {

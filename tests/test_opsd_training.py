@@ -8,6 +8,7 @@ from novelty_distill.training.opsd import (
     opsd_dataset_kwargs,
     override_opsd_baseline,
     render_matched_prompt_pairs,
+    render_privileged_prompt_pairs,
 )
 
 
@@ -74,6 +75,37 @@ def test_matched_context_control_renders_identical_teacher_and_student_prompts()
     )
 
     assert pairs == (("rendered::ordinary prompt", "rendered::ordinary prompt"),)
+
+
+def test_privileged_collator_changes_only_the_teacher_context_not_the_task() -> None:
+    class RecordingTokenizer:
+        def apply_chat_template(self, messages, **kwargs):
+            assert kwargs == {
+                "tokenize": False,
+                "add_generation_prompt": True,
+                "enable_thinking": False,
+            }
+            return f"rendered::{messages[0]['content']}"
+
+    features = ({"problem": "ordinary prompt", "solution": "private evidence"},)
+    student, teacher = render_privileged_prompt_pairs(
+        features,
+        tokenizer=RecordingTokenizer(),
+        student_thinking=False,
+        teacher_thinking=False,
+    )[0]
+    matched_student = render_matched_prompt_pairs(
+        features,
+        tokenizer=RecordingTokenizer(),
+        enable_thinking=False,
+    )[0][0]
+
+    assert student == matched_student
+    assert "private evidence" not in student
+    assert "ordinary prompt" in teacher
+    assert "private evidence" in teacher
+    assert "boxed" not in teacher.lower()
+    assert "step by step" not in teacher.lower()
 
 
 def test_official_opsd_receives_raw_problem_solution_rows() -> None:

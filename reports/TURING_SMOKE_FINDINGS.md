@@ -16,7 +16,8 @@ or two records and one optimizer step; official evaluation runs use one or two b
 
 ## Baseline execution
 
-Nineteen executable training variants completed and wrote auditable `run_metadata.json` files:
+Nineteen executable training variants reached real optimizer steps and wrote auditable
+`run_metadata.json` files:
 
 - SFT/SeqKD/GEM: B1, B2a, B2b, B2c, B3, B4;
 - off-policy distillation: all three C1 views, all three C2 views, and C3;
@@ -28,6 +29,14 @@ E1 is intentionally fail-closed: the pinned official OPSD repository has no stat
 off-policy mode, and this project does not invent an unofficial substitute. The registry records
 that boundary with `execution_status: fail_closed`, so matrix consumers can distinguish an
 unsupported planned control from a missing or silently skipped run.
+
+A post-smoke source audit reopened the E2/E3 task-faithfulness gate: OPSD's upstream data collator
+wraps every input as a mathematics problem and requests step-by-step reasoning with a boxed answer.
+That smoke established trainer/loss deployability, but it is not valid TOMATO treatment evidence.
+The corrected adapter keeps the official trainer and loss, renders the E2/E3/E4 student prompt
+identically, and adds historical hypotheses/inspirations only to the privileged teacher prompt.
+A fresh main-model smoke must validate this corrected collator before E2/E3 production artifacts
+are accepted.
 
 Teacher-generation jobs 17918 and 17922 independently produced the same eight-record projection
 for one fixed TOMATO prompt. All eight hypotheses were distinct within each run, and the canonical

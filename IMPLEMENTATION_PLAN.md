@@ -94,7 +94,10 @@ Run C1/C2 on human, teacher-best-1, and teacher-diverse trajectories through con
 | E3 | privileged OPSD reverse KL | official OPSD loss configuration/adaptation |
 | E4 | OPSD without privileged context | official OPSD trainer control |
 
-The main custom adaptation is a TOMATO batch builder that gives the student the ordinary prompt and gives the frozen self-teacher the same prompt plus the historical hypothesis/inspirations.
+The main custom adaptation is a TOMATO data collator that gives the student the byte-identical
+ordinary chat prompt in E2/E3/E4 and gives only the frozen E2/E3 self-teacher the same task plus the
+historical hypothesis/inspirations. It deliberately replaces OPSD's upstream math-specific prompt
+wrapper while retaining the pinned official trainer and losses.
 E1 remains in the registry as a planned negative-capability control, with a machine-readable
 `fail_closed` status and reason. It is excluded from executable matrices unless a reviewed official
 upstream implementation becomes available.
