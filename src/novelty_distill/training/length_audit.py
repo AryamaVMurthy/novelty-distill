@@ -3,6 +3,33 @@
 import statistics
 from collections.abc import Iterable
 
+from novelty_distill.data.tomato import CanonicalExample
+
+
+def select_canonical_json_lines(
+    lines: Iterable[str], *, ids: Iterable[str]
+) -> tuple[str, ...]:
+    """Select exact canonical JSON records in an explicit ID order."""
+
+    requested = tuple(str(value).strip() for value in ids)
+    if not requested or any(not value for value in requested):
+        raise ValueError("requested IDs must be non-empty")
+    if len(requested) != len(set(requested)):
+        raise ValueError("requested IDs must be unique")
+    by_id: dict[str, str] = {}
+    for line in lines:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        example = CanonicalExample.model_validate_json(stripped)
+        if example.id in by_id:
+            raise ValueError(f"duplicate canonical ID {example.id}")
+        by_id[example.id] = stripped
+    missing = tuple(identifier for identifier in requested if identifier not in by_id)
+    if missing:
+        raise ValueError(f"missing requested canonical IDs: {missing}")
+    return tuple(by_id[identifier] for identifier in requested)
+
 
 def summarize_token_lengths(
     lengths: Iterable[int], *, max_length: int
