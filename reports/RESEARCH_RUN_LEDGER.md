@@ -60,6 +60,13 @@ and instructed counts still differ materially; the complete eight-threshold curv
 remain mandatory. Exact hashes and the full distribution are in
 `reports/TEACHER_TARGET_FINDINGS.md`.
 
+Before any student metric was computed, evaluation commit `40e9244` closed an asymmetric
+assignment loophole: a student now joins a frozen teacher mode only when its minimum cosine to
+every member reaches the threshold. Choosing the qualifying mode by its best complete-link score
+keeps the 0.94 boundary consistent between teacher partitioning and student admission; otherwise a
+student could match one member while contradicting another. Unmatched students remain
+complete-linkage clustered as separately named student modes.
+
 Training jobs 18092, 18097, and 18098 and control evaluation 18113 directly require successful
 gate 18132, so no target consumer can run on a superseded artifact.
 
@@ -103,6 +110,11 @@ model chain has three resumable generation passes, two resumable judge passes, t
 evaluation passes, and strict checkpoint preflight. The final CPU analysis requires all aligned evaluation artifacts,
 runs the frozen prompt-paired contrasts with per-metric Holm correction, and reports per-prompt
 favorable/tied/unfavorable directions over every declared clustering threshold.
+
+The registry contains 24 planned entries: four non-training controls, nineteen executable training
+variants, and E1. E1 is explicitly `fail_closed` because the pinned official OPSD implementation
+does not expose static-trajectory off-policy training. It is neither missing nor silently skipped,
+and it cannot enter the executable matrix without a reviewed upstream implementation.
 
 ## UltraFeedback systems pilot
 
