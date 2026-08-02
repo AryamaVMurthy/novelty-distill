@@ -42,13 +42,17 @@ baseline_ids=(
   C1-human C1-best1 C1-diverse4 C2-human C2-best1 C2-diverse4 C3
   D1 D2 D3 E2 E3 E4
 )
-collector_inputs=(--input "A0=${evaluation_root}/A0-temporal-k16-seed17000.json")
+collector_inputs=(
+  --input "A0=${evaluation_root}/A0-temporal-k16-seed17000.json"
+  --input "A1=${evaluation_root}/A1-temporal-k16-seed17000.json"
+)
 for baseline_id in "${baseline_ids[@]}"; do
   eval_id="${baseline_id}-tomato1k-seed17-temporal-k16"
   test -s "${evaluation_root}/${eval_id}.json"
   collector_inputs+=(--input "${baseline_id}=${evaluation_root}/${eval_id}.json")
 done
 test -s "${evaluation_root}/A0-temporal-k16-seed17000.json"
+test -s "${evaluation_root}/A1-temporal-k16-seed17000.json"
 
 matrix_path="${output_dir}/prompt-metrics.jsonl"
 "${venv_dir}/bin/python" "${repo_dir}/scripts/collect_evaluation_metrics.py" \

@@ -75,6 +75,15 @@ submit_job() {
   printf '%s\n' "${job_id}"
 }
 
+teacher_eval_job="$(
+  submit_job \
+    --time=06:00:00 \
+    --dependency="afterok:${teacher_score_job_id}:${target_job_id}" \
+    --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=${teacher_score_id},SCORE_NAMESPACE=${score_namespace},TARGET_NAME=${target_name},OUTPUT_NAME=A1-temporal-k16-seed17000" \
+    slurm/evaluate_student.sbatch
+)"
+printf '{"baseline":"A1","evaluation":"%s"}\n' "${teacher_eval_job}"
+
 submit_chain() {
   local baseline_id="$1"
   local model_path="$2"
@@ -124,7 +133,7 @@ submit_chain C3 "${distillm_path}" configs/generation/eval_qwen3_4b.yaml
 evaluation_dependency="$(IFS=:; printf '%s' "${evaluation_jobs[*]}")"
 analysis_job="$(
   submit_job \
-    --dependency="afterok:${control_eval_job_id}:${evaluation_dependency}" \
+    --dependency="afterok:${control_eval_job_id}:${teacher_eval_job}:${evaluation_dependency}" \
     slurm/analyze_evaluation_matrix.sbatch
 )"
 printf '{"analysis":"%s","evaluations":%s}\n' \
