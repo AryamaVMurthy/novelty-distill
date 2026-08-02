@@ -189,6 +189,9 @@ Run the pinned-tokenizer context audit before training. The validated 1k gate us
 for SFT and OPSD, 2,048 for GKD, 1,024 for GEM, and 896/480 full/prompt caps for DistiLLM. GKD's
 task adapter must preserve the complete prompt and truncate only the completion tail, recording
 affected rows and tokens; the official trainer and distillation loss remain unchanged.
+GKD on-policy generation must explicitly use the same frozen temperature, top-p, top-k, min-p,
+maximum-new-token, and non-thinking controls as teacher/evaluation generation; model-specific
+defaults are not part of the experimental contract.
 
 ## Teacher generation
 

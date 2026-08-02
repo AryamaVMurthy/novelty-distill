@@ -108,6 +108,11 @@ The GKD metadata records completion truncation counts/tokens and the explicit no
 mode for every run.
 Final on-policy prompt-contract gate 18139 completed in 00:00:50 at commit `67c9a48`, recording
 `student_thinking: false`, zero truncation, finite loss/gradient, and a deployable adapter.
+The subsequent decoding-parity gate 18140 completed in 00:00:50 at commit `6eb1c5a`, after a
+source audit found that official GKD otherwise forced `top_k=0` and inherited Qwen's
+`top_p=0.95`. The successful run records the frozen teacher/evaluation controls
+`temperature=0.7`, `top_p=0.8`, `top_k=20`, and `min_p=0.0`, together with non-thinking mode,
+zero truncation, loss 0.6325, gradient norm 1.9707, and a structurally valid 504-tensor adapter.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
@@ -165,3 +170,5 @@ finish with a deployable adapter before that backend is considered research-read
   completion-tail truncation at the hardware-safe GKD limit; this 0.3% rate and token count remain
   mandatory diagnostics. DistiLLM's 896-token full-chat proxy exceeds its cap for 1/1,000 records
   by 19 tokens, while all prompts fit its separate 480-token prompt cap.
+- GKD on-policy sampling is explicitly overwritten on the official trainer after construction and
+  recorded in run metadata. Model defaults are not accepted as implicit experimental controls.

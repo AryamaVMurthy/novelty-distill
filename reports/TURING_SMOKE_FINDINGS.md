@@ -53,6 +53,12 @@ leaving three explicitly measured human-target truncations out of 1,000 instead 
 Final non-thinking on-policy gate 18139 completed in 00:00:50 with finite loss 0.5591, gradient
 norm 1.6348, no context truncation, an explicit `student_thinking: false` metadata field, and a
 loadable adapter. This is the prompt contract consumed by production D1/D2/D3.
+An additional source audit found that TRL GKD's internal generation config forced `top_k=0` and
+otherwise inherited Qwen's `top_p=0.95`, rather than the frozen teacher/evaluation sampler.
+Commit `6eb1c5a` now sets and records all on-policy controls on the official trainer. Gate 18140
+completed in 00:00:50 with controls `temperature=0.7`, `top_p=0.8`, `top_k=20`, `min_p=0.0`,
+finite loss 0.6325, gradient norm 1.9707, zero truncation, peak observed GPU memory 38,596 MiB,
+and a 132,187,888-byte adapter containing 504 readable tensors.
 
 Teacher-generation jobs 17918 and 17922 independently produced the same eight-record projection
 for one fixed TOMATO prompt. All eight hypotheses were distinct within each run, and the canonical
