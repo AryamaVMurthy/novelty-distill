@@ -147,13 +147,13 @@ def main() -> None:
     }
 
     summaries = {
-        "student_prompt_at_1024": summarize_token_lengths(
+        f"student_prompt_at_{args.max_length}": summarize_token_lengths(
             student_prompt_lengths, max_length=args.max_length
         ),
-        "privileged_teacher_prompt_at_1024": summarize_token_lengths(
+        f"privileged_teacher_prompt_at_{args.max_length}": summarize_token_lengths(
             privileged_teacher_lengths, max_length=args.max_length
         ),
-        "on_policy_prompt_plus_max_generation_at_1024": summarize_token_lengths(
+        f"on_policy_prompt_plus_max_generation_at_{args.max_length}": summarize_token_lengths(
             (length + args.max_new_tokens for length in student_prompt_lengths),
             max_length=args.max_length,
         ),
@@ -161,7 +161,7 @@ def main() -> None:
             student_prompt_lengths, max_length=args.distillm_max_prompt_length
         ),
         **{
-            f"{view}_full_chat_at_1024": summarize_token_lengths(
+            f"{view}_full_chat_at_{args.max_length}": summarize_token_lengths(
                 lengths, max_length=args.max_length
             )
             for view, lengths in full_lengths.items()
