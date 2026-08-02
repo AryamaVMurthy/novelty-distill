@@ -50,6 +50,9 @@ task-adapter edge while retaining the official GKD trainer/loss. Worst-record st
 completed in 00:00:29 (peak 41,776 MiB), and on-policy job 18138 completed in 00:00:49 (peak
 38,556 MiB); both wrote loadable 132,187,888-byte adapters. Production GKD uses 2,048 tokens,
 leaving three explicitly measured human-target truncations out of 1,000 instead of 142.
+Final non-thinking on-policy gate 18139 completed in 00:00:50 with finite loss 0.5591, gradient
+norm 1.6348, no context truncation, an explicit `student_thinking: false` metadata field, and a
+loadable adapter. This is the prompt contract consumed by production D1/D2/D3.
 
 Teacher-generation jobs 17918 and 17922 independently produced the same eight-record projection
 for one fixed TOMATO prompt. All eight hypotheses were distinct within each run, and the canonical

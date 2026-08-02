@@ -106,6 +106,8 @@ introduced a prompt-preserving ChatML adapter with the identical tensor contract
 Production contexts are frozen at SFT 3,072, GKD 2,048, OPSD 3,072, GEM 1,024, and DistiLLM 896.
 The GKD metadata records completion truncation counts/tokens and the explicit non-thinking prompt
 mode for every run.
+Final on-policy prompt-contract gate 18139 completed in 00:00:50 at commit `67c9a48`, recording
+`student_thinking: false`, zero truncation, finite loss/gradient, and a deployable adapter.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
