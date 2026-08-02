@@ -115,7 +115,7 @@ Their resume jobs retain the same output IDs and begin at the first missing prom
 | TRL/OPSD bounded resumes | 18195 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
 | C3 DistiLLM | 18098 | index 12, four GPUs, 12-hour bound; after target gate 18132 and smoke 18092 |
 | Final target replay | 18209 | waits for 18195, final A1 score 18202, and final A0 evaluation 18208 |
-| Evaluation fan-out controller | 18210 | waits for 18209 and names its fresh target gate for every submitted evaluation chain |
+| Evaluation fan-out controller | 18210 | waits for final target replay 18209 and B4 deploy gate 18191; names the fresh target gate for every submitted evaluation chain |
 
 Completed TOMATO-1k production runs currently have the following measured systems costs. Training
 losses are intentionally omitted from this cross-backend table because CE, GEM, forward/reverse
@@ -284,7 +284,8 @@ the environment-lock repair; 18197 was likewise replaced before execution when i
 were respun with that lock. Gate 18209 reruns exact target validation only after every other
 controller prerequisite succeeds; this keeps its Slurm ID fresh when controller 18210 submits
 downstream dependencies and avoids relying on purged historical gate 18132. Controller 18210
-submits A1 and historical A3 controls plus 19 trained model chains. Each trained
+also requires B4 serving proof 18191 before it submits A1 and historical A3 controls plus 19 trained
+model chains. Each trained
 model chain has three resumable generation passes, two resumable judge passes, two cached anchored
 evaluation passes, and strict checkpoint preflight. The final CPU analysis requires all aligned
 evaluation artifacts, runs the frozen prompt-paired contrasts with per-metric Holm correction, and
