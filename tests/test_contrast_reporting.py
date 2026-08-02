@@ -6,6 +6,7 @@ def test_contrast_report_renders_inference_and_threshold_direction_counts() -> N
         "schema_version": 2,
         "bootstrap_samples": 10_000,
         "seed": 17,
+        "git_commit": "a" * 40,
         "method_summaries": {
             "A": {"n": 3, "recall_mean": 0.4, "recall_median": 0.4},
             "B": {"n": 3, "recall_mean": 0.5, "recall_median": 0.5},
@@ -45,6 +46,7 @@ def test_contrast_report_renders_inference_and_threshold_direction_counts() -> N
     report = render_contrast_markdown(payload)
 
     assert "# Frozen TOMATO contrast findings" in report
+    assert "Producer Git commit: `aaaaaaaa" in report
     assert "## Descriptive method levels" in report
     assert "A3 is the single historical author response (K=1)" in report
     assert "| `A` | 3 | 0.4 |" in report

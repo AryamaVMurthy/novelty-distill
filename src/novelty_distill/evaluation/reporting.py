@@ -39,6 +39,8 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
         ),
         "",
     ]
+    if git_commit := payload.get("git_commit"):
+        lines[2:2] = [f"Producer Git commit: `{git_commit}`.", ""]
     mean_fields = sorted(
         {
             str(field)

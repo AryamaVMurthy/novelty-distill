@@ -146,6 +146,8 @@ def render_score_summary_markdown(summary: Mapping[str, Any]) -> str:
         "| Dimension | Mean | Median | Rating-5 rate | Rating counts |",
         "|---|---:|---:|---:|---|",
     ]
+    if git_commit := summary.get("git_commit"):
+        lines[2:2] = [f"Producer Git commit: `{git_commit}`.", ""]
     for name, values in dimensions.items():
         counts = ", ".join(f"{rating}:{count}" for rating, count in values["rating_counts"].items())
         lines.append(

@@ -188,6 +188,8 @@ def render_teacher_target_markdown(summary: Mapping[str, Any]) -> str:
         ),
         "|---|---:|---:|---:|---:|---:|",
     ]
+    if git_commit := summary.get("git_commit"):
+        lines[2:2] = [f"Producer Git commit: `{git_commit}`.", ""]
     for view, values in summary["views"].items():
         lines.append(
             f"| `{view}` | {int(values['num_responses'])} | "
