@@ -120,6 +120,7 @@ mkdir -p \
   "${scratch_root}/cache/cuda" \
   "${scratch_root}/cache/xdg" \
   "${scratch_root}/logs" \
+  "${scratch_root}/locks" \
   "${scratch_root}/tmp"
 if [[ ! -w "${TVM_FFI_CACHE_DIR}" ]]; then
   echo "TVM-FFI cache is not writable: ${TVM_FFI_CACHE_DIR}" >&2
@@ -137,12 +138,15 @@ else
   flock -u 9
 fi
 
+exec 8>"${scratch_root}/locks/venv-inference.lock"
+flock -x 8
 if [[ ! -x "${venv_dir}/bin/python" ]]; then
   uv venv --python 3.12 "${venv_dir}"
 fi
 "${venv_dir}/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 12), sys.version'
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
+flock -u 8
 
 if [[ -n "${calibration_config}" ]]; then
   if [[ -z "${calibration_run_id}" || "${calibration_run_id}" == */* || "${calibration_run_id}" == *..* ]]; then

@@ -56,8 +56,12 @@ git -C "${repo_dir}" fetch origin "${repo_ref}"
 git -C "${repo_dir}" switch "${repo_ref}"
 git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
 flock -u 9
+mkdir -p "${scratch_root}/locks"
+exec 8>"${scratch_root}/locks/venv-inference.lock"
+flock -x 8
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
+flock -u 8
 
 if [[ -n "${calibration_run_id}" ]]; then
   score_root="${scratch_root}/teacher-calibration-scores/${calibration_run_id}"

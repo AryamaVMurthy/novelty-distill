@@ -35,7 +35,11 @@ export UV_CACHE_DIR="${scratch_root}/cache/uv-a3"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
 export UV_LINK_MODE=copy
 export HF_HOME="${scratch_root}/cache/huggingface"
+mkdir -p "${scratch_root}/locks"
+exec 8>"${scratch_root}/locks/venv-inference.lock"
+flock -x 8
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
+flock -u 8
 
 "${venv_dir}/bin/python" "${repo_dir}/scripts/create_human_control_generations.py" \
   --input "${input_path}" \

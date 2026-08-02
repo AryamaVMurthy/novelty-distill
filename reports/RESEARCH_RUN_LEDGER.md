@@ -164,7 +164,10 @@ resource-pending even though a fourth GPU was free: D1 plus the two controls res
 the node's 386,630 MiB, leaving slightly less than D2's default 128 GiB request. Its pending-only
 reservation was conservatively reduced to 116 GiB (the identical live D1 workload's measured host
 RSS was about 1.6 GiB), after which concrete job 18194 started without restarting any active work.
-The node therefore has four useful GPU lanes rather than one scheduler-idle device.
+The node therefore has four useful GPU lanes rather than one scheduler-idle device. Pending resume
+array 18117 now uses the same 116 GiB reservation, allowing its two-task throttle to coexist with
+both 64 GiB controls under the node's measured RAM ceiling; this changes only Slurm reservation
+accounting, not any batch, optimizer, context, or checkpoint setting.
 
 Pre-production context gates 18134--18138 ran on the longest tokenizer-audited TOMATO record.
 Task-faithful OPSD at 3,072 tokens passed in 18134. GKD 3,072 failed closed on memory in 18135, and
@@ -257,6 +260,10 @@ while concurrent jobs raced updating the shared remote Git ref; neither reached 
 or training. The already-submitted bounded resume array 18117 contains the repository `flock`
 fix, depends `afterany` on the entire primary array, and will rerun incomplete artifacts while
 preflighting completed ones.
+After D1 and D2 were safely running, the remaining unstarted old-spooled elements D3/E2/E3/E4
+(18097_15--18) were cancelled before execution. Array 18117 contains all four indices, so this
+removes the known unlocked-fetch race without omitting any baseline; the primary array's expected
+aggregate `CANCELLED` state reflects these superseded pending elements rather than a new run fault.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`

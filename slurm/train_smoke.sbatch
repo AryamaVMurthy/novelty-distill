@@ -166,6 +166,7 @@ trap cleanup EXIT
 
 mkdir -p \
   "${scratch_root}/logs" \
+  "${scratch_root}/locks" \
   "${scratch_root}/cache/torch-extensions" \
   "${scratch_root}/cache/triton" \
   "${scratch_root}/cache/cuda" \
@@ -181,12 +182,15 @@ flock -u 9
 export NOVELTY_GIT_COMMIT
 NOVELTY_GIT_COMMIT="$(git -C "${repo_dir}" rev-parse HEAD)"
 
+exec 8>"${scratch_root}/locks/venv-${training_backend}.lock"
+flock -x 8
 if [[ ! -x "${venv_dir}/bin/python" ]]; then
   uv venv --python 3.10 "${venv_dir}"
 fi
 "${venv_dir}/bin/python" -c 'import sys; assert sys.version_info[:2] == (3, 10), sys.version'
 uv pip sync --python "${venv_dir}/bin/python" "${environment_lock}"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
+flock -u 8
 
 if [[ -n "${BASELINE_ID:-}" ]] && [[ "${training_backend}" == "trl" || "${training_backend}" == "opsd" ]]; then
   metadata_path="${scratch_root}/checkpoints/${BASELINE_ID}-${run_suffix}/run_metadata.json"

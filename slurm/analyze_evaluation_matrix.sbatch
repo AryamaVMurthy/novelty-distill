@@ -34,7 +34,11 @@ flock -u 9
 export UV_CACHE_DIR="${scratch_root}/cache/uv-analysis"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
 export UV_LINK_MODE=copy
+mkdir -p "${scratch_root}/locks"
+exec 8>"${scratch_root}/locks/venv-data.lock"
+flock -x 8
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
+flock -u 8
 mkdir -p "${output_dir}"
 
 baseline_ids=(

@@ -81,7 +81,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-mkdir -p "${scratch_root}/logs" "${scratch_root}/tmp"
+mkdir -p "${scratch_root}/logs" "${scratch_root}/locks" "${scratch_root}/tmp"
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
 git -C "${repo_dir}" diff --quiet
@@ -89,8 +89,11 @@ git -C "${repo_dir}" fetch origin "${repo_ref}"
 git -C "${repo_dir}" switch "${repo_ref}"
 git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
 flock -u 9
+exec 8>"${scratch_root}/locks/venv-inference.lock"
+flock -x 8
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
+flock -u 8
 
 if [[ -z "${calibration_run_id}" ]]; then
   generation_dir="${scratch_root}/generations/${generation_name}/${generation_job_id}"

@@ -53,7 +53,7 @@ export TRITON_CACHE_DIR="${scratch_root}/cache/triton"
 export CUDA_CACHE_PATH="${scratch_root}/cache/cuda"
 export TMPDIR="${scratch_root}/tmp"
 
-mkdir -p "${scratch_root}/tmp" "${scratch_root}/evaluations/tomato"
+mkdir -p "${scratch_root}/tmp" "${scratch_root}/locks" "${scratch_root}/evaluations/tomato"
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
 git -C "${repo_dir}" diff --quiet
@@ -61,8 +61,11 @@ git -C "${repo_dir}" fetch origin "${repo_ref}"
 git -C "${repo_dir}" switch "${repo_ref}"
 git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
 flock -u 9
+exec 8>"${scratch_root}/locks/venv-inference.lock"
+flock -x 8
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
+flock -u 8
 
 "${venv_dir}/bin/python" "${repo_dir}/scripts/evaluate_student_generations.py" \
   --teacher-score-dir "${scratch_root}/${score_namespace}/${teacher_score_id}" \
