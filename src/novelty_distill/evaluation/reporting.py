@@ -37,8 +37,11 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
             [
                 f"### `{metric}`",
                 "",
-                "| Contrast | n | Mean difference | 95% CI | Cohen's dz | p | Holm p |",
-                "|---|---:|---:|---:|---:|---:|---:|",
+                (
+                    "| Contrast | n | Reference mean | Treatment mean | Mean difference | "
+                    "95% CI | Cohen's dz | p | Holm p |"
+                ),
+                "|---|---:|---:|---:|---:|---:|---:|---:|---:|",
             ]
         )
         for contrast_id, estimate in raw_contrasts.items():
@@ -48,6 +51,8 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
             effect_text = "NA" if effect is None else _number(effect)
             lines.append(
                 f"| `{contrast_id}` | {int(estimate['n'])} | "
+                f"{_number(estimate['reference_mean'])} | "
+                f"{_number(estimate['treatment_mean'])} | "
                 f"{_number(estimate['mean_difference'])} | "
                 f"[{_number(estimate['ci_low'])}, {_number(estimate['ci_high'])}] | "
                 f"{effect_text} | {_number(estimate['p_value'])} | "

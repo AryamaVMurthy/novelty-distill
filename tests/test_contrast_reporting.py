@@ -10,6 +10,8 @@ def test_contrast_report_renders_inference_and_threshold_direction_counts() -> N
             "recall": {
                 "B-vs-A": {
                     "n": 3,
+                    "reference_mean": 0.4,
+                    "treatment_mean": 0.5,
                     "mean_difference": 0.1,
                     "ci_low": 0.01,
                     "ci_high": 0.2,
@@ -39,6 +41,9 @@ def test_contrast_report_renders_inference_and_threshold_direction_counts() -> N
     report = render_contrast_markdown(payload)
 
     assert "# Frozen TOMATO contrast findings" in report
-    assert "| `B-vs-A` | 3 | 0.1 | [0.01, 0.2] | 0.5 | 0.02 | 0.04 |" in report
+    assert (
+        "| `B-vs-A` | 3 | 0.4 | 0.5 | 0.1 | [0.01, 0.2] | 0.5 | 0.02 | 0.04 |"
+        in report
+    )
     assert "0.700: 2/0/1" in report
     assert "not human-validated scientific novelty labels" in report

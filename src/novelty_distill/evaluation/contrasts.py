@@ -74,7 +74,12 @@ def analyze_contrasts(
             if not math.isfinite(serialized["effect_size"]):
                 serialized["effect_size"] = None
             serialized.update(
-                {"reference": reference_name, "treatment": treatment_name}
+                {
+                    "reference": reference_name,
+                    "treatment": treatment_name,
+                    "reference_mean": statistics.fmean(reference_values),
+                    "treatment_mean": statistics.fmean(treatment_values),
+                }
             )
             metric_results[contrast_id] = serialized
             raw_p_values[contrast_id] = estimate.p_value
