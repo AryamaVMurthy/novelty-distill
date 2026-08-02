@@ -82,10 +82,13 @@ cleanup() {
 trap cleanup EXIT
 
 mkdir -p "${scratch_root}/logs" "${scratch_root}/tmp"
+exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
+flock -x 9
 git -C "${repo_dir}" diff --quiet
 git -C "${repo_dir}" fetch origin "${repo_ref}"
 git -C "${repo_dir}" switch "${repo_ref}"
 git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
+flock -u 9
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 

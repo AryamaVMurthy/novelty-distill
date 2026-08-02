@@ -17,7 +17,7 @@ fi
 repo_ref="${REPO_REF:-codex/implementation}"
 printf -v quoted_ref '%q' "${repo_ref}"
 remote_command="set -euo pipefail; repo_ref=${quoted_ref}"
-remote_command+='; scratch_root=/scratch/$USER/novelty-distill; repo_dir=$scratch_root/repo; mkdir -p "$scratch_root/logs"; git -C "$repo_dir" diff --quiet; git -C "$repo_dir" fetch origin "$repo_ref"; git -C "$repo_dir" switch "$repo_ref"; git -C "$repo_dir" merge --ff-only "origin/$repo_ref"; cd "$repo_dir"; sbatch --output="$scratch_root/logs/slurm-%x-%j.out" --error="$scratch_root/logs/slurm-%x-%j.err"'
+remote_command+='; scratch_root=/scratch/$USER/novelty-distill; repo_dir=$scratch_root/repo; mkdir -p "$scratch_root/logs"; exec 9>"$repo_dir/.git/novelty-distill-sync.lock"; flock -x 9; git -C "$repo_dir" diff --quiet; git -C "$repo_dir" fetch origin "$repo_ref"; git -C "$repo_dir" switch "$repo_ref"; git -C "$repo_dir" merge --ff-only "origin/$repo_ref"; flock -u 9; cd "$repo_dir"; sbatch --output="$scratch_root/logs/slurm-%x-%j.out" --error="$scratch_root/logs/slurm-%x-%j.err"'
 for argument in "$@"; do
   printf -v quoted_argument '%q' "${argument}"
   remote_command+=" ${quoted_argument}"

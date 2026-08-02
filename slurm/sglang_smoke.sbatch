@@ -22,6 +22,7 @@ repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
 model_path="${MODEL_PATH:-Qwen/Qwen3-1.7B}"
 model_revision="${MODEL_REVISION:-70d244cc86ccca08cf5af4e1e306ecf908b1ad5e}"
+served_model_name="${SERVED_MODEL_NAME:-}"
 generation_config="${GENERATION_CONFIG:-configs/generation/smoke.yaml}"
 input_limit="${INPUT_LIMIT:-1}"
 output_name="${OUTPUT_NAME:-sglang-smoke}"
@@ -106,10 +107,13 @@ mkdir -p \
 if [[ ! -d "${repo_dir}/.git" ]]; then
   git clone --branch "${repo_ref}" --single-branch "${repo_url}" "${repo_dir}"
 else
+  exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
+  flock -x 9
   git -C "${repo_dir}" diff --quiet
   git -C "${repo_dir}" fetch origin "${repo_ref}"
   git -C "${repo_dir}" switch "${repo_ref}"
   git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
+  flock -u 9
 fi
 
 if [[ ! -x "${venv_dir}/bin/python" ]]; then
@@ -138,6 +142,9 @@ print(study.conditions[0].generation.revision)
   model_path="${calibration_model[0]}"
   model_revision="${calibration_model[1]}"
 fi
+if [[ -z "${served_model_name}" ]]; then
+  served_model_name="${model_path}"
+fi
 
 if [[ -n "${calibration_config}" ]]; then
   input="${scratch_root}/data/tomato-open-calibration-8.jsonl"
@@ -158,7 +165,7 @@ fi
 server_args=(
   --model-path "${model_path}"
   --revision "${model_revision}"
-  --served-model-name "${model_path}"
+  --served-model-name "${served_model_name}"
   --host 127.0.0.1
   --port "${port}"
   --mem-fraction-static 0.75
