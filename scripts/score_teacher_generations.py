@@ -18,7 +18,11 @@ from novelty_distill.evaluation.teacher_annotation import (
     build_quality_judge_payload,
     parse_quality_judge_response,
 )
-from novelty_distill.generation.sglang import GenerationSpec, load_prompt_shard
+from novelty_distill.generation.sglang import (
+    GenerationSpec,
+    load_prompt_shard,
+    render_generation_prompt,
+)
 
 
 def parse_args() -> argparse.Namespace:
@@ -99,7 +103,9 @@ def main() -> None:
         scored = []
         for record in records:
             payload = build_quality_judge_payload(
-                prompt=prompts[prompt_id], response=record.text, spec=judge_spec
+                prompt=render_generation_prompt(prompts[prompt_id], generation_spec),
+                response=record.text,
+                spec=judge_spec,
             )
             quality = parse_quality_judge_response(
                 _post(endpoint, payload, args.timeout), judge_spec

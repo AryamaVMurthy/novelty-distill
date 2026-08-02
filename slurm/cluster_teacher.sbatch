@@ -79,11 +79,14 @@ if [[ -n "${calibration_run_id}" ]]; then
   test "${conditions}" -gt 0
   echo "clustered_calibration_conditions=${conditions}"
   analysis_root="${scratch_root}/evaluations/teacher-calibration/${calibration_run_id}"
+  mkdir -p "${analysis_root}"
   "${venv_dir}/bin/python" "${repo_dir}/scripts/analyze_teacher_calibration.py" \
     --generation-root "${scratch_root}/generations/teacher-calibration/${calibration_run_id}" \
     --cluster-root "${cluster_root}" \
     --output "${analysis_root}/analysis.json" \
     --markdown "${analysis_root}/findings.md"
+  test -s "${analysis_root}/analysis.json"
+  test -s "${analysis_root}/findings.md"
 else
   "${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
     --score-dir "${scratch_root}/teacher-scores/${generation_job_id}" \

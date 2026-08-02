@@ -49,8 +49,16 @@ def build_quality_judge_payload(
     if not prompt.strip() or not response.strip():
         raise ValueError("judge prompt and response must both be non-empty")
     rubric = (
-        "Score the candidate scientific idea from 1 (poor) to 5 (excellent) on each "
-        "requested dimension. Judge only what is supported by the supplied task and answer."
+        "Score dimensions independently from 1 to 5 and judge only evidence in the supplied "
+        "task and candidate answer. Relevance means directly answering the research question "
+        "and using its background. Feasibility means an actionable test with credible "
+        "measurements and resources. Soundness means a coherent mechanism and conclusions "
+        "that do not outrun the proposed evidence. Clarity means specific, unambiguous prose. "
+        "Instruction compliance includes every response requirement in the task. Reserve 5 "
+        "for an exceptional answer with a concrete mechanism and operational test and no "
+        "material gap; 4 is strong with a minor gap; 3 means plausible but has a substantive "
+        "gap or vagueness; 2 has major defects; 1 means the dimension is missing, contradictory, "
+        "or off-task. Do not default to 5 merely because the answer is fluent or long."
     )
     user_content = f"Task:\n{prompt}\n\nCandidate answer:\n{response}"
     return {

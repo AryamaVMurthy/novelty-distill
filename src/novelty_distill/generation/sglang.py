@@ -28,6 +28,7 @@ class GenerationSpec(BaseModel):
     samples_per_prompt: int = Field(gt=0)
     seed: int = Field(ge=0)
     enable_thinking: bool = False
+    response_instruction: str | None = Field(default=None, min_length=1)
 
 
 class Prompt(BaseModel):
@@ -82,9 +83,10 @@ def build_chat_completion_payload(
     if not 0 <= sample_index < spec.samples_per_prompt:
         raise ValueError("sample index is outside the generation specification")
 
+    effective_prompt = render_generation_prompt(prompt, spec)
     return {
         "model": spec.model,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": effective_prompt}],
         "temperature": spec.temperature,
         "top_p": spec.top_p,
         "top_k": spec.top_k,
@@ -94,6 +96,14 @@ def build_chat_completion_payload(
         "seed": spec.seed + sample_index,
         "chat_template_kwargs": {"enable_thinking": spec.enable_thinking},
     }
+
+
+def render_generation_prompt(prompt: str, spec: GenerationSpec) -> str:
+    """Render the exact user message seen by the generation model."""
+
+    if not spec.response_instruction:
+        return prompt
+    return f"{prompt}\n\nResponse requirements:\n{spec.response_instruction}"
 
 
 def generation_fingerprint(spec: GenerationSpec) -> str:

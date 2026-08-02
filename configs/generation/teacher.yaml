@@ -1,7 +1,7 @@
 model: Qwen/Qwen3-14B
 revision: 40c069824f4251a91eefaf281ebe4c544efd3e18
-temperature: 0.8
-top_p: 0.95
+temperature: 0.7
+top_p: 0.8
 top_k: 20
 min_p: 0.0
 max_new_tokens: 512

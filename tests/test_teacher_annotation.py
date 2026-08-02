@@ -26,6 +26,11 @@ def test_quality_judge_uses_strict_structured_output() -> None:
     assert payload["model"] == "Qwen/Qwen3-32B-FP8"
     assert payload["temperature"] == 0
     assert payload["chat_template_kwargs"] == {"enable_thinking": False}
+    rubric = payload["messages"][0]["content"]
+    assert "Reserve 5" in rubric
+    assert "3 means" in rubric
+    assert "1 means" in rubric
+    assert "Score dimensions independently" in rubric
     schema = payload["response_format"]["json_schema"]
     assert schema["strict"] is True
     assert set(schema["schema"]["required"]) == {

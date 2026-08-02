@@ -44,6 +44,33 @@ def test_qwen_payload_disables_thinking_and_fixes_sampling_controls() -> None:
     }
 
 
+def test_generation_response_instruction_is_part_of_the_effective_prompt_and_fingerprint() -> None:
+    base = GenerationSpec(
+        model="Qwen/Qwen3-14B",
+        revision="40c069824f4251a91eefaf281ebe4c544efd3e18",
+        temperature=0.7,
+        top_p=0.8,
+        max_new_tokens=512,
+        samples_per_prompt=8,
+        seed=17,
+    )
+    concise = base.model_copy(
+        update={"response_instruction": "Return at most 300 words."}
+    )
+
+    payload = build_chat_completion_payload(
+        "Propose a hypothesis.", concise, sample_index=0
+    )
+
+    assert payload["messages"] == [
+        {
+            "role": "user",
+            "content": "Propose a hypothesis.\n\nResponse requirements:\nReturn at most 300 words.",
+        }
+    ]
+    assert generation_fingerprint(concise) != generation_fingerprint(base)
+
+
 def test_response_is_parsed_into_auditable_sample_records() -> None:
     spec = GenerationSpec(
         model="Qwen/Qwen3-14B",
