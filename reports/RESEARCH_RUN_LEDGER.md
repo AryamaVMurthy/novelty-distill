@@ -60,10 +60,14 @@ score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled b
 | Work | Job | Contract |
 |---|---:|---|
 | DistiLLM deployability smoke | 18092 | four GPUs; must produce a loadable full checkpoint after real optimizer updates |
-| Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18122 |
+| Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18122 and DistiLLM smoke 18092 |
 | TRL/OPSD bounded resumes | 18117 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
 | C3 DistiLLM | 18098 | index 12, four GPUs; after target gate 18122 and smoke 18092 |
 | Evaluation fan-out controller | 18125 | waits for B4 task 18097_5, 18117, 18098, A0/A1, and validated targets 18122 |
+
+Job 18097 deliberately waits for 18092 as well as the target gate. Otherwise a one-GPU training
+task could occupy the only GPU released by teacher scoring/clustering and starve the four-GPU
+DistiLLM proof when the current temporal-control jobs release the remaining devices.
 
 Controller 18125 replaces pending controller 18120, whose immutable export still named cancelled
 cluster job 18039. Its internal target dependency is validation gate 18122. It submits A1 and
