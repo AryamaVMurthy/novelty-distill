@@ -29,6 +29,15 @@ scripts/turing_submit.sh slurm/evaluate_official.sbatch --export=ALL,EVAL_SUITE=
 scripts/turing_submit.sh slurm/evaluate_official.sbatch --export=ALL,EVAL_SUITE=hypospace,HYPOSPACE_DOMAIN=causal
 ```
 
+Teacher calibration uses one SGLang server for the frozen seven-condition matrix, followed by the
+pinned judge and embedding model:
+
+```bash
+scripts/turing_submit.sh slurm/sglang_smoke.sbatch --export=ALL,CALIBRATION_CONFIG=configs/generation/teacher_calibration.yaml,CALIBRATION_RUN_ID=qwen3-14b-v1
+scripts/turing_submit.sh slurm/score_teacher.sbatch --export=ALL,CALIBRATION_RUN_ID=qwen3-14b-v1
+scripts/turing_submit.sh slurm/cluster_teacher.sbatch --export=ALL,CALIBRATION_RUN_ID=qwen3-14b-v1
+```
+
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
 submission helper briefly allocates node01 before calling `sbatch`.
