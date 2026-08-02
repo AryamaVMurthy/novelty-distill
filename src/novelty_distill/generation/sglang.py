@@ -22,6 +22,8 @@ class GenerationSpec(BaseModel):
     revision: str = Field(min_length=40, max_length=40)
     temperature: float = Field(ge=0)
     top_p: float = Field(gt=0, le=1)
+    top_k: int = Field(default=20, gt=0)
+    min_p: float = Field(default=0, ge=0, le=1)
     max_new_tokens: int = Field(gt=0)
     samples_per_prompt: int = Field(gt=0)
     seed: int = Field(ge=0)
@@ -35,6 +37,25 @@ class Prompt(BaseModel):
 
     id: str = Field(min_length=1)
     text: str = Field(min_length=1)
+
+
+def load_prompts(path: Path) -> tuple[Prompt, ...]:
+    """Load canonical JSONL prompts and reject malformed or duplicate IDs."""
+
+    prompts: list[Prompt] = []
+    with path.open(encoding="utf-8") as handle:
+        for line_number, line in enumerate(handle, start=1):
+            if not line.strip():
+                continue
+            payload = json.loads(line)
+            try:
+                prompts.append(Prompt(id=payload["id"], text=payload["student_prompt"]))
+            except (KeyError, TypeError, ValueError) as error:
+                raise ValueError(f"invalid prompt at {path}:{line_number}") from error
+    ids = [prompt.id for prompt in prompts]
+    if len(ids) != len(set(ids)):
+        raise ValueError(f"duplicate prompt ids in {path}")
+    return tuple(prompts)
 
 
 class GenerationRecord(BaseModel):
@@ -66,6 +87,8 @@ def build_chat_completion_payload(
         "messages": [{"role": "user", "content": prompt}],
         "temperature": spec.temperature,
         "top_p": spec.top_p,
+        "top_k": spec.top_k,
+        "min_p": spec.min_p,
         "max_tokens": spec.max_new_tokens,
         "n": 1,
         "seed": spec.seed + sample_index,

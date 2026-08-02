@@ -25,6 +25,8 @@ model_revision="${MODEL_REVISION:-70d244cc86ccca08cf5af4e1e306ecf908b1ad5e}"
 generation_config="${GENERATION_CONFIG:-configs/generation/smoke.yaml}"
 input_limit="${INPUT_LIMIT:-1}"
 output_name="${OUTPUT_NAME:-sglang-smoke}"
+calibration_config="${CALIBRATION_CONFIG:-}"
+calibration_run_id="${CALIBRATION_RUN_ID:-}"
 server_log="${scratch_root}/logs/sglang-${SLURM_JOB_ID}.log"
 input_slice="${scratch_root}/tmp/generation-input-${SLURM_JOB_ID}.jsonl"
 server_pid=""
@@ -91,6 +93,26 @@ fi
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
+if [[ -n "${calibration_config}" ]]; then
+  if [[ -z "${calibration_run_id}" || "${calibration_run_id}" == */* || "${calibration_run_id}" == *..* ]]; then
+    echo "CALIBRATION_RUN_ID must be a non-empty path-safe name" >&2
+    exit 2
+  fi
+  mapfile -t calibration_model < <(
+    "${venv_dir}/bin/python" -c '
+import sys
+from pathlib import Path
+import yaml
+from novelty_distill.evaluation.teacher_calibration import TeacherCalibrationStudy
+study = TeacherCalibrationStudy.model_validate(yaml.safe_load(Path(sys.argv[1]).read_text()))
+print(study.conditions[0].generation.model)
+print(study.conditions[0].generation.revision)
+' "${repo_dir}/${calibration_config}"
+  )
+  model_path="${calibration_model[0]}"
+  model_revision="${calibration_model[1]}"
+fi
+
 "${venv_dir}/bin/python" -m sglang.launch_server \
   --model-path "${model_path}" \
   --revision "${model_revision}" \
@@ -122,27 +144,42 @@ if [[ "${ready}" != 1 ]]; then
   exit 1
 fi
 
-input="${scratch_root}/data/tomato-open-train-1000.jsonl"
-output_dir="${scratch_root}/generations/${output_name}/${SLURM_JOB_ID}"
-if [[ ! -f "${input}" ]]; then
-  echo "missing prepared smoke data: ${input}" >&2
-  exit 1
+if [[ -n "${calibration_config}" ]]; then
+  input="${scratch_root}/data/tomato-open-calibration-8.jsonl"
+  output_dir="${scratch_root}/generations/teacher-calibration/${calibration_run_id}"
+  if [[ ! -f "${input}" ]]; then
+    echo "missing prepared calibration data: ${input}" >&2
+    exit 1
+  fi
+  echo "stage=calibrate input=${input} output=${output_dir}"
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/run_teacher_calibration.py" \
+    --input "${input}" \
+    --output-dir "${output_dir}" \
+    --config "${repo_dir}/${calibration_config}" \
+    --base-url "http://127.0.0.1:${port}"
+else
+  input="${scratch_root}/data/tomato-open-train-1000.jsonl"
+  output_dir="${scratch_root}/generations/${output_name}/${SLURM_JOB_ID}"
+  if [[ ! -f "${input}" ]]; then
+    echo "missing prepared smoke data: ${input}" >&2
+    exit 1
+  fi
+  mkdir -p "${output_dir}"
+  head -n "${input_limit}" "${input}" >"${input_slice}"
+  echo "stage=generate input=${input_slice} output=${output_dir}"
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
+    --input "${input_slice}" \
+    --output-dir "${output_dir}" \
+    --config "${repo_dir}/${generation_config}" \
+    --base-url "http://127.0.0.1:${port}" \
+    --concurrency 1
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
+    --input "${input_slice}" \
+    --output-dir "${output_dir}" \
+    --config "${repo_dir}/${generation_config}" \
+    --base-url "http://127.0.0.1:${port}" \
+    --concurrency 1
+  find "${output_dir}" -maxdepth 1 -type f -name '*.json' -print
 fi
-mkdir -p "${output_dir}"
-head -n "${input_limit}" "${input}" >"${input_slice}"
-echo "stage=generate input=${input_slice} output=${output_dir}"
-"${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
-  --input "${input_slice}" \
-  --output-dir "${output_dir}" \
-  --config "${repo_dir}/${generation_config}" \
-  --base-url "http://127.0.0.1:${port}" \
-  --concurrency 1
-"${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
-  --input "${input_slice}" \
-  --output-dir "${output_dir}" \
-  --config "${repo_dir}/${generation_config}" \
-  --base-url "http://127.0.0.1:${port}" \
-  --concurrency 1
-find "${output_dir}" -maxdepth 1 -type f -name '*.json' -print
 
 "${venv_dir}/bin/python" -c 'import sglang, torch, transformers; print({"sglang": sglang.__version__, "torch": torch.__version__, "transformers": transformers.__version__, "cuda": torch.version.cuda, "gpu": torch.cuda.get_device_name(0)})'

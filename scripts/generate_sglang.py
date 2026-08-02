@@ -12,6 +12,7 @@ from novelty_distill.generation.sglang import (
     GenerationSpec,
     Prompt,
     generate_prompt,
+    load_prompts,
     pending_prompts,
 )
 
@@ -25,23 +26,6 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--timeout", type=float, default=600)
     return parser.parse_args()
-
-
-def load_prompts(path: Path) -> tuple[Prompt, ...]:
-    prompts: list[Prompt] = []
-    with path.open(encoding="utf-8") as handle:
-        for line_number, line in enumerate(handle, start=1):
-            if not line.strip():
-                continue
-            payload = json.loads(line)
-            try:
-                prompts.append(Prompt(id=payload["id"], text=payload["student_prompt"]))
-            except (KeyError, TypeError, ValueError) as error:
-                raise ValueError(f"invalid prompt at {path}:{line_number}") from error
-    ids = [prompt.id for prompt in prompts]
-    if len(ids) != len(set(ids)):
-        raise ValueError(f"duplicate prompt ids in {path}")
-    return tuple(prompts)
 
 
 def main() -> None:

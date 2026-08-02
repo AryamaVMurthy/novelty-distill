@@ -57,3 +57,13 @@ fi
 
 wc -l "${output}"
 sha256sum "${output}"
+
+calibration_output="${scratch_root}/data/tomato-open-calibration-8.jsonl"
+if [[ ! -f "${calibration_output}" ]]; then
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/select_calibration_prompts.py" \
+    --input "${output}" \
+    --output "${calibration_output}" \
+    --size 8
+fi
+wc -l "${calibration_output}"
+sha256sum "${calibration_output}"

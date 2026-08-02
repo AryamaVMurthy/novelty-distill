@@ -111,18 +111,7 @@ def cluster_cosine_embeddings(
 
     if not -1 <= threshold <= 1:
         raise ValueError("cosine threshold must be between -1 and 1")
-    if not embeddings:
-        raise ValueError("clustering requires at least one embedding")
-    dimension = len(embeddings[0])
-    if dimension == 0 or any(len(embedding) != dimension for embedding in embeddings):
-        raise ValueError("embeddings must have one shared non-zero dimension")
-
-    normalized: list[tuple[float, ...]] = []
-    for embedding in embeddings:
-        norm = math.sqrt(sum(float(value) ** 2 for value in embedding))
-        if norm == 0:
-            raise ValueError("embeddings must be non-zero")
-        normalized.append(tuple(float(value) / norm for value in embedding))
+    normalized = _normalize_embeddings(embeddings)
 
     adjacency: list[list[int]] = [[] for _ in normalized]
     for left in range(len(normalized)):
@@ -150,3 +139,50 @@ def cluster_cosine_embeddings(
                     frontier.append(neighbor)
         cluster_index += 1
     return tuple(labels)
+
+
+def cosine_embedding_diagnostics(
+    embeddings: Sequence[Sequence[float]], *, thresholds: Sequence[float]
+) -> dict[str, Any]:
+    """Summarize pairwise cosine values and cluster-count sensitivity."""
+
+    normalized = _normalize_embeddings(embeddings)
+    if len(normalized) < 2:
+        raise ValueError("cosine diagnostics require at least two embeddings")
+    if not thresholds or len(set(thresholds)) != len(thresholds):
+        raise ValueError("diagnostic thresholds must be non-empty and unique")
+    similarities = [
+        sum(a * b for a, b in zip(normalized[left], normalized[right], strict=True))
+        for left in range(len(normalized))
+        for right in range(left + 1, len(normalized))
+    ]
+    clusters_by_threshold = {
+        f"{threshold:.3f}": len(
+            set(cluster_cosine_embeddings(normalized, threshold=threshold))
+        )
+        for threshold in thresholds
+    }
+    return {
+        "pair_count": len(similarities),
+        "cosine_min": min(similarities),
+        "cosine_mean": sum(similarities) / len(similarities),
+        "cosine_max": max(similarities),
+        "clusters_by_threshold": clusters_by_threshold,
+    }
+
+
+def _normalize_embeddings(
+    embeddings: Sequence[Sequence[float]],
+) -> list[tuple[float, ...]]:
+    if not embeddings:
+        raise ValueError("clustering requires at least one embedding")
+    dimension = len(embeddings[0])
+    if dimension == 0 or any(len(embedding) != dimension for embedding in embeddings):
+        raise ValueError("embeddings must have one shared non-zero dimension")
+    normalized: list[tuple[float, ...]] = []
+    for embedding in embeddings:
+        norm = math.sqrt(sum(float(value) ** 2 for value in embedding))
+        if norm == 0:
+            raise ValueError("embeddings must be non-zero")
+        normalized.append(tuple(float(value) / norm for value in embedding))
+    return normalized

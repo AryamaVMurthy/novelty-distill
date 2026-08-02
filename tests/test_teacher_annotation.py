@@ -4,6 +4,7 @@ from novelty_distill.evaluation.teacher_annotation import (
     JudgeSpec,
     build_quality_judge_payload,
     cluster_cosine_embeddings,
+    cosine_embedding_diagnostics,
     parse_quality_judge_response,
 )
 
@@ -76,3 +77,19 @@ def test_cosine_threshold_clustering_is_deterministic() -> None:
 def test_cosine_clustering_rejects_zero_vectors() -> None:
     with pytest.raises(ValueError, match="non-zero"):
         cluster_cosine_embeddings(((0.0, 0.0),), threshold=0.9)
+
+
+def test_cosine_diagnostics_report_similarity_and_threshold_sensitivity() -> None:
+    embeddings = (
+        (1.0, 0.0),
+        (0.8, 0.6),
+        (0.0, 1.0),
+    )
+
+    diagnostics = cosine_embedding_diagnostics(embeddings, thresholds=(0.5, 0.9))
+
+    assert diagnostics["pair_count"] == 3
+    assert diagnostics["cosine_min"] == pytest.approx(0.0)
+    assert diagnostics["cosine_mean"] == pytest.approx((0.8 + 0.0 + 0.6) / 3)
+    assert diagnostics["cosine_max"] == pytest.approx(0.8)
+    assert diagnostics["clusters_by_threshold"] == {"0.500": 1, "0.900": 3}

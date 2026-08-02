@@ -17,8 +17,17 @@ set -euo pipefail
 
 module load u22/cuda/12.4
 
-generation_job_id="${GENERATION_JOB_ID:?set GENERATION_JOB_ID to the teacher SGLang job}"
+calibration_run_id="${CALIBRATION_RUN_ID:-}"
+generation_job_id="${GENERATION_JOB_ID:-}"
 generation_name="${GENERATION_NAME:-teacher-smoke}"
+if [[ -z "${calibration_run_id}" && -z "${generation_job_id}" ]]; then
+  echo "set GENERATION_JOB_ID or CALIBRATION_RUN_ID" >&2
+  exit 2
+fi
+if [[ -n "${calibration_run_id}" && ("${calibration_run_id}" == */* || "${calibration_run_id}" == *..*) ]]; then
+  echo "CALIBRATION_RUN_ID must be a path-safe name" >&2
+  exit 2
+fi
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
@@ -92,10 +101,31 @@ if [[ "${ready}" != 1 ]]; then
   exit 1
 fi
 
-"${venv_dir}/bin/python" "${repo_dir}/scripts/score_teacher_generations.py" \
-  --generation-dir "${scratch_root}/generations/${generation_name}/${generation_job_id}" \
-  --generation-config "${repo_dir}/configs/generation/teacher.yaml" \
-  --prompts "${scratch_root}/data/tomato-open-train-1000.jsonl" \
-  --output-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
-  --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
-  --base-url "http://127.0.0.1:${port}"
+if [[ -n "${calibration_run_id}" ]]; then
+  calibration_root="${scratch_root}/generations/teacher-calibration/${calibration_run_id}"
+  score_root="${scratch_root}/teacher-calibration-scores/${calibration_run_id}"
+  test -f "${calibration_root}/study-manifest.json"
+  conditions=0
+  for condition_dir in "${calibration_root}"/*; do
+    [[ -d "${condition_dir}/shards" ]] || continue
+    condition="$(basename "${condition_dir}")"
+    "${venv_dir}/bin/python" "${repo_dir}/scripts/score_teacher_generations.py" \
+      --generation-dir "${condition_dir}/shards" \
+      --generation-config "${condition_dir}/generation-config.json" \
+      --prompts "${scratch_root}/data/tomato-open-calibration-8.jsonl" \
+      --output-dir "${score_root}/${condition}" \
+      --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+      --base-url "http://127.0.0.1:${port}"
+    conditions=$((conditions + 1))
+  done
+  test "${conditions}" -gt 0
+  echo "scored_calibration_conditions=${conditions}"
+else
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/score_teacher_generations.py" \
+    --generation-dir "${scratch_root}/generations/${generation_name}/${generation_job_id}" \
+    --generation-config "${repo_dir}/configs/generation/teacher.yaml" \
+    --prompts "${scratch_root}/data/tomato-open-train-1000.jsonl" \
+    --output-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
+    --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+    --base-url "http://127.0.0.1:${port}"
+fi

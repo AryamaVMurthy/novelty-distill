@@ -32,6 +32,8 @@ def test_qwen_payload_disables_thinking_and_fixes_sampling_controls() -> None:
         "messages": [{"role": "user", "content": "Propose a hypothesis."}],
         "temperature": 0.8,
         "top_p": 0.95,
+        "top_k": 20,
+        "min_p": 0.0,
         "max_tokens": 512,
         "n": 1,
         "seed": 20,

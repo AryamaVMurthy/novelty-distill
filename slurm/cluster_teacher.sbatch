@@ -17,8 +17,17 @@ set -euo pipefail
 
 module load u22/cuda/12.4
 
-generation_job_id="${GENERATION_JOB_ID:?set GENERATION_JOB_ID to the teacher SGLang job}"
+calibration_run_id="${CALIBRATION_RUN_ID:-}"
+generation_job_id="${GENERATION_JOB_ID:-}"
 target_name="${TARGET_NAME:-teacher-targets.json}"
+if [[ -z "${calibration_run_id}" && -z "${generation_job_id}" ]]; then
+  echo "set GENERATION_JOB_ID or CALIBRATION_RUN_ID" >&2
+  exit 2
+fi
+if [[ -n "${calibration_run_id}" && ("${calibration_run_id}" == */* || "${calibration_run_id}" == *..*) ]]; then
+  echo "CALIBRATION_RUN_ID must be a path-safe name" >&2
+  exit 2
+fi
 if [[ "${target_name}" == */* || "${target_name}" == *..* ]]; then
   echo "TARGET_NAME must be a filename without '..'" >&2
   exit 2
@@ -47,12 +56,36 @@ git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
-"${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
-  --score-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
-  --output "${scratch_root}/data/teacher-generations-${generation_job_id}.jsonl" \
-  --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
+if [[ -n "${calibration_run_id}" ]]; then
+  score_root="${scratch_root}/teacher-calibration-scores/${calibration_run_id}"
+  cluster_root="${scratch_root}/teacher-calibration-clusters/${calibration_run_id}"
+  target_root="${scratch_root}/data/teacher-calibration-targets/${calibration_run_id}"
+  mkdir -p "${cluster_root}" "${target_root}"
+  conditions=0
+  for score_dir in "${score_root}"/*; do
+    [[ -d "${score_dir}" ]] || continue
+    condition="$(basename "${score_dir}")"
+    clustered="${cluster_root}/${condition}.jsonl"
+    "${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
+      --score-dir "${score_dir}" \
+      --output "${clustered}" \
+      --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
+    "${venv_dir}/bin/python" "${repo_dir}/scripts/derive_teacher_targets.py" \
+      --input "${clustered}" \
+      --output "${target_root}/${condition}.json" \
+      --seed 17
+    conditions=$((conditions + 1))
+  done
+  test "${conditions}" -gt 0
+  echo "clustered_calibration_conditions=${conditions}"
+else
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
+    --score-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
+    --output "${scratch_root}/data/teacher-generations-${generation_job_id}.jsonl" \
+    --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
 
-"${venv_dir}/bin/python" "${repo_dir}/scripts/derive_teacher_targets.py" \
-  --input "${scratch_root}/data/teacher-generations-${generation_job_id}.jsonl" \
-  --output "${scratch_root}/data/${target_name}" \
-  --seed 17
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/derive_teacher_targets.py" \
+    --input "${scratch_root}/data/teacher-generations-${generation_job_id}.jsonl" \
+    --output "${scratch_root}/data/${target_name}" \
+    --seed 17
+fi
