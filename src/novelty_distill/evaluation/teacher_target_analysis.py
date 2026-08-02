@@ -89,7 +89,9 @@ def summarize_teacher_targets(
                 int(record["completion_tokens"]) for record in selected_scores
             ),
             "primary_clusters_per_prompt_mean": statistics.fmean(cluster_counts),
-            "four_primary_clusters_rate": sum(value == 4 for value in cluster_counts)
+            "at_least_four_primary_clusters_rate": sum(
+                value >= 4 for value in cluster_counts
+            )
             / len(cluster_counts),
         }
 
@@ -184,7 +186,7 @@ def render_teacher_target_markdown(summary: Mapping[str, Any]) -> str:
         "",
         (
             "| View | Responses | Quality mean | Length-stop rate | "
-            "Clusters/prompt | Four-cluster prompts |"
+            "Clusters/prompt | At-least-four-cluster prompts |"
         ),
         "|---|---:|---:|---:|---:|---:|",
     ]
@@ -195,7 +197,7 @@ def render_teacher_target_markdown(summary: Mapping[str, Any]) -> str:
             f"| `{view}` | {int(values['num_responses'])} | "
             f"{_number(values['quality_mean'])} | {_number(values['length_stop_rate'])} | "
             f"{_number(values['primary_clusters_per_prompt_mean'])} | "
-            f"{_number(values['four_primary_clusters_rate'])} |"
+            f"{_number(values['at_least_four_primary_clusters_rate'])} |"
         )
     lines.extend(["", "## Single-view overlap", ""])
     for name, values in summary["single_view_overlap"].items():

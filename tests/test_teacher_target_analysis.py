@@ -59,7 +59,8 @@ def test_teacher_target_summary_exposes_view_selection_and_thresholds() -> None:
     assert summary["num_prompts"] == 1
     assert summary["views"]["best1"]["quality_mean"] == pytest.approx(0.9)
     assert summary["views"]["diverse4"]["quality_mean"] == pytest.approx(0.675)
-    assert summary["views"]["diverse4"]["four_primary_clusters_rate"] == 1
+    assert summary["views"]["diverse4"]["at_least_four_primary_clusters_rate"] == 1
+    assert "four_primary_clusters_rate" not in summary["views"]["all8"]
     assert summary["views"]["all8"]["length_stop_rate"] == pytest.approx(1 / 8)
     assert summary["single_view_overlap"]["mode1_equals_best1"]["rate"] == 1
     assert summary["thresholds"]["0.700"]["instructed_cluster_mean"] == 3
@@ -68,3 +69,4 @@ def test_teacher_target_summary_exposes_view_selection_and_thresholds() -> None:
     assert "# Frozen teacher-target findings" in markdown
     assert "not expert novelty labels" in markdown
     assert "| `diverse4` |" in markdown
+    assert "At-least-four-cluster prompts" in markdown
