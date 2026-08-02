@@ -3,8 +3,8 @@ student_model: Qwen/Qwen3-4B
 student_revision: 1cfa9a7208912126459214e8b04321603b3df60c
 teacher_model: Qwen/Qwen3-14B
 teacher_revision: 40c069824f4251a91eefaf281ebe4c544efd3e18
-input: data/tomato-open-train-1000.jsonl
-teacher_targets: data/teacher-targets.json
+input: data/ultrafeedback-train-1000.jsonl
+teacher_targets: data/ultrafeedback-targets-1000.json
 raw_dir: data/distillm-main-model-smoke-l896-2gpu-v2/raw
 processed_dir: data/distillm-main-model-smoke-l896-2gpu-v2/processed
 output_dir: checkpoints/C3-main-model-smoke-l896-2gpu-v2
