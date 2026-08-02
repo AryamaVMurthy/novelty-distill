@@ -2,7 +2,7 @@
 
 import hashlib
 from collections import Counter, defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -39,6 +39,8 @@ def build_teacher_target_artifact(
         prompt_generations = tuple(grouped[prompt_id])
         if len(prompt_generations) != 8:
             raise ValueError(f"prompt {prompt_id} requires exactly eight permanent samples")
+        if sorted(generation.sample_index for generation in prompt_generations) != list(range(8)):
+            raise ValueError(f"prompt {prompt_id} requires sample indices 0 through 7")
         targets[prompt_id] = {
             view: [
                 generation.text
@@ -51,6 +53,38 @@ def build_teacher_target_artifact(
             for view in ("random1", "best1", "mode1", "diverse4", "all8")
         }
     return {"schema_version": 1, "targets": targets}
+
+
+def validate_teacher_target_artifact(
+    artifact: Mapping[str, object],
+    *,
+    generations: Iterable[TeacherGeneration],
+    seed: int,
+    expected_prompt_ids: set[str] | None = None,
+) -> dict[str, int]:
+    """Prove that every stored view reconstructs from one frozen generation set."""
+
+    if artifact.get("schema_version") != 1:
+        raise ValueError("teacher-target artifact has an unsupported schema")
+    generation_tuple = tuple(generations)
+    expected = build_teacher_target_artifact(generation_tuple, seed=seed)
+    if artifact.get("targets") != expected["targets"]:
+        raise ValueError("teacher-target views do not reconstruct from frozen generations")
+    target_mapping = expected["targets"]
+    assert isinstance(target_mapping, dict)
+    actual_prompt_ids = set(target_mapping)
+    if expected_prompt_ids is not None and actual_prompt_ids != expected_prompt_ids:
+        missing = sorted(expected_prompt_ids - actual_prompt_ids)
+        extra = sorted(actual_prompt_ids - expected_prompt_ids)
+        raise ValueError(
+            "teacher-target prompt IDs differ from expected prompts: "
+            f"missing={missing[:5]} extra={extra[:5]}"
+        )
+    return {
+        "num_prompts": len(actual_prompt_ids),
+        "num_generations": len(generation_tuple),
+        "seed": seed,
+    }
 
 
 def derive_teacher_view(

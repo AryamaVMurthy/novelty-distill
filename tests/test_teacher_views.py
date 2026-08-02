@@ -1,7 +1,10 @@
+import pytest
+
 from novelty_distill.data.teacher_views import (
     TeacherGeneration,
     build_teacher_target_artifact,
     derive_teacher_view,
+    validate_teacher_target_artifact,
 )
 
 
@@ -47,3 +50,39 @@ def test_teacher_target_artifact_derives_every_training_view_once() -> None:
     assert len(views["random1"]) == len(views["best1"]) == len(views["mode1"]) == 1
     assert len(views["diverse4"]) == 4
     assert len(views["all8"]) == 8
+
+
+def test_validate_teacher_target_artifact_reconstructs_frozen_views() -> None:
+    generations = _generations()
+    artifact = build_teacher_target_artifact(generations, seed=17)
+
+    summary = validate_teacher_target_artifact(
+        artifact,
+        generations=generations,
+        seed=17,
+        expected_prompt_ids={"paper-1"},
+    )
+
+    assert summary == {"num_prompts": 1, "num_generations": 8, "seed": 17}
+
+
+def test_validate_teacher_target_artifact_rejects_changed_view() -> None:
+    generations = _generations()
+    artifact = build_teacher_target_artifact(generations, seed=17)
+    artifact["targets"]["paper-1"]["best1"] = ["tampered"]
+
+    with pytest.raises(ValueError, match="do not reconstruct"):
+        validate_teacher_target_artifact(artifact, generations=generations, seed=17)
+
+
+def test_validate_teacher_target_artifact_rejects_prompt_mismatch() -> None:
+    generations = _generations()
+    artifact = build_teacher_target_artifact(generations, seed=17)
+
+    with pytest.raises(ValueError, match="prompt IDs differ"):
+        validate_teacher_target_artifact(
+            artifact,
+            generations=generations,
+            seed=17,
+            expected_prompt_ids={"paper-1", "missing"},
+        )

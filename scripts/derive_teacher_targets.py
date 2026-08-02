@@ -2,6 +2,7 @@
 """Derive all static teacher views from one scored eight-sample generation set."""
 
 import argparse
+import hashlib
 import json
 import os
 import tempfile
@@ -26,6 +27,11 @@ def main() -> None:
             if line.strip():
                 generations.append(TeacherGeneration.model_validate_json(line))
     artifact = build_teacher_target_artifact(generations, seed=args.seed)
+    artifact["provenance"] = {
+        "clustered_input_sha256": hashlib.sha256(args.input.read_bytes()).hexdigest(),
+        "num_generations": len(generations),
+        "seed": args.seed,
+    }
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary_name: str | None = None
