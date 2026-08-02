@@ -256,6 +256,31 @@ def test_generation_manifest_binds_local_model_artifact_bytes(tmp_path: Path) ->
         )
 
 
+def test_generation_manifest_rejects_orphaned_existing_shards(tmp_path: Path) -> None:
+    spec = GenerationSpec(
+        model="Qwen/Qwen3-4B",
+        revision="1cfa9a7208912126459214e8b04321603b3df60c",
+        temperature=0.7,
+        top_p=0.8,
+        max_new_tokens=512,
+        samples_per_prompt=16,
+        seed=17,
+    )
+    input_path = tmp_path / "prompts.jsonl"
+    input_path.write_text('{"id":"p1","student_prompt":"first"}\n', encoding="utf-8")
+    output_dir = tmp_path / "generation"
+    output_dir.mkdir()
+    (output_dir / "orphan.json").write_text("{}\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="without a run manifest"):
+        ensure_generation_run_manifest(
+            input_path=input_path,
+            output_dir=output_dir,
+            prompts=(Prompt(id="p1", text="first"),),
+            spec=spec,
+        )
+
+
 def test_generate_prompt_calls_one_seeded_request_per_sample_then_resumes(tmp_path: Path) -> None:
     spec = GenerationSpec(
         model="Qwen/Qwen3-14B",

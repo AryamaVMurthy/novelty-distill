@@ -356,6 +356,12 @@ def ensure_generation_run_manifest(
                 raise ValueError(f"generation run changed for existing {destination}")
         return destination
 
+    orphaned_shard = next(output_dir.glob("*.json"), None) if output_dir.exists() else None
+    if orphaned_shard is not None:
+        raise ValueError(
+            f"generation shards exist without a run manifest: {orphaned_shard}"
+        )
+
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary_name: str | None = None
     try:
