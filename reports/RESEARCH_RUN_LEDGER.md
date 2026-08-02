@@ -14,7 +14,7 @@ record. All active or pending jobs use `codex/implementation` and synchronize th
 | Quality score pass 1 | 18035 | `afterok:18033` |
 | Quality score pass 2 | 18037 | `afterany:18035`, same resumable score directory |
 | Cluster and target views | 18039 | `afterok:18037`; `data/teacher-targets-tomato1k-v1.json` |
-| Target provenance gate | 18121 | `afterok:18039`; exact reconstruction and 1,000-ID validation |
+| Target provenance/findings gate | 18122 | `afterok:18039`; exact reconstruction, 1,000-ID validation, and descriptive findings |
 
 The second generation and scoring passes are deliberate safety passes. Current preflights validate
 all existing shards and exit before model loading when an artifact is already complete.
@@ -31,7 +31,9 @@ Job 18039's pending time limit was increased from 01:00:00 to 03:00:00 before ex
 observed seven-condition calibration cluster job processed 56 prompts in 00:04:02; linear scaling
 projects about 72 minutes for 1,000 prompts, so the original limit had inadequate margin. The job
 ID remains unchanged. Training jobs 18097 and 18098 and control evaluation 18113 now require the
-successful provenance gate 18121, so no model can consume the target artifact before validation.
+successful provenance/findings gate 18122, so no model can consume the target artifact before
+validation. Gate 18121 was replaced and cancelled while pending because its immutable staged script
+predated the deterministic target-view findings report.
 
 ## Temporal controls
 
@@ -56,9 +58,9 @@ score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled b
 | Work | Job | Contract |
 |---|---:|---|
 | DistiLLM deployability smoke | 18092 | four GPUs; must produce a loadable full checkpoint after real optimizer updates |
-| Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18121 |
+| Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18122 |
 | TRL/OPSD bounded resumes | 18117 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
-| C3 DistiLLM | 18098 | index 12, four GPUs; after target gate 18121 and smoke 18092 |
+| C3 DistiLLM | 18098 | index 12, four GPUs; after target gate 18122 and smoke 18092 |
 | Evaluation fan-out controller | 18120 | waits for B4 task 18097_5, 18117, 18098, A0/A1, and teacher targets |
 
 Controller 18120 submits A1 and historical A3 controls plus 19 trained model chains. Each trained
