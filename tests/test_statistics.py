@@ -1,3 +1,4 @@
+import numpy as np
 import pytest
 
 from novelty_distill.evaluation.statistics import holm_adjust, paired_bootstrap
@@ -16,6 +17,20 @@ def test_paired_bootstrap_reports_prompt_level_difference_and_interval() -> None
     assert estimate.ci_low > 0
     assert estimate.ci_high >= estimate.ci_low
     assert 0 <= estimate.p_value <= 1
+
+
+def test_paired_bootstrap_accepts_numpy_sequences_deterministically() -> None:
+    reference = np.asarray((0.1, 0.2, 0.3, 0.4))
+    treatment = np.asarray((0.2, 0.4, 0.6, 0.8))
+
+    first = paired_bootstrap(
+        reference=reference, treatment=treatment, samples=2_000, seed=7
+    )
+    second = paired_bootstrap(
+        reference=reference, treatment=treatment, samples=2_000, seed=7
+    )
+
+    assert first == second
 
 
 def test_paired_bootstrap_rejects_unpaired_or_degenerate_values() -> None:

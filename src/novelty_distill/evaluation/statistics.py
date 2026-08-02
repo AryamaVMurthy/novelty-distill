@@ -1,10 +1,11 @@
 """Small, deterministic statistics helpers for paired prompt-level evaluation."""
 
 import math
-import random
 import statistics
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+
+import numpy as np
 
 
 @dataclass(frozen=True)
@@ -28,7 +29,7 @@ def paired_bootstrap(
 ) -> PairedEstimate:
     """Estimate a paired mean difference, 95% CI, Cohen's dz, and sign-flip p-value."""
 
-    if len(reference) != len(treatment) or not reference:
+    if len(reference) != len(treatment) or len(reference) == 0:
         raise ValueError("paired samples must have the same non-zero length")
     if len(reference) < 2:
         raise ValueError("paired analysis requires at least two prompts")
@@ -49,32 +50,28 @@ def paired_bootstrap(
     else:
         effect_size = observed / standard_deviation
 
-    rng = random.Random(seed)
     count = len(differences)
-    bootstrap_means = sorted(
-        statistics.fmean(differences[rng.randrange(count)] for _ in range(count))
-        for _ in range(samples)
-    )
-    ci_low = _quantile(bootstrap_means, 0.025)
-    ci_high = _quantile(bootstrap_means, 0.975)
-
-    permutation_rng = random.Random(seed + 1)
-    extreme = sum(
-        abs(
-            statistics.fmean(
-                difference if permutation_rng.getrandbits(1) else -difference
-                for difference in differences
-            )
-        )
-        >= abs(observed)
-        for _ in range(samples)
-    )
+    difference_array = np.asarray(differences, dtype=np.float64)
+    chunk_size = min(1_000, samples)
+    bootstrap_rng = np.random.default_rng(seed)
+    bootstrap_means = np.empty(samples, dtype=np.float64)
+    permutation_rng = np.random.default_rng(seed + 1)
+    extreme = 0
+    for start in range(0, samples, chunk_size):
+        stop = min(start + chunk_size, samples)
+        chunk = stop - start
+        indices = bootstrap_rng.integers(0, count, size=(chunk, count))
+        bootstrap_means[start:stop] = difference_array[indices].mean(axis=1)
+        signs = permutation_rng.integers(0, 2, size=(chunk, count), dtype=np.int8) * 2 - 1
+        permuted_means = (signs * difference_array).mean(axis=1)
+        extreme += int(np.count_nonzero(np.abs(permuted_means) >= abs(observed)))
+    ci_low, ci_high = np.quantile(bootstrap_means, (0.025, 0.975), method="linear")
     p_value = (extreme + 1) / (samples + 1)
     return PairedEstimate(
         n=count,
         mean_difference=observed,
-        ci_low=ci_low,
-        ci_high=ci_high,
+        ci_low=float(ci_low),
+        ci_high=float(ci_high),
         effect_size=effect_size,
         p_value=p_value,
     )
@@ -94,13 +91,3 @@ def holm_adjust(p_values: Mapping[str, float]) -> dict[str, float]:
         previous = max(previous, current)
         adjusted[label] = previous
     return adjusted
-
-
-def _quantile(sorted_values: Sequence[float], probability: float) -> float:
-    position = probability * (len(sorted_values) - 1)
-    lower = math.floor(position)
-    upper = math.ceil(position)
-    if lower == upper:
-        return sorted_values[lower]
-    weight = position - lower
-    return sorted_values[lower] * (1 - weight) + sorted_values[upper] * weight
