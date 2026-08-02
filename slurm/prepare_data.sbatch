@@ -96,3 +96,21 @@ if [[ ! -f "${calibration_output}" ]]; then
 fi
 wc -l "${calibration_output}"
 sha256sum "${calibration_output}"
+
+ultrafeedback_output="${scratch_root}/data/ultrafeedback-train-1000.jsonl"
+ultrafeedback_targets="${scratch_root}/data/ultrafeedback-targets-1000.json"
+ultrafeedback_manifest="${scratch_root}/data/ultrafeedback-manifest-1000.json"
+if [[ ! -f "${ultrafeedback_output}" || ! -f "${ultrafeedback_targets}" || ! -f "${ultrafeedback_manifest}" ]]; then
+  if [[ -e "${ultrafeedback_output}" || -e "${ultrafeedback_targets}" || -e "${ultrafeedback_manifest}" ]]; then
+    echo "partial UltraFeedback artifact set exists; refusing an inconsistent resume" >&2
+    exit 1
+  fi
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/prepare_ultrafeedback.py" \
+    --size 1000 \
+    --seed 17 \
+    --output "${ultrafeedback_output}" \
+    --targets "${ultrafeedback_targets}" \
+    --manifest "${ultrafeedback_manifest}"
+fi
+wc -l "${ultrafeedback_output}"
+sha256sum "${ultrafeedback_output}" "${ultrafeedback_targets}" "${ultrafeedback_manifest}"

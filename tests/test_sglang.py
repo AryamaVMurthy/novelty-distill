@@ -1,3 +1,5 @@
+import hashlib
+import json
 from pathlib import Path
 
 import pytest
@@ -87,6 +89,28 @@ def test_lora_adapter_is_routed_explicitly_and_fingerprinted() -> None:
         "Propose a hypothesis.", base, sample_index=0
     )
     assert generation_fingerprint(adapted) != generation_fingerprint(base)
+
+
+def test_absent_lora_field_preserves_pre_lora_generation_fingerprint() -> None:
+    spec = GenerationSpec(
+        model="Qwen/Qwen3-14B",
+        revision="40c069824f4251a91eefaf281ebe4c544efd3e18",
+        temperature=0.7,
+        top_p=0.8,
+        max_new_tokens=512,
+        samples_per_prompt=8,
+        seed=17,
+        response_instruction="Return one concise hypothesis.",
+    )
+    legacy_spec = spec.model_dump(mode="json")
+    legacy_spec.pop("lora_path")
+    encoded = json.dumps(
+        {"sampling_strategy": "single-request-per-sample-v1", "spec": legacy_spec},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+    assert generation_fingerprint(spec) == hashlib.sha256(encoded).hexdigest()
 
 
 def test_response_is_parsed_into_auditable_sample_records() -> None:

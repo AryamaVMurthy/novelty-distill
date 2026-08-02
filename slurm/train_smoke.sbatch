@@ -24,6 +24,8 @@ training_backend="${TRAINING_BACKEND:-trl}"
 matrix_mode="${BASELINE_MATRIX:-0}"
 if [[ "${matrix_mode}" == "tomato1k" ]]; then
   run_suffix="${RUN_SUFFIX:-tomato1k-seed17}"
+elif [[ "${matrix_mode}" == "ultrafeedback1k" ]]; then
+  run_suffix="${RUN_SUFFIX:-ultrafeedback1k-seed17}"
 else
   run_suffix="${RUN_SUFFIX:-smoke}"
 fi
@@ -61,6 +63,25 @@ if [[ "${matrix_mode}" == 1 ]]; then
   training_backend="${matrix_backends[$matrix_index]}"
   RUN_CONFIG="${matrix_configs[$matrix_index]}"
   echo "matrix_index=${matrix_index} baseline_id=${BASELINE_ID} backend=${training_backend}"
+elif [[ "${matrix_mode}" == "ultrafeedback1k" ]]; then
+  matrix_ids=(B1 B2a B2b B3 D1)
+  matrix_backends=(trl trl trl trl trl)
+  matrix_configs=(
+    configs/training/sft_ultrafeedback1k.yaml
+    configs/training/sft_ultrafeedback1k.yaml
+    configs/training/sft_ultrafeedback1k.yaml
+    configs/training/sft_ultrafeedback1k.yaml
+    configs/training/gkd_ultrafeedback1k.yaml
+  )
+  matrix_index="${SLURM_ARRAY_TASK_ID:?ultrafeedback1k matrix requires a Slurm array task}"
+  if ((matrix_index < 0 || matrix_index >= ${#matrix_ids[@]})); then
+    echo "SLURM_ARRAY_TASK_ID must be between 0 and $((${#matrix_ids[@]} - 1))" >&2
+    exit 1
+  fi
+  BASELINE_ID="${matrix_ids[$matrix_index]}"
+  training_backend="${matrix_backends[$matrix_index]}"
+  RUN_CONFIG="${matrix_configs[$matrix_index]}"
+  echo "matrix=ultrafeedback1k index=${matrix_index} baseline_id=${BASELINE_ID} backend=${training_backend}"
 elif [[ "${matrix_mode}" == "tomato1k" ]]; then
   matrix_ids=(
     B1 B2a B2b B2c B3 B4

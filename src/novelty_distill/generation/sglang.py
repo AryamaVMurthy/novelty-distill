@@ -113,9 +113,14 @@ def render_generation_prompt(prompt: str, spec: GenerationSpec) -> str:
 def generation_fingerprint(spec: GenerationSpec) -> str:
     """Return a stable hash of every generation control."""
 
+    spec_payload = spec.model_dump(mode="json")
+    if spec.lora_path is None:
+        # Added after permanent teacher generation began; preserve fingerprints for
+        # base-model shards while still fingerprinting every routed adapter.
+        spec_payload.pop("lora_path")
     controls = {
         "sampling_strategy": SAMPLING_STRATEGY,
-        "spec": spec.model_dump(mode="json"),
+        "spec": spec_payload,
     }
     encoded = json.dumps(controls, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
