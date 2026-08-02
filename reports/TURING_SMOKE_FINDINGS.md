@@ -33,7 +33,11 @@ text-list SHA-256 was
 `f1e2a65adbee57edb7c3a466e8366d725c850e1f561d1d7df9657b5451901be3`. This required one
 single-sample SGLang request per hypothesis with seeds `base_seed + sample_index`; one deterministic
 request with `n=8` had incorrectly returned eight copies of one hypothesis. Judge job 17926 then
-completed against the corrected shard using Qwen3-32B-FP8.
+completed against the corrected shard using Qwen3-32B-FP8, producing eight auditable request IDs
+and a quality score of 0.95 for every response. Cluster job 17931 assigned all eight responses to
+one semantic mode at the frozen cosine threshold of 0.82, while still producing the random-1,
+best-1, common-mode-1, and diverse-4 target views in the isolated
+`data/teacher-targets-17918.json` artifact.
 
 All eight corrected teacher responses reached the configured 512-token ceiling. They are valid
 training records, but this saturation must be measured on a larger prompt sample before promotion;
@@ -83,10 +87,18 @@ small for model comparisons.
    this Qwen path. Independent single-sample requests with derived seeds preserve exact rerun
    reproducibility while recovering eight distinct hypotheses. The strategy is part of the shard
    fingerprint so old collapsed shards fail validation instead of being resumed.
+7. Lexically distinct samples are not necessarily distinct scientific modes. Both prompts in the
+   original two-prompt teacher smoke had eight unique texts but only one embedding cluster each;
+   the corrected deterministic prompt showed the same result. The 32B judge was also nearly
+   saturated (0.90--1.00 across the original prompts, exactly 0.95 on the corrected prompt).
+   Teacher-temperature, clustering-threshold, and judge-calibration checks are therefore required
+   before calling `diverse4` a semantic-diversity treatment at research scale.
 
 ## Next research-scale gate
 
 The next run may scale only after fixed prompt IDs and decoding seeds are frozen. Use at least three
 training seeds for promoted methods, then analyze prompt-level metric JSONL with
 `scripts/analyze_paired_metrics.py` for paired bootstrap intervals, Cohen's dz, and Holm-adjusted
-p-values. The smoke scores above must not be entered into a paper table.
+p-values. First calibrate the teacher-mode threshold and verify that the quality judge has useful
+within-prompt resolution on a larger stratified prompt sample. The smoke scores above must not be
+entered into a paper table.
