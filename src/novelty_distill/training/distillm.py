@@ -14,7 +14,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from novelty_distill.config import BaselineConfig
 from novelty_distill.data.tomato import CanonicalExample
-from novelty_distill.training.provenance import file_provenance
+from novelty_distill.training.provenance import atomic_json, file_provenance
 
 
 class DistiLLMRawRow(TypedDict):
@@ -394,8 +394,7 @@ def execute_distillm_training(
         "output_dir": str(output_dir),
         "final_dir": str(final_dir),
     }
-    with (output_dir / "run_metadata.json").open("w", encoding="utf-8") as handle:
-        json.dump(metadata, handle, indent=2, sort_keys=True)
+    atomic_json(output_dir / "run_metadata.json", metadata)
     return metadata
 
 

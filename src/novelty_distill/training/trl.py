@@ -17,7 +17,7 @@ from novelty_distill.data.training_rows import (
     to_chat_row,
     to_prompt_completion_row,
 )
-from novelty_distill.training.provenance import file_provenance
+from novelty_distill.training.provenance import atomic_json, file_provenance
 
 TRLTrainingRow = ChatTrainingRow | PromptCompletionRow
 TeacherTargets = Mapping[str, Mapping[str, Sequence[str]]]
@@ -354,9 +354,7 @@ def execute_trl_training(
         "final_dir": str(final_dir),
     }
     metadata_path = output_dir / "run_metadata.json"
-    with metadata_path.open("w", encoding="utf-8") as handle:
-        json.dump(metadata, handle, indent=2, sort_keys=True)
-        handle.write("\n")
+    atomic_json(metadata_path, metadata)
     return metadata
 
 

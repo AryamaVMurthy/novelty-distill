@@ -1,6 +1,5 @@
 """Data/config adapter for the pinned official OPSD trainer."""
 
-import json
 import os
 import sys
 from collections.abc import Mapping, Sequence
@@ -14,7 +13,7 @@ from novelty_distill.config import BaselineConfig
 from novelty_distill.data.tomato import CanonicalExample
 from novelty_distill.data.training_rows import OPSDTrainingRow, to_opsd_row
 from novelty_distill.official import checkout_official_repository, load_official_repositories
-from novelty_distill.training.provenance import file_provenance
+from novelty_distill.training.provenance import atomic_json, file_provenance
 from novelty_distill.training.trl import load_canonical_examples
 
 
@@ -318,9 +317,7 @@ def execute_opsd_training(
         "metrics": train_result.metrics,
         "final_dir": str(final_dir),
     }
-    with (output_dir / "run_metadata.json").open("w", encoding="utf-8") as handle:
-        json.dump(metadata, handle, indent=2, sort_keys=True)
-        handle.write("\n")
+    atomic_json(output_dir / "run_metadata.json", metadata)
     return metadata
 
 
