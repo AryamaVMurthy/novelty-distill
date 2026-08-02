@@ -65,6 +65,13 @@ def _atomic_json(path: Path, payload: dict[str, Any]) -> None:
             os.unlink(temporary_name)
 
 
+def _longest(rows: Any, *, count: int = 10) -> list[dict[str, int | str]]:
+    return [
+        {"id": row_id, "length": length}
+        for row_id, length in sorted(rows, key=lambda row: (-row[1], row[0]))[:count]
+    ]
+
+
 def main() -> None:
     args = parse_args()
     if args.max_examples <= 0 or args.max_new_tokens <= 0:
@@ -75,10 +82,12 @@ def main() -> None:
     examples = load_canonical_examples(args.input, limit=args.max_examples)
     teacher_targets = load_teacher_targets(args.teacher_targets)
 
-    student_prompt_lengths = tuple(
-        _chat_tokens(tokenizer, prompt=example.student_prompt) for example in examples
+    student_prompt_rows = tuple(
+        (example.id, _chat_tokens(tokenizer, prompt=example.student_prompt))
+        for example in examples
     )
-    full_lengths: dict[str, list[int]] = {
+    student_prompt_lengths = tuple(length for _id, length in student_prompt_rows)
+    full_rows: dict[str, list[tuple[str, int]]] = {
         "human": [],
         "random1": [],
         "best1": [],
@@ -87,10 +96,15 @@ def main() -> None:
     }
     for example in examples:
         views = {"human": (example.human_target,), **teacher_targets[example.id]}
-        for view in full_lengths:
-            for target in views[view]:
-                full_lengths[view].append(
-                    _chat_tokens(tokenizer, prompt=example.student_prompt, target=target)
+        for view in full_rows:
+            for target_index, target in enumerate(views[view]):
+                full_rows[view].append(
+                    (
+                        f"{example.id}:{target_index}",
+                        _chat_tokens(
+                            tokenizer, prompt=example.student_prompt, target=target
+                        ),
+                    )
                 )
 
     privileged_pairs = render_privileged_prompt_pairs(
@@ -118,10 +132,19 @@ def main() -> None:
         student_thinking=False,
         teacher_thinking=False,
     )
-    privileged_teacher_lengths = tuple(
-        len(tokenizer(teacher, add_special_tokens=False)["input_ids"])
-        for _student, teacher in privileged_pairs
+    privileged_teacher_rows = tuple(
+        (
+            example.id,
+            len(tokenizer(teacher, add_special_tokens=False)["input_ids"]),
+        )
+        for example, (_student, teacher) in zip(examples, privileged_pairs, strict=True)
     )
+    privileged_teacher_lengths = tuple(
+        length for _id, length in privileged_teacher_rows
+    )
+    full_lengths = {
+        view: [length for _id, length in rows] for view, rows in full_rows.items()
+    }
 
     summaries = {
         "student_prompt_at_1024": summarize_token_lengths(
@@ -169,6 +192,11 @@ def main() -> None:
             "distillm": "Qwen chat-template proxy; official preprocessing enforces the named caps",
         },
         "summaries": summaries,
+        "longest_examples": {
+            "student_prompt": _longest(student_prompt_rows),
+            "privileged_teacher_prompt": _longest(privileged_teacher_rows),
+            **{f"{view}_full_chat": _longest(rows) for view, rows in full_rows.items()},
+        },
     }
     _atomic_json(args.output, payload)
     print(json.dumps(payload, sort_keys=True))
