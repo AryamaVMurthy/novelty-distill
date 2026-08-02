@@ -14,8 +14,8 @@ record. All active or pending jobs use `codex/implementation` and synchronize th
 | Quality score pass 1 | 18035 | `afterok:18033` |
 | Quality score pass 2 | 18037 | `afterany:18035`, same resumable score directory |
 | Score diagnostics | 18123 | `afterok:18037`; strict JSON and Markdown judge diagnostics |
-| Cluster and target views | 18039 | `afterok:18037`; `data/teacher-targets-tomato1k-v1.json` |
-| Target provenance/findings gate | 18122 | `afterok:18039`; exact reconstruction, 1,000-ID validation, and descriptive findings |
+| Cluster and target views | 18124 | `afterok:18037`; cached embeddings; `data/teacher-targets-tomato1k-v1.json` |
+| Target provenance/findings gate | 18122 | `afterok:18124`; exact reconstruction, 1,000-ID validation, and descriptive findings |
 
 The second generation and scoring passes are deliberate safety passes. Current preflights validate
 all existing shards and exit before model loading when an artifact is already complete.
@@ -28,10 +28,11 @@ The completion-token distribution has mean 355.5487, median 353, and maximum 512
 `stop` finishes and 15 `length` finishes, for a length-stop rate of 0.001875. These are generation
 integrity and lexical-uniqueness diagnostics; they do not establish semantic diversity or quality.
 
-Job 18039's pending time limit was increased from 01:00:00 to 03:00:00 before execution. The
-observed seven-condition calibration cluster job processed 56 prompts in 00:04:02; linear scaling
-projects about 72 minutes for 1,000 prompts, so the original limit had inadequate margin. The job
-ID remains unchanged. Training jobs 18097 and 18098 and control evaluation 18113 now require the
+The original pending cluster job 18039 was first extended from 01:00:00 to 03:00:00, then replaced
+and cancelled before execution by current staged job 18124 so production uses the persistent atomic
+embedding cache. The observed seven-condition calibration cluster job processed 56 prompts in
+00:04:02; linear scaling projects about 72 minutes for 1,000 prompts, so 18124 retains a three-hour
+limit. Training jobs 18097 and 18098 and control evaluation 18113 require the
 successful provenance/findings gate 18122, so no model can consume the target artifact before
 validation. Gate 18121 was replaced and cancelled while pending because its immutable staged script
 predated the deterministic target-view findings report.
@@ -50,7 +51,7 @@ window before resuming.
 
 Jobs 18102 and 18105 require both `afterany` on the current partial generation and `afterok:18092`.
 Later generation and score passes use `afterany` and the same stable output IDs. A0 evaluation
-18113 requires final A1 score 18108, final A0 score 18110, and targets 18039; 18119 is its cached
+18113 requires final A1 score 18108, final A0 score 18110, and target gate 18122; 18119 is its cached
 resume pass. Obsolete single-pass
 score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled before execution.
 
