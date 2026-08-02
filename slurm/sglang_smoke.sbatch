@@ -85,6 +85,7 @@ export FLASHINFER_WORKSPACE_BASE="${scratch_root}/cache/flashinfer-workspace"
 export XDG_CACHE_HOME="${scratch_root}/cache/xdg"
 export TORCH_EXTENSIONS_DIR="${scratch_root}/cache/torch-extensions"
 export TRITON_CACHE_DIR="${scratch_root}/cache/triton"
+export TVM_FFI_CACHE_DIR="${scratch_root}/cache/tvm-ffi"
 export CUDA_CACHE_PATH="${scratch_root}/cache/cuda"
 export TMPDIR="${scratch_root}/tmp"
 
@@ -110,10 +111,15 @@ mkdir -p \
   "${scratch_root}/cache/flashinfer-workspace" \
   "${scratch_root}/cache/torch-extensions" \
   "${scratch_root}/cache/triton" \
+  "${scratch_root}/cache/tvm-ffi" \
   "${scratch_root}/cache/cuda" \
   "${scratch_root}/cache/xdg" \
   "${scratch_root}/logs" \
   "${scratch_root}/tmp"
+if [[ ! -w "${TVM_FFI_CACHE_DIR}" ]]; then
+  echo "TVM-FFI cache is not writable: ${TVM_FFI_CACHE_DIR}" >&2
+  exit 1
+fi
 if [[ ! -d "${repo_dir}/.git" ]]; then
   git clone --branch "${repo_ref}" --single-branch "${repo_url}" "${repo_dir}"
 else
