@@ -192,6 +192,10 @@ affected rows and tokens; the official trainer and distillation loss remain unch
 GKD on-policy generation must explicitly use the same frozen temperature, top-p, top-k, min-p,
 maximum-new-token, and non-thinking controls as teacher/evaluation generation; model-specific
 defaults are not part of the experimental contract.
+DistiLLM must compute enough official sampler epochs to reach `total-iters`: its distributed
+sampler drops incomplete world-size batches, so a nominal one-pass dataset can otherwise terminate
+before the configured save step. The 1k C3 gate uses 960 train rows, 40 validation rows, and two
+epochs to reach 250 four-example optimizer steps exactly.
 
 ## Teacher generation
 

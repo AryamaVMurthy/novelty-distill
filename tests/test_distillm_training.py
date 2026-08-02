@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 
 from novelty_distill.config import load_baseline_registry
 from novelty_distill.data.tomato import prepare_tomato_record
@@ -10,6 +11,7 @@ from novelty_distill.training.distillm import (
     build_distillm_preprocess_command,
     build_distillm_raw_rows,
     build_distillm_training_command,
+    distillm_epoch_plan,
     normalize_distillm_qwen_sentinels,
 )
 
@@ -131,7 +133,7 @@ def test_distillm_commands_delegate_preprocessing_and_training_to_official_repo(
 
 
 def test_distillm_command_partitions_training_across_requested_gpus() -> None:
-    spec = _spec().model_copy(update={"num_gpus": 2})
+    spec = _spec().model_copy(update={"num_gpus": 2, "max_examples": 3})
 
     training = build_distillm_training_command(
         spec,
@@ -145,6 +147,29 @@ def test_distillm_command_partitions_training_across_requested_gpus() -> None:
 
     assert training[training.index("--nproc_per_node=2")] == "--nproc_per_node=2"
     assert training[training.index("--n-gpu") + 1] == "2"
+
+
+def test_distillm_production_repeats_only_enough_data_to_reach_save_step() -> None:
+    spec = DistiLLMRunSpec.model_validate(
+        yaml.safe_load(
+            Path("configs/training/distillm_tomato1k.yaml").read_text(encoding="utf-8")
+        )
+    )
+
+    plan = distillm_epoch_plan(spec)
+    training = build_distillm_training_command(
+        spec,
+        python_executable=Path("/env/bin/python"),
+        official_checkout=Path("/official/distillm"),
+        student_model_path=Path("/models/student"),
+        teacher_model_path=Path("/models/teacher"),
+        processed_dir=Path("/data/processed/qwen"),
+        output_dir=Path("/output"),
+    )
+
+    assert plan == {"train_examples": 960, "steps_per_epoch": 240, "epochs": 2}
+    assert training[training.index("--epochs") + 1] == "2"
+    assert spec.max_steps * spec.batch_size * spec.num_gpus == 1000
 
 
 def test_distillm_spec_rejects_too_few_rows_for_distributed_batch() -> None:

@@ -1,6 +1,7 @@
 """Thin data and command adapters for the pinned official DistiLLM repository."""
 
 import json
+import math
 import os
 import subprocess
 import sys
@@ -61,6 +62,11 @@ class DistiLLMRunSpec(BaseModel):
         if train_examples < distributed_batch:
             raise ValueError(
                 "DistiLLM needs at least one complete distributed batch: "
+                f"train_examples={train_examples}, distributed_batch={distributed_batch}"
+            )
+        if train_examples % distributed_batch:
+            raise ValueError(
+                "DistiLLM train rows must divide into complete distributed batches: "
                 f"train_examples={train_examples}, distributed_batch={distributed_batch}"
             )
         if self.max_prompt_length >= self.max_length:
@@ -141,6 +147,8 @@ def build_distillm_training_command(
 ) -> tuple[str, ...]:
     """Build the official adaptive skew-forward-KL launch command."""
 
+    epoch_plan = distillm_epoch_plan(spec)
+
     return (
         str(python_executable),
         "-m",
@@ -190,7 +198,7 @@ def build_distillm_training_command(
         "--clip-grad",
         "1.0",
         "--epochs",
-        "1",
+        str(epoch_plan["epochs"]),
         "--total-iters",
         str(spec.max_steps),
         "--kd-ratio",
@@ -244,6 +252,19 @@ def build_distillm_training_command(
         "--capacity",
         "1000",
     )
+
+
+def distillm_epoch_plan(spec: DistiLLMRunSpec) -> dict[str, int]:
+    """Plan enough official sampler epochs to reach the requested save step."""
+
+    train_examples = spec.max_examples - spec.dev_examples
+    distributed_batch = spec.batch_size * spec.num_gpus
+    steps_per_epoch = train_examples // distributed_batch
+    return {
+        "train_examples": train_examples,
+        "steps_per_epoch": steps_per_epoch,
+        "epochs": math.ceil(spec.max_steps / steps_per_epoch),
+    }
 
 
 def load_distillm_run_spec(path: Path) -> DistiLLMRunSpec:
@@ -386,6 +407,7 @@ def execute_distillm_training(
         "normalized_qwen_separators": sentinel_replacements,
         "training_rows": len(rows),
         "optimizer_example_exposures": spec.max_steps * spec.batch_size * spec.num_gpus,
+        "epoch_plan": distillm_epoch_plan(spec),
         "max_steps": spec.max_steps,
         "num_gpus": spec.num_gpus,
         "seed": spec.seed,

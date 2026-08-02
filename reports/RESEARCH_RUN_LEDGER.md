@@ -114,6 +114,13 @@ source audit found that official GKD otherwise forced `top_k=0` and inherited Qw
 `temperature=0.7`, `top_p=0.8`, `top_k=20`, and `min_p=0.0`, together with non-thinking mode,
 zero truncation, loss 0.6325, gradient norm 1.9707, and a structurally valid 504-tensor adapter.
 
+A pre-execution audit of the pinned DistiLLM loop found that its distributed sampler drops rows
+to a complete world-size batch and its original one-epoch launch would yield only 237 steps from
+950 train rows, never reaching the step-250 save gate. Production C3 now uses 960 train and 40
+validation rows, exactly 240 four-example steps per epoch, and computes two epochs to stop at step
+250. This preserves the common 1,000 optimizer-example exposure budget and guarantees that the
+official step-250 checkpoint branch is reachable.
+
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
 edges release the other baselines and controls even if C3 fails, while controller 18133 separately
