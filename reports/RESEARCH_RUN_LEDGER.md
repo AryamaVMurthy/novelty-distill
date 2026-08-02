@@ -27,12 +27,13 @@ window before resuming.
 
 | Control | Current pass | Resume passes | Score passes | Final evaluation |
 |---|---:|---|---|---:|
-| A1 Qwen3-14B | 18078 | 18102 -> 18103 -> 18104 | 18107 -> 18108 | submitted by controller 18118 |
-| A0 Qwen3-4B | 18084 | 18105 -> 18106 | 18109 -> 18110 | 18113 |
+| A1 Qwen3-14B | 18078 | 18102 -> 18103 -> 18104 | 18107 -> 18108 | submitted by controller 18120 |
+| A0 Qwen3-4B | 18084 | 18105 -> 18106 | 18109 -> 18110 | 18113 -> 18119 |
 
 Jobs 18102 and 18105 require both `afterany` on the current partial generation and `afterok:18092`.
 Later generation and score passes use `afterany` and the same stable output IDs. A0 evaluation
-18113 requires final A1 score 18108, final A0 score 18110, and targets 18039. Obsolete single-pass
+18113 requires final A1 score 18108, final A0 score 18110, and targets 18039; 18119 is its cached
+resume pass. Obsolete single-pass
 score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled before execution.
 
 ## Training and evaluation matrix
@@ -43,11 +44,11 @@ score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled b
 | Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after targets 18039 |
 | TRL/OPSD bounded resumes | 18117 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
 | C3 DistiLLM | 18098 | index 12, four GPUs; after targets 18039 and smoke 18092 |
-| Evaluation fan-out controller | 18118 | waits for B4 task 18097_5, 18117, 18098, A0/A1, and teacher targets |
+| Evaluation fan-out controller | 18120 | waits for B4 task 18097_5, 18117, 18098, A0/A1, and teacher targets |
 
-Controller 18118 submits A1 and historical A3 controls plus 19 trained model chains. Each trained
-model chain has three resumable generation passes, two resumable judge passes, a joint evaluation,
-and strict checkpoint preflight. The final CPU analysis requires all aligned evaluation artifacts,
+Controller 18120 submits A1 and historical A3 controls plus 19 trained model chains. Each trained
+model chain has three resumable generation passes, two resumable judge passes, two cached joint
+evaluation passes, and strict checkpoint preflight. The final CPU analysis requires all aligned evaluation artifacts,
 runs the frozen prompt-paired contrasts with per-metric Holm correction, and reports per-prompt
 favorable/tied/unfavorable directions over every declared clustering threshold.
 
