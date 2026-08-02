@@ -4,6 +4,7 @@
 import argparse
 import json
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -32,23 +33,34 @@ def main() -> None:
 
     output_records: list[TeacherGeneration] = []
     prompt_diagnostics: dict[str, object] = {}
+    prompt_batches: list[tuple[Path, list[dict[str, Any]]]] = []
+    embedding_inputs: list[str] = []
+    instruction = str(annotation["embedding_instruction"])
     for score_path in score_paths:
         payload = json.loads(score_path.read_text(encoding="utf-8"))
         records = payload.get("records", [])
         if len(records) != 8:
             raise ValueError(f"score shard {score_path} must contain exactly eight records")
         texts = [record["text"] for record in records]
-        instruction = str(annotation["embedding_instruction"])
-        embedding_inputs = texts + [f"Instruct: {instruction}\nQuery: {text}" for text in texts]
-        all_embeddings = embed_texts(
-            embedding_inputs,
-            model_id=annotation["embedding_model"],
-            revision=annotation["embedding_revision"],
-            max_length=annotation["embedding_max_length"],
-            batch_size=int(annotation["embedding_batch_size"]),
-        )
-        raw_embeddings = all_embeddings[: len(texts)]
-        instructed_embeddings = all_embeddings[len(texts) :]
+        prompt_batches.append((score_path, records))
+        embedding_inputs.extend(texts)
+        embedding_inputs.extend(f"Instruct: {instruction}\nQuery: {text}" for text in texts)
+
+    all_embeddings = embed_texts(
+        embedding_inputs,
+        model_id=annotation["embedding_model"],
+        revision=annotation["embedding_revision"],
+        max_length=annotation["embedding_max_length"],
+        batch_size=int(annotation["embedding_batch_size"]),
+    )
+    embedding_cursor = 0
+    for score_path, records in prompt_batches:
+        sample_count = len(records)
+        raw_embeddings = all_embeddings[embedding_cursor : embedding_cursor + sample_count]
+        instructed_embeddings = all_embeddings[
+            embedding_cursor + sample_count : embedding_cursor + 2 * sample_count
+        ]
+        embedding_cursor += 2 * sample_count
         labels = cluster_cosine_embeddings(
             instructed_embeddings, threshold=float(annotation["cosine_threshold"])
         )
@@ -74,6 +86,9 @@ def main() -> None:
                     cluster_id=cluster_id,
                 )
             )
+
+    if embedding_cursor != len(all_embeddings):
+        raise AssertionError("embedding batch cursor did not consume the full corpus")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     temporary = args.output.with_suffix(args.output.suffix + ".tmp")
