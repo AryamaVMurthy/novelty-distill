@@ -10,6 +10,7 @@ import yaml
 from novelty_distill.evaluation.contrasts import (
     analyze_contrasts,
     analyze_threshold_directions,
+    summarize_method_metrics,
 )
 from novelty_distill.evaluation.reporting import render_contrast_markdown
 
@@ -56,6 +57,9 @@ def main() -> None:
         "bootstrap_samples": config["bootstrap_samples"],
         "seed": config["seed"],
         "holm_family": "all declared contrasts within each metric",
+        "method_summaries": summarize_method_metrics(
+            rows=rows, metrics=tuple(config["metrics"])
+        ),
         "results": results,
         "threshold_direction_counts": threshold_directions,
     }

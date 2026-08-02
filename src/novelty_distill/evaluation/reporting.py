@@ -11,10 +11,13 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
         raise ValueError("contrast report requires schema version 2")
     results = payload.get("results")
     directions = payload.get("threshold_direction_counts")
+    method_summaries = payload.get("method_summaries")
     if not isinstance(results, Mapping) or not results:
         raise ValueError("contrast report has no primary results")
     if not isinstance(directions, Mapping) or not directions:
         raise ValueError("contrast report has no threshold directions")
+    if not isinstance(method_summaries, Mapping) or not method_summaries:
+        raise ValueError("contrast report has no descriptive method summaries")
 
     lines = [
         "# Frozen TOMATO contrast findings",
@@ -27,9 +30,43 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
             "human-validated scientific novelty labels."
         ),
         "",
-        "## Primary-threshold paired estimates",
+        "## Descriptive method levels",
         "",
     ]
+    mean_fields = sorted(
+        {
+            str(field)
+            for summary in method_summaries.values()
+            if isinstance(summary, Mapping)
+            for field in summary
+            if str(field).endswith("_mean")
+        }
+    )
+    if not mean_fields:
+        raise ValueError("descriptive method summaries have no metric means")
+    lines.extend(
+        [
+            "| Method | n | "
+            + " | ".join(f"`{field.removesuffix('_mean')}` mean" for field in mean_fields)
+            + " |",
+            "|---|---:|" + "---:|" * len(mean_fields),
+        ]
+    )
+    for method, summary in method_summaries.items():
+        if not isinstance(summary, Mapping):
+            raise ValueError(f"method summary {method!r} is invalid")
+        lines.append(
+            f"| `{method}` | {int(summary['n'])} | "
+            + " | ".join(_number(summary[field]) for field in mean_fields)
+            + " |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Primary-threshold paired estimates",
+            "",
+        ]
+    )
     for metric, raw_contrasts in results.items():
         if not isinstance(raw_contrasts, Mapping):
             raise ValueError(f"metric {metric!r} has invalid contrast results")

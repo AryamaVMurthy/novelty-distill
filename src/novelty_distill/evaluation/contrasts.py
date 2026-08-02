@@ -9,6 +9,38 @@ from typing import Any
 from novelty_distill.evaluation.statistics import holm_adjust, paired_bootstrap
 
 
+def summarize_method_metrics(
+    *, rows: Sequence[Mapping[str, Any]], metrics: Sequence[str]
+) -> dict[str, dict[str, float | int]]:
+    """Report absolute method levels without creating undeclared inferential contrasts."""
+
+    if not rows or not metrics or len(set(metrics)) != len(metrics):
+        raise ValueError("rows and unique metrics must be non-empty")
+    by_method: dict[str, dict[str, Mapping[str, Any]]] = {}
+    for row in rows:
+        method = str(row.get("method", ""))
+        prompt_id = str(row.get("prompt_id", ""))
+        if not method or not prompt_id:
+            raise ValueError("every row needs non-empty method and prompt_id")
+        if prompt_id in by_method.setdefault(method, {}):
+            raise ValueError(f"duplicate prompt {prompt_id!r} for method {method!r}")
+        by_method[method][prompt_id] = row
+    summaries: dict[str, dict[str, float | int]] = {}
+    for method, prompt_rows in sorted(by_method.items()):
+        summary: dict[str, float | int] = {"n": len(prompt_rows)}
+        for metric in metrics:
+            try:
+                values = tuple(float(row[metric]) for row in prompt_rows.values())
+            except (KeyError, TypeError, ValueError) as error:
+                raise ValueError(f"method {method!r} has invalid metric {metric!r}") from error
+            if any(not math.isfinite(value) for value in values):
+                raise ValueError(f"method {method!r} has non-finite metric {metric!r}")
+            summary[f"{metric}_mean"] = statistics.fmean(values)
+            summary[f"{metric}_median"] = statistics.median(values)
+        summaries[method] = summary
+    return summaries
+
+
 def analyze_contrasts(
     *,
     rows: Sequence[Mapping[str, Any]],

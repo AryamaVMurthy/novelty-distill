@@ -3,6 +3,7 @@ import pytest
 from novelty_distill.evaluation.contrasts import (
     analyze_contrasts,
     analyze_threshold_directions,
+    summarize_method_metrics,
 )
 
 
@@ -34,6 +35,15 @@ def test_contrast_analysis_pairs_prompts_and_holm_adjusts_each_metric() -> None:
     assert result["quality"]["C-vs-A"]["mean_difference"] < 0
     assert 0 <= result["quality"]["B-vs-A"]["holm_p_value"] <= 1
     assert result["recall"]["B-vs-A"]["n"] == 3
+
+    summaries = summarize_method_metrics(rows=rows, metrics=("quality", "recall"))
+    assert summaries["A"] == {
+        "n": 3,
+        "quality_mean": pytest.approx(0.2),
+        "quality_median": pytest.approx(0.2),
+        "recall_mean": pytest.approx(0.4),
+        "recall_median": pytest.approx(0.4),
+    }
 
 
 def test_threshold_direction_analysis_respects_metric_direction() -> None:
