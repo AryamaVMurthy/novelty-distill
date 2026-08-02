@@ -148,6 +148,22 @@ uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inferenc
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 flock -u 8
 
+artifact_path=""
+if [[ -n "${lora_path}" ]]; then
+  artifact_path="${lora_path}"
+elif [[ -d "${model_path}" ]]; then
+  artifact_path="${model_path}"
+fi
+artifact_identity_args=()
+if [[ -n "${artifact_path}" ]]; then
+  served_artifact_identity="$(
+    "${venv_dir}/bin/python" "${repo_dir}/scripts/hash_model_artifact.py" \
+      --path "${artifact_path}"
+  )"
+  artifact_identity_args=(--served-artifact-identity "${served_artifact_identity}")
+  echo "served_artifact_identity=${served_artifact_identity}"
+fi
+
 if [[ -n "${calibration_config}" ]]; then
   if [[ -z "${calibration_run_id}" || "${calibration_run_id}" == */* || "${calibration_run_id}" == *..* ]]; then
     echo "CALIBRATION_RUN_ID must be a non-empty path-safe name" >&2
@@ -195,7 +211,8 @@ if [[ -z "${calibration_config}" ]]; then
   "${venv_dir}/bin/python" "${repo_dir}/scripts/check_generation_status.py" \
     --input "${input_slice}" \
     --output-dir "${output_dir}" \
-    --config "${repo_dir}/${generation_config}"
+    --config "${repo_dir}/${generation_config}" \
+    "${artifact_identity_args[@]}"
   generation_status=$?
   set -e
   if [[ "${generation_status}" -eq 0 ]]; then
@@ -266,13 +283,15 @@ else
     --output-dir "${output_dir}" \
     --config "${repo_dir}/${generation_config}" \
     --base-url "http://127.0.0.1:${port}" \
-    --concurrency "${generation_concurrency}"
+    --concurrency "${generation_concurrency}" \
+    "${artifact_identity_args[@]}"
   "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
     --input "${input_slice}" \
     --output-dir "${output_dir}" \
     --config "${repo_dir}/${generation_config}" \
     --base-url "http://127.0.0.1:${port}" \
-    --concurrency "${generation_concurrency}"
+    --concurrency "${generation_concurrency}" \
+    "${artifact_identity_args[@]}"
   find "${output_dir}" -maxdepth 1 -type f -name '*.json' -print
 fi
 

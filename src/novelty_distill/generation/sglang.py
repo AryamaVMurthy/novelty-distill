@@ -11,6 +11,22 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 SAMPLING_STRATEGY = "single-request-per-sample-v1"
+INFERENCE_ARTIFACT_PATTERNS = (
+    "config.json",
+    "generation_config.json",
+    "adapter_config.json",
+    "*.safetensors",
+    "*.safetensors.index.json",
+    "pytorch_model*.bin",
+    "pytorch_model*.bin.index.json",
+    "tokenizer.json",
+    "tokenizer_config.json",
+    "special_tokens_map.json",
+    "chat_template.jinja",
+    "tokenizer.model",
+    "vocab.json",
+    "merges.txt",
+)
 
 
 class GenerationSpec(BaseModel):
@@ -124,6 +140,46 @@ def generation_fingerprint(spec: GenerationSpec) -> str:
     }
     encoded = json.dumps(controls, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
+
+
+def model_artifact_identity(path: Path) -> str:
+    """Hash every local file that can affect loaded inference behavior."""
+
+    root = path.resolve(strict=True)
+    if not root.is_dir():
+        raise ValueError(f"model artifact is not a directory: {root}")
+    files = sorted(
+        {
+            candidate
+            for pattern in INFERENCE_ARTIFACT_PATTERNS
+            for candidate in root.glob(pattern)
+            if candidate.is_file()
+        },
+        key=lambda candidate: candidate.relative_to(root).as_posix(),
+    )
+    has_config = any(
+        candidate.name in {"config.json", "adapter_config.json"} for candidate in files
+    )
+    has_weights = any(
+        candidate.name.endswith(".safetensors")
+        or (candidate.name.startswith("pytorch_model") and candidate.name.endswith(".bin"))
+        for candidate in files
+    )
+    if not has_config or not has_weights:
+        raise ValueError(f"model artifact needs a config and weights: {root}")
+
+    digest = hashlib.sha256()
+    for candidate in files:
+        relative = candidate.relative_to(root).as_posix().encode()
+        digest.update(relative)
+        digest.update(b"\0")
+        digest.update(str(candidate.stat().st_size).encode())
+        digest.update(b"\0")
+        with candidate.open("rb") as handle:
+            while chunk := handle.read(16 * 1024 * 1024):
+                digest.update(chunk)
+        digest.update(b"\0")
+    return f"sha256:{digest.hexdigest()}"
 
 
 def parse_chat_completion_response(
@@ -271,6 +327,7 @@ def ensure_generation_run_manifest(
     output_dir: Path,
     prompts: Iterable[Prompt],
     spec: GenerationSpec,
+    served_artifact_identity: str | None = None,
 ) -> Path:
     """Freeze the input prompts and generation controls for a resumable run."""
 
@@ -288,6 +345,10 @@ def ensure_generation_run_manifest(
             for prompt in prompt_tuple
         ],
     }
+    if served_artifact_identity is not None:
+        if not served_artifact_identity.strip():
+            raise ValueError("served artifact identity must be non-empty when provided")
+        manifest["served_artifact_identity"] = served_artifact_identity
     destination = output_dir / "_metadata" / "run-manifest.json"
     if destination.exists():
         with destination.open(encoding="utf-8") as handle:

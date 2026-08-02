@@ -20,6 +20,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--served-artifact-identity")
     return parser.parse_args()
 
 
@@ -34,6 +35,7 @@ def main() -> None:
         output_dir=args.output_dir,
         prompts=prompts,
         spec=spec,
+        served_artifact_identity=args.served_artifact_identity,
     )
     remaining = pending_prompts(prompts, args.output_dir, spec)
     print(

@@ -26,6 +26,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", default="http://127.0.0.1:30000")
     parser.add_argument("--concurrency", type=int, default=32)
     parser.add_argument("--timeout", type=float, default=600)
+    parser.add_argument("--served-artifact-identity")
     return parser.parse_args()
 
 
@@ -42,6 +43,7 @@ def main() -> None:
         output_dir=args.output_dir,
         prompts=prompts,
         spec=spec,
+        served_artifact_identity=args.served_artifact_identity,
     )
     remaining = pending_prompts(prompts, args.output_dir, spec)
     print(

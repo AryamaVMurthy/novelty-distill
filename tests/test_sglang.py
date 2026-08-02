@@ -13,6 +13,7 @@ from novelty_distill.generation.sglang import (
     generate_prompt,
     generation_fingerprint,
     load_prompt_shard,
+    model_artifact_identity,
     parse_chat_completion_response,
     pending_prompts,
     write_prompt_shard,
@@ -204,6 +205,54 @@ def test_generation_manifest_rejects_changed_prompt_text(tmp_path: Path) -> None
             output_dir=output_dir,
             prompts=(Prompt(id="p1", text="changed"),),
             spec=spec,
+        )
+
+
+def test_generation_manifest_binds_local_model_artifact_bytes(tmp_path: Path) -> None:
+    spec = GenerationSpec(
+        model="Qwen/Qwen3-4B",
+        revision="1cfa9a7208912126459214e8b04321603b3df60c",
+        temperature=0.7,
+        top_p=0.8,
+        max_new_tokens=512,
+        samples_per_prompt=16,
+        seed=17,
+    )
+    artifact = tmp_path / "adapter"
+    artifact.mkdir()
+    (artifact / "adapter_config.json").write_text('{"rank":16}\n', encoding="utf-8")
+    weights = artifact / "adapter_model.safetensors"
+    weights.write_bytes(b"first-weights")
+    (artifact / "run_metadata.json").write_text('{"note":"ignored"}\n', encoding="utf-8")
+    first_identity = model_artifact_identity(artifact)
+    (artifact / "run_metadata.json").write_text('{"note":"changed"}\n', encoding="utf-8")
+    assert model_artifact_identity(artifact) == first_identity
+
+    input_path = tmp_path / "prompts.jsonl"
+    input_path.write_text('{"id":"p1","student_prompt":"first"}\n', encoding="utf-8")
+    output_dir = tmp_path / "generation"
+    ensure_generation_run_manifest(
+        input_path=input_path,
+        output_dir=output_dir,
+        prompts=(Prompt(id="p1", text="first"),),
+        spec=spec,
+        served_artifact_identity=first_identity,
+    )
+    payload = json.loads(
+        (output_dir / "_metadata" / "run-manifest.json").read_text(encoding="utf-8")
+    )
+    assert payload["served_artifact_identity"] == first_identity
+
+    weights.write_bytes(b"second-weights")
+    second_identity = model_artifact_identity(artifact)
+    assert second_identity != first_identity
+    with pytest.raises(ValueError, match="changed"):
+        ensure_generation_run_manifest(
+            input_path=input_path,
+            output_dir=output_dir,
+            prompts=(Prompt(id="p1", text="first"),),
+            spec=spec,
+            served_artifact_identity=second_identity,
         )
 
 

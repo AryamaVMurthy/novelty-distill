@@ -9,6 +9,17 @@ def test_sglang_job_forwards_validated_model_dtype() -> None:
     assert '--dtype "${model_dtype}"' in script
 
 
+def test_sglang_job_binds_local_checkpoint_or_adapter_bytes() -> None:
+    script = Path("slurm/sglang_smoke.sbatch").read_text(encoding="utf-8")
+
+    assert "scripts/hash_model_artifact.py" in script
+    assert (
+        'artifact_identity_args=(--served-artifact-identity "${served_artifact_identity}")'
+        in script
+    )
+    assert script.count('"${artifact_identity_args[@]}"') == 3
+
+
 def test_distillm_matrix_evaluation_forces_bfloat16_serving() -> None:
     script = Path("slurm/submit_evaluation_matrix.sbatch").read_text(
         encoding="utf-8"

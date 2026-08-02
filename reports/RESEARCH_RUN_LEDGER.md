@@ -291,6 +291,12 @@ evaluation passes, and strict checkpoint preflight. The final CPU analysis requi
 evaluation artifacts, runs the frozen prompt-paired contrasts with per-metric Holm correction, and
 reports per-prompt favorable/tied/unfavorable directions over every declared clustering threshold.
 
+The final generation preflight also binds every local LoRA or full checkpoint to a streaming
+SHA-256 over inference-relevant configuration, tokenizer, index, and weight files. That identity is
+stored in the run manifest and must match on every resume, preventing shards from an older model at
+the same path from being silently reused. Remote A0/A1 model controls retain their already-frozen
+repository revisions and legacy manifests; no local artifact exists to hash for those runs.
+
 The registry contains 24 planned entries: four non-training controls, nineteen executable training
 variants, and E1. E1 is explicitly `fail_closed` because the pinned official OPSD implementation
 does not expose static-trajectory off-policy training. It is neither missing nor silently skipped,
