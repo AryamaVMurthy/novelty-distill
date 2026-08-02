@@ -98,6 +98,29 @@ def summarize_student_prompt(
     }
 
 
+def summarize_generation_diagnostics(
+    *,
+    finish_reasons: Iterable[str],
+    completion_tokens: Iterable[int],
+) -> dict[str, float | int]:
+    """Expose truncation and response-length confounds for one prompt."""
+
+    reasons = tuple(str(value) for value in finish_reasons)
+    tokens = tuple(int(value) for value in completion_tokens)
+    if not reasons or len(reasons) != len(tokens):
+        raise ValueError("finish reasons and token counts must have the same non-zero length")
+    if any(not reason for reason in reasons):
+        raise ValueError("finish reasons must be non-empty")
+    if any(value < 0 for value in tokens):
+        raise ValueError("completion token counts must be non-negative")
+    return {
+        "length_stop_rate": sum(reason == "length" for reason in reasons) / len(reasons),
+        "completion_tokens_mean": statistics.fmean(tokens),
+        "completion_tokens_median": statistics.median(tokens),
+        "completion_tokens_max": max(tokens),
+    }
+
+
 def _normalize(rows: tuple[tuple[float, ...], ...]) -> tuple[tuple[float, ...], ...]:
     normalized = []
     for row in rows:

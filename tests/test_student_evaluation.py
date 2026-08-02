@@ -2,6 +2,7 @@ import pytest
 
 from novelty_distill.evaluation.student_evaluation import (
     evaluate_joint_embeddings,
+    summarize_generation_diagnostics,
     summarize_student_prompt,
 )
 
@@ -74,3 +75,25 @@ def test_joint_embedding_evaluation_shares_cluster_labels_and_finds_training_nei
     assert summary["teacher_mode_precision"] == pytest.approx(0.5)
     assert summary["nearest_training_target_similarity_mean"] == pytest.approx(0.5, abs=1e-4)
     assert summary["nearest_training_target_similarity_max"] == pytest.approx(1.0, abs=1e-4)
+
+
+def test_generation_diagnostics_expose_length_stops_and_token_distribution() -> None:
+    diagnostics = summarize_generation_diagnostics(
+        finish_reasons=("stop", "length", "stop", "length"),
+        completion_tokens=(101, 512, 203, 512),
+    )
+
+    assert diagnostics == {
+        "length_stop_rate": 0.5,
+        "completion_tokens_mean": 332.0,
+        "completion_tokens_median": 357.5,
+        "completion_tokens_max": 512,
+    }
+
+
+def test_generation_diagnostics_reject_missing_usage() -> None:
+    with pytest.raises(ValueError, match="same non-zero length"):
+        summarize_generation_diagnostics(
+            finish_reasons=("stop", "length"),
+            completion_tokens=(100,),
+        )

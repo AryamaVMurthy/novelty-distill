@@ -14,7 +14,10 @@ from typing import Any
 import yaml
 
 from novelty_distill.evaluation.embeddings import embed_texts
-from novelty_distill.evaluation.student_evaluation import summarize_student_prompt
+from novelty_distill.evaluation.student_evaluation import (
+    summarize_generation_diagnostics,
+    summarize_student_prompt,
+)
 from novelty_distill.evaluation.teacher_annotation import cluster_cosine_embeddings
 
 
@@ -175,7 +178,7 @@ def main() -> None:
             labels = cluster_cosine_embeddings(
                 [*teacher_embeddings, *student_embeddings], threshold=threshold
             )
-            prompt_metrics[prompt_id] = summarize_student_prompt(
+            semantic_metrics = summarize_student_prompt(
                 teacher_clusters=labels[: args.samples_per_prompt],
                 student_clusters=labels[args.samples_per_prompt :],
                 student_quality_scores=(
@@ -186,6 +189,11 @@ def main() -> None:
                 ),
                 nearest_training_target_similarities=nearest_by_prompt[prompt_id],
             )
+            diagnostics = summarize_generation_diagnostics(
+                finish_reasons=(str(record["finish_reason"]) for record in student_records),
+                completion_tokens=(int(record["completion_tokens"]) for record in student_records),
+            )
+            prompt_metrics[prompt_id] = {**semantic_metrics, **diagnostics}
         metrics_by_threshold[f"{threshold:.3f}"] = prompt_metrics
 
     primary_key = f"{primary_threshold:.3f}"

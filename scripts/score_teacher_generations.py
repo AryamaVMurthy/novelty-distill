@@ -98,6 +98,8 @@ def main() -> None:
             "prompt_id": prompt_id,
             "sample_index": record.sample_index,
             "text": record.text,
+            "finish_reason": record.finish_reason,
+            "completion_tokens": record.completion_tokens,
             **quality.model_dump(mode="json"),
         }
 
@@ -113,7 +115,8 @@ def main() -> None:
             if output_path.exists():
                 existing = json.loads(output_path.read_text(encoding="utf-8"))
                 if (
-                    existing.get("prompt_id") != prompt_id
+                    existing.get("schema_version") != 2
+                    or existing.get("prompt_id") != prompt_id
                     or existing.get("text_hashes") != text_hashes
                     or existing.get("judge") != judge_spec.model_dump(mode="json")
                 ):
@@ -125,7 +128,7 @@ def main() -> None:
             _atomic_json(
                 output_path,
                 {
-                    "schema_version": 1,
+                    "schema_version": 2,
                     "prompt_id": prompt_id,
                     "text_hashes": text_hashes,
                     "judge": judge_spec.model_dump(mode="json"),
