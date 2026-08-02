@@ -7,7 +7,7 @@ input: data/tomato-open-train-1000.jsonl
 teacher_targets: data/teacher-targets.json
 raw_dir: data/distillm-main-model-smoke-l896/raw
 processed_dir: data/distillm-main-model-smoke-l896/processed
-output_dir: checkpoints/C3-main-model-smoke-l896
+output_dir: checkpoints/C3-main-model-smoke-l896-2gpu
 max_examples: 2
 dev_examples: 1
 max_steps: 1
@@ -15,5 +15,6 @@ batch_size: 1
 learning_rate: 0.000005
 max_length: 896
 max_prompt_length: 480
+num_gpus: 2
 skew_alpha: 0.1
 seed: 17

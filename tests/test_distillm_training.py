@@ -125,3 +125,20 @@ def test_distillm_commands_delegate_preprocessing_and_training_to_official_repo(
     )
     assert "--student-gen" in training
     assert training[training.index("--skew-alpha") + 1] == "0.1"
+
+
+def test_distillm_command_partitions_training_across_requested_gpus() -> None:
+    spec = _spec().model_copy(update={"num_gpus": 2})
+
+    training = build_distillm_training_command(
+        spec,
+        python_executable=Path("/env/bin/python"),
+        official_checkout=Path("/official/distillm"),
+        student_model_path=Path("/models/student"),
+        teacher_model_path=Path("/models/teacher"),
+        processed_dir=Path("/data/processed/qwen"),
+        output_dir=Path("/output"),
+    )
+
+    assert training[training.index("--nproc_per_node=2")] == "--nproc_per_node=2"
+    assert training[training.index("--n-gpu") + 1] == "2"

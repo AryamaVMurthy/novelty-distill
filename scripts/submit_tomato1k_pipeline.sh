@@ -76,16 +76,27 @@ cluster_job="$(
 )"
 
 training_job=""
+distillm_training_job=""
 if [[ "${submit_training}" == 1 ]]; then
   training_job="$(
     submit_job slurm/train_smoke.sbatch \
       --time=06:00:00 \
       --mem=128G \
-      --array=0-18%1 \
+      --array=0-11,13-18%1 \
+      --dependency="afterok:${cluster_job}" \
+      --export=ALL,BASELINE_MATRIX=tomato1k
+  )"
+  distillm_training_job="$(
+    submit_job slurm/train_smoke.sbatch \
+      --time=06:00:00 \
+      --mem=128G \
+      --gres=gpu:2 \
+      --array=12 \
       --dependency="afterok:${cluster_job}" \
       --export=ALL,BASELINE_MATRIX=tomato1k
   )"
 fi
 
-printf '{"generation_last":"%s","score_last":"%s","cluster":"%s","training":"%s"}\n' \
-  "${generation_job}" "${score_job}" "${cluster_job}" "${training_job}"
+printf '{"generation_last":"%s","score_last":"%s","cluster":"%s","training":"%s","distillm_training":"%s"}\n' \
+  "${generation_job}" "${score_job}" "${cluster_job}" "${training_job}" \
+  "${distillm_training_job}"

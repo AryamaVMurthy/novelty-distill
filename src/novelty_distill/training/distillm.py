@@ -47,6 +47,7 @@ class DistiLLMRunSpec(BaseModel):
     learning_rate: float = Field(gt=0)
     max_length: int = Field(gt=0)
     max_prompt_length: int = Field(gt=0)
+    num_gpus: int = Field(default=1, gt=0)
     skew_alpha: float = Field(gt=0, lt=1)
     seed: int = Field(ge=0)
 
@@ -138,7 +139,7 @@ def build_distillm_training_command(
         "torch.distributed.run",
         "--standalone",
         "--nnodes=1",
-        "--nproc_per_node=1",
+        f"--nproc_per_node={spec.num_gpus}",
         str(official_checkout / "finetune.py"),
         "--base-path",
         str(official_checkout),
@@ -155,7 +156,7 @@ def build_distillm_training_command(
         "--teacher-model-type",
         "qwen",
         "--n-gpu",
-        "1",
+        str(spec.num_gpus),
         "--data-dir",
         f"{processed_dir}{os.sep}",
         "--train-num",
@@ -368,6 +369,7 @@ def execute_distillm_training(
         "example_ids": [example.id for example in examples],
         "normalized_qwen_separators": sentinel_replacements,
         "max_steps": spec.max_steps,
+        "num_gpus": spec.num_gpus,
         "seed": spec.seed,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
