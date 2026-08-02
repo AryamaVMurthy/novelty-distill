@@ -22,9 +22,17 @@ student_score_id="${STUDENT_SCORE_ID:-}"
 score_namespace="${SCORE_NAMESPACE:-evaluation-scores}"
 target_name="${TARGET_NAME:-teacher-targets-tomato1k-v1.json}"
 output_name="${OUTPUT_NAME:-}"
+teacher_samples_per_prompt="${TEACHER_SAMPLES_PER_PROMPT:-16}"
+student_samples_per_prompt="${STUDENT_SAMPLES_PER_PROMPT:-16}"
 for value in "${teacher_score_id}" "${student_score_id}" "${score_namespace}" "${target_name}" "${output_name}"; do
   if [[ -z "${value}" || "${value}" == */* || "${value}" == *..* ]]; then
     echo "score IDs, namespace, target, and output names must be non-empty path-safe names" >&2
+    exit 2
+  fi
+done
+for value in "${teacher_samples_per_prompt}" "${student_samples_per_prompt}"; do
+  if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "teacher and student samples per prompt must be positive integers" >&2
     exit 2
   fi
 done
@@ -62,6 +70,7 @@ uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
   --training-targets "${scratch_root}/data/${target_name}" \
   --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
   --output "${scratch_root}/evaluations/tomato/${output_name}.json" \
-  --samples-per-prompt 16
+  --teacher-samples-per-prompt "${teacher_samples_per_prompt}" \
+  --student-samples-per-prompt "${student_samples_per_prompt}"
 
 test -s "${scratch_root}/evaluations/tomato/${output_name}.json"

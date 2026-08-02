@@ -84,6 +84,24 @@ teacher_eval_job="$(
 )"
 printf '{"baseline":"A1","evaluation":"%s"}\n' "${teacher_eval_job}"
 
+human_prepare_job="$(submit_job slurm/prepare_human_control.sbatch)"
+human_score_job="$(
+  submit_job \
+    --time=06:00:00 \
+    --dependency="afterok:${human_prepare_job}" \
+    --export="ALL,GENERATION_JOB_ID=A3-temporal-k1,GENERATION_NAME=evaluation-student,GENERATION_CONFIG=configs/generation/eval_historical.yaml,PROMPTS_PATH=${input_path},SCORE_NAMESPACE=${score_namespace},SCORE_CONCURRENCY=8" \
+    slurm/score_teacher.sbatch
+)"
+human_eval_job="$(
+  submit_job \
+    --time=06:00:00 \
+    --dependency="afterok:${teacher_score_job_id}:${human_score_job}:${target_job_id}" \
+    --export="ALL,TEACHER_SCORE_ID=${teacher_score_id},STUDENT_SCORE_ID=A3-temporal-k1,SCORE_NAMESPACE=${score_namespace},TARGET_NAME=${target_name},OUTPUT_NAME=A3-temporal-k1,TEACHER_SAMPLES_PER_PROMPT=16,STUDENT_SAMPLES_PER_PROMPT=1" \
+    slurm/evaluate_student.sbatch
+)"
+printf '{"baseline":"A3","prepare":"%s","score":"%s","evaluation":"%s"}\n' \
+  "${human_prepare_job}" "${human_score_job}" "${human_eval_job}"
+
 submit_chain() {
   local baseline_id="$1"
   local model_path="$2"
@@ -133,7 +151,7 @@ submit_chain C3 "${distillm_path}" configs/generation/eval_qwen3_4b.yaml
 evaluation_dependency="$(IFS=:; printf '%s' "${evaluation_jobs[*]}")"
 analysis_job="$(
   submit_job \
-    --dependency="afterok:${control_eval_job_id}:${teacher_eval_job}:${evaluation_dependency}" \
+    --dependency="afterok:${control_eval_job_id}:${teacher_eval_job}:${human_eval_job}:${evaluation_dependency}" \
     slurm/analyze_evaluation_matrix.sbatch
 )"
 printf '{"analysis":"%s","evaluations":%s}\n' \

@@ -29,6 +29,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--annotation-config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--samples-per-prompt", type=int, default=16)
+    parser.add_argument("--teacher-samples-per-prompt", type=int)
+    parser.add_argument("--student-samples-per-prompt", type=int)
     return parser.parse_args()
 
 
@@ -112,8 +114,12 @@ def main() -> None:
     args = parse_args()
     if args.samples_per_prompt <= 0:
         raise ValueError("samples per prompt must be positive")
-    teacher = _load_scores(args.teacher_score_dir, samples_per_prompt=args.samples_per_prompt)
-    student = _load_scores(args.student_score_dir, samples_per_prompt=args.samples_per_prompt)
+    teacher_samples = args.teacher_samples_per_prompt or args.samples_per_prompt
+    student_samples = args.student_samples_per_prompt or args.samples_per_prompt
+    if teacher_samples <= 0 or student_samples <= 0:
+        raise ValueError("teacher and student samples per prompt must be positive")
+    teacher = _load_scores(args.teacher_score_dir, samples_per_prompt=teacher_samples)
+    student = _load_scores(args.student_score_dir, samples_per_prompt=student_samples)
     if teacher.keys() != student.keys():
         missing_teacher = sorted(student.keys() - teacher.keys())
         missing_student = sorted(teacher.keys() - student.keys())
@@ -179,8 +185,8 @@ def main() -> None:
                 [*teacher_embeddings, *student_embeddings], threshold=threshold
             )
             semantic_metrics = summarize_student_prompt(
-                teacher_clusters=labels[: args.samples_per_prompt],
-                student_clusters=labels[args.samples_per_prompt :],
+                teacher_clusters=labels[:teacher_samples],
+                student_clusters=labels[teacher_samples:],
                 student_quality_scores=(
                     float(record["quality_score"]) for record in student_records
                 ),
@@ -201,7 +207,8 @@ def main() -> None:
     payload = {
         "schema_version": 1,
         "num_prompts": len(primary_metrics),
-        "samples_per_prompt": args.samples_per_prompt,
+        "teacher_samples_per_prompt": teacher_samples,
+        "student_samples_per_prompt": student_samples,
         "primary_cosine_threshold": primary_threshold,
         "embedding": {
             "model": annotation["embedding_model"],

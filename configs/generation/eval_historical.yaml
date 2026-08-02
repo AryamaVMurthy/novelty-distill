@@ -1,0 +1,15 @@
+model: historical-human-target
+revision: fcd201d92758a642465a7653b8055f3a04d5f439
+temperature: 0.0
+top_p: 1.0
+top_k: 1
+min_p: 0.0
+max_new_tokens: 512
+samples_per_prompt: 1
+seed: 0
+enable_thinking: false
+response_instruction: >-
+  Return only one hypothesis and its test plan in at most 300 words. Be specific about the
+  mechanism, how it differs from existing approaches, the intervention or experiment, measurable
+  outcomes, and what result would falsify the hypothesis. Do not add preambles or repeat the
+  research background.
