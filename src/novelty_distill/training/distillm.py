@@ -310,7 +310,11 @@ def distillm_epoch_plan(spec: DistiLLMRunSpec) -> dict[str, int]:
 
 
 def audit_distillm_log(
-    path: Path, *, expected_steps: int, loss_epsilon: float = 0.1
+    path: Path,
+    *,
+    expected_steps: int,
+    loss_epsilon: float = 0.1,
+    start_offset: int = 0,
 ) -> dict[str, object]:
     """Validate official progress and reconstruct its adaptive scheduler state."""
 
@@ -319,7 +323,8 @@ def audit_distillm_log(
     global_steps: list[int] = []
     validation_losses: list[float] = []
     logged_thresholds: list[float] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    run_log = path.read_bytes()[start_offset:].decode("utf-8")
+    for line in run_log.splitlines():
         if match := re.search(r"global iter:\s*(\d+)/\s*(\d+)", line):
             global_steps.append(int(match.group(1)))
         if line.startswith("dev |"):
@@ -528,6 +533,10 @@ def execute_distillm_training(
             f"normalized {sentinel_replacements} for {len(rows)} rows"
         )
     output_dir.mkdir(parents=True, exist_ok=True)
+    official_log_path = output_dir / "log.txt"
+    official_log_start = (
+        official_log_path.stat().st_size if official_log_path.is_file() else 0
+    )
     subprocess.run(
         build_distillm_training_command(
             spec,
@@ -544,7 +553,9 @@ def execute_distillm_training(
     )
     final_dir = _latest_distillm_checkpoint(output_dir)
     log_audit = audit_distillm_log(
-        output_dir / "log.txt", expected_steps=spec.max_steps
+        official_log_path,
+        expected_steps=spec.max_steps,
+        start_offset=official_log_start,
     )
 
     metadata: dict[str, object] = {

@@ -86,6 +86,26 @@ def test_distillm_log_audit_records_adaptive_threshold_trajectory(
     }
 
 
+def test_distillm_log_audit_ignores_preserved_previous_invocations(
+    tmp_path: Path,
+) -> None:
+    log_path = tmp_path / "log.txt"
+    old_log = "dev | avg_loss: 99.0 | {} | threshold: 0.9\n"
+    log_path.write_text(
+        old_log
+        + "dev | avg_loss: 1.0 | {} | threshold: 0.0\n"
+        + "train | global iter: 1/1 | loss: 0.5\n",
+        encoding="utf-8",
+    )
+
+    audit = audit_distillm_log(
+        log_path, expected_steps=1, start_offset=len(old_log.encode())
+    )
+
+    assert audit["validation_losses"] == [1.0]
+    assert audit["adaptive_thresholds"] == [0.0]
+
+
 def test_distillm_environment_pins_deepspeed_runtime_build_dependency() -> None:
     requirements = Path("environments/distillm.in").read_text(
         encoding="utf-8"
