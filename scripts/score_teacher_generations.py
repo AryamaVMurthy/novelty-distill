@@ -15,6 +15,7 @@ from typing import Any
 import httpx
 import yaml
 
+from novelty_distill.evaluation.score_shards import validate_score_shard
 from novelty_distill.evaluation.teacher_annotation import (
     JudgeSpec,
     build_quality_judge_payload,
@@ -112,15 +113,12 @@ def main() -> None:
                 raise ValueError(f"generation prompt {prompt_id} is absent from the prompt dataset")
             output_path = args.output_dir / generation_path.name
             text_hashes = [hashlib.sha256(record.text.encode()).hexdigest() for record in records]
-            if output_path.exists():
-                existing = json.loads(output_path.read_text(encoding="utf-8"))
-                if (
-                    existing.get("schema_version") != 2
-                    or existing.get("prompt_id") != prompt_id
-                    or existing.get("text_hashes") != text_hashes
-                    or existing.get("judge") != judge_spec.model_dump(mode="json")
-                ):
-                    raise ValueError(f"stale or incompatible score shard {output_path}")
+            if validate_score_shard(
+                output_path,
+                prompt_id=prompt_id,
+                text_hashes=text_hashes,
+                judge=judge_spec,
+            ):
                 completed += 1
                 continue
 

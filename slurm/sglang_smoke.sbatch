@@ -162,6 +162,26 @@ else
   fi
 fi
 
+if [[ -z "${calibration_config}" ]]; then
+  mkdir -p "${output_dir}"
+  head -n "${input_limit}" "${input}" >"${input_slice}"
+  set +e
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/check_generation_status.py" \
+    --input "${input_slice}" \
+    --output-dir "${output_dir}" \
+    --config "${repo_dir}/${generation_config}"
+  generation_status=$?
+  set -e
+  if [[ "${generation_status}" -eq 0 ]]; then
+    echo "stage=already_complete output=${output_dir}"
+    exit 0
+  fi
+  if [[ "${generation_status}" -ne 3 ]]; then
+    echo "generation preflight failed with status ${generation_status}" >&2
+    exit "${generation_status}"
+  fi
+fi
+
 server_args=(
   --model-path "${model_path}"
   --revision "${model_revision}"
@@ -208,8 +228,6 @@ if [[ -n "${calibration_config}" ]]; then
     --config "${repo_dir}/${calibration_config}" \
     --base-url "http://127.0.0.1:${port}"
 else
-  mkdir -p "${output_dir}"
-  head -n "${input_limit}" "${input}" >"${input_slice}"
   echo "stage=generate input=${input_slice} output=${output_dir}"
   "${venv_dir}/bin/python" "${repo_dir}/scripts/generate_sglang.py" \
     --input "${input_slice}" \

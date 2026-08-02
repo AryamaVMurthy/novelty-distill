@@ -26,6 +26,15 @@ input_path="${scratch_root}/data/tomato-open-test-1658.jsonl"
 model_revision="1cfa9a7208912126459214e8b04321603b3df60c"
 score_namespace="evaluation-scores"
 target_name="teacher-targets-tomato1k-v1.json"
+generation_passes="${GENERATION_PASSES:-3}"
+score_passes="${SCORE_PASSES:-2}"
+
+for value in "${generation_passes}" "${score_passes}"; do
+  if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
+    echo "GENERATION_PASSES and SCORE_PASSES must be positive integers" >&2
+    exit 2
+  fi
+done
 
 for job_id in "${teacher_score_job_id}" "${target_job_id}" "${control_eval_job_id}"; do
   if ! [[ "${job_id}" =~ ^[0-9]+$ ]]; then
@@ -113,18 +122,37 @@ submit_chain() {
     generation_export+=",LORA_NAME=student-adapter,LORA_PATH=${lora_path}"
   fi
 
-  local generation_job
-  generation_job="$(
-    submit_job --time=06:00:00 --export="${generation_export}" slurm/sglang_smoke.sbatch
-  )"
-  local score_job
-  score_job="$(
-    submit_job \
-      --time=06:00:00 \
-      --dependency="afterok:${generation_job}" \
-      --export="ALL,GENERATION_JOB_ID=${eval_id},GENERATION_NAME=evaluation-student,GENERATION_CONFIG=${generation_config},PROMPTS_PATH=${input_path},SCORE_NAMESPACE=${score_namespace},SCORE_CONCURRENCY=8" \
-      slurm/score_teacher.sbatch
-  )"
+  local generation_job=""
+  local pass_index
+  for pass_index in $(seq 1 "${generation_passes}"); do
+    local generation_dependency=()
+    if [[ -n "${generation_job}" ]]; then
+      generation_dependency=(--dependency="afterany:${generation_job}")
+    fi
+    generation_job="$(
+      submit_job \
+        --time=06:00:00 \
+        "${generation_dependency[@]}" \
+        --export="${generation_export}" \
+        slurm/sglang_smoke.sbatch
+    )"
+  done
+  local score_job=""
+  for pass_index in $(seq 1 "${score_passes}"); do
+    local score_dependency
+    if [[ -z "${score_job}" ]]; then
+      score_dependency="afterok:${generation_job}"
+    else
+      score_dependency="afterany:${score_job}"
+    fi
+    score_job="$(
+      submit_job \
+        --time=06:00:00 \
+        --dependency="${score_dependency}" \
+        --export="ALL,GENERATION_JOB_ID=${eval_id},GENERATION_NAME=evaluation-student,GENERATION_CONFIG=${generation_config},PROMPTS_PATH=${input_path},SCORE_NAMESPACE=${score_namespace},SCORE_CONCURRENCY=8" \
+        slurm/score_teacher.sbatch
+    )"
+  done
   local evaluation_job
   evaluation_job="$(
     submit_job \
@@ -134,8 +162,9 @@ submit_chain() {
       slurm/evaluate_student.sbatch
   )"
   evaluation_jobs+=("${evaluation_job}")
-  printf '{"baseline":"%s","generation":"%s","score":"%s","evaluation":"%s"}\n' \
-    "${baseline_id}" "${generation_job}" "${score_job}" "${evaluation_job}"
+  printf '{"baseline":"%s","generation_final":"%s","generation_passes":%s,"score_final":"%s","score_passes":%s,"evaluation":"%s"}\n' \
+    "${baseline_id}" "${generation_job}" "${generation_passes}" "${score_job}" \
+    "${score_passes}" "${evaluation_job}"
 }
 
 for baseline_id in "${adapter_ids[@]}"; do

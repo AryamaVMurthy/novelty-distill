@@ -92,6 +92,27 @@ flock -u 9
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
+if [[ -z "${calibration_run_id}" ]]; then
+  generation_dir="${scratch_root}/generations/${generation_name}/${generation_job_id}"
+  score_dir="${scratch_root}/${score_namespace}/${generation_job_id}"
+  set +e
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/check_score_status.py" \
+    --generation-dir "${generation_dir}" \
+    --generation-config "${generation_config}" \
+    --output-dir "${score_dir}" \
+    --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
+  score_status=$?
+  set -e
+  if [[ "${score_status}" -eq 0 ]]; then
+    echo "stage=already_complete output=${score_dir}"
+    exit 0
+  fi
+  if [[ "${score_status}" -ne 3 ]]; then
+    echo "score preflight failed with status ${score_status}" >&2
+    exit "${score_status}"
+  fi
+fi
+
 "${venv_dir}/bin/python" -m sglang.launch_server \
   --model-path "${judge_model}" \
   --revision "${judge_revision}" \
