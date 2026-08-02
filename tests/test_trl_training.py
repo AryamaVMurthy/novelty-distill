@@ -147,3 +147,11 @@ def test_baseline_override_can_name_a_non_smoke_run() -> None:
     )
 
     assert spec.output_dir == Path("checkpoints/B2b-tomato1k-seed17")
+
+
+def test_research_run_checkpoints_before_the_six_hour_boundary() -> None:
+    sft = load_trl_run_spec(Path("configs/training/sft_tomato1k.yaml"))
+    gkd = load_trl_run_spec(Path("configs/training/gkd_tomato1k.yaml"))
+
+    assert sft.save_steps == 25
+    assert gkd.save_steps == 25

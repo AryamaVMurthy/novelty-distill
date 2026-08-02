@@ -88,3 +88,9 @@ def test_opsd_smoke_config_can_select_each_supported_ablation() -> None:
     assert override_opsd_baseline(
         base, "E2", run_suffix="tomato1k-seed17"
     ).output_dir == Path("checkpoints/E2-tomato1k-seed17")
+
+
+def test_opsd_research_run_checkpoints_before_the_six_hour_boundary() -> None:
+    spec = load_opsd_run_spec(Path("configs/training/opsd_tomato1k.yaml"))
+
+    assert spec.save_steps == 25

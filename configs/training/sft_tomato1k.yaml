@@ -6,6 +6,7 @@ input: data/tomato-open-train-1000.jsonl
 output_dir: checkpoints/B1-tomato1k-seed17
 max_examples: 1000
 max_steps: 125
+save_steps: 25
 per_device_train_batch_size: 1
 gradient_accumulation_steps: 8
 learning_rate: 0.00002

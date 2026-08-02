@@ -37,6 +37,7 @@ class TRLRunSpec(BaseModel):
     output_dir: Path
     max_examples: int = Field(gt=0)
     max_steps: int = Field(gt=0)
+    save_steps: int | None = Field(default=None, gt=0)
     per_device_train_batch_size: int = Field(gt=0)
     gradient_accumulation_steps: int = Field(gt=0)
     learning_rate: float = Field(gt=0)
@@ -54,6 +55,8 @@ class TRLRunSpec(BaseModel):
     def teacher_fields_are_paired(self) -> "TRLRunSpec":
         if (self.teacher_model is None) != (self.teacher_revision is None):
             raise ValueError("teacher_model and teacher_revision must be set together")
+        if self.save_steps is not None and self.save_steps > self.max_steps:
+            raise ValueError("save_steps cannot exceed max_steps")
         return self
 
 
@@ -228,7 +231,7 @@ def execute_trl_training(
         "bf16": True,
         "logging_steps": 1,
         "save_strategy": "steps",
-        "save_steps": spec.max_steps,
+        "save_steps": spec.save_steps or spec.max_steps,
         "save_total_limit": 2,
         "report_to": "none",
         "seed": spec.seed,
@@ -332,6 +335,7 @@ def execute_trl_training(
             * spec.gradient_accumulation_steps
         ),
         "max_steps": spec.max_steps,
+        "save_steps": spec.save_steps or spec.max_steps,
         "seed": spec.seed,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),

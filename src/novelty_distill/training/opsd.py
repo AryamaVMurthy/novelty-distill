@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from novelty_distill.config import BaselineConfig
 from novelty_distill.data.tomato import CanonicalExample
@@ -29,6 +29,7 @@ class OPSDRunSpec(BaseModel):
     output_dir: Path
     max_examples: int = Field(gt=0)
     max_steps: int = Field(gt=0)
+    save_steps: int | None = Field(default=None, gt=0)
     per_device_train_batch_size: int = Field(gt=0)
     gradient_accumulation_steps: int = Field(gt=0)
     learning_rate: float = Field(gt=0)
@@ -45,6 +46,12 @@ class OPSDRunSpec(BaseModel):
     student_thinking: bool
     teacher_thinking: bool
     seed: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def save_cadence_is_bounded(self) -> "OPSDRunSpec":
+        if self.save_steps is not None and self.save_steps > self.max_steps:
+            raise ValueError("save_steps cannot exceed max_steps")
+        return self
 
 
 def load_opsd_run_spec(path: Path) -> OPSDRunSpec:
@@ -230,7 +237,7 @@ def execute_opsd_training(
         bf16=True,
         logging_steps=1,
         save_strategy="steps",
-        save_steps=spec.max_steps,
+        save_steps=spec.save_steps or spec.max_steps,
         save_total_limit=2,
         report_to="none",
         seed=spec.seed,
@@ -297,6 +304,7 @@ def execute_opsd_training(
             * spec.gradient_accumulation_steps
         ),
         "max_steps": spec.max_steps,
+        "save_steps": spec.save_steps or spec.max_steps,
         "seed": spec.seed,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
