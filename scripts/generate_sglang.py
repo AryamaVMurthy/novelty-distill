@@ -44,7 +44,10 @@ def main() -> None:
         spec=spec,
     )
     remaining = pending_prompts(prompts, args.output_dir, spec)
-    print(json.dumps({"total": len(prompts), "pending": len(remaining)}, sort_keys=True))
+    print(
+        json.dumps({"total": len(prompts), "pending": len(remaining)}, sort_keys=True),
+        flush=True,
+    )
 
     def run(prompt: Prompt) -> str:
         generate_prompt(
@@ -59,7 +62,10 @@ def main() -> None:
     with ThreadPoolExecutor(max_workers=args.concurrency) as executor:
         for completed, _prompt_id in enumerate(executor.map(run, remaining), start=1):
             if completed % 10 == 0 or completed == len(remaining):
-                print(json.dumps({"completed": completed, "pending_at_start": len(remaining)}))
+                print(
+                    json.dumps({"completed": completed, "pending_at_start": len(remaining)}),
+                    flush=True,
+                )
 
 
 if __name__ == "__main__":

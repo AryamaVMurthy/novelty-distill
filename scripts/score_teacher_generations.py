@@ -134,7 +134,10 @@ def main() -> None:
                 },
             )
             completed += 1
-            print(json.dumps({"scored_prompt": prompt_id, "completed": completed}, sort_keys=True))
+            print(
+                json.dumps({"scored_prompt": prompt_id, "completed": completed}, sort_keys=True),
+                flush=True,
+            )
     if completed == 0:
         raise ValueError(f"no generation shards found in {args.generation_dir}")
 
