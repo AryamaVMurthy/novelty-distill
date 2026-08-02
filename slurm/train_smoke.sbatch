@@ -188,6 +188,26 @@ fi
 uv pip sync --python "${venv_dir}/bin/python" "${environment_lock}"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 
+if [[ -n "${BASELINE_ID:-}" ]] && [[ "${training_backend}" == "trl" || "${training_backend}" == "opsd" ]]; then
+  metadata_path="${scratch_root}/checkpoints/${BASELINE_ID}-${run_suffix}/run_metadata.json"
+  max_steps="$(${venv_dir}/bin/python -c 'import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))["max_steps"])' "${config_path}")"
+  set +e
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/check_training_status.py" \
+    --metadata "${metadata_path}" \
+    --baseline-id "${BASELINE_ID}" \
+    --max-steps "${max_steps}"
+  training_status=$?
+  set -e
+  if [[ "${training_status}" -eq 0 ]]; then
+    echo "stage=already_complete output=${metadata_path}"
+    exit 0
+  fi
+  if [[ "${training_status}" -ne 3 ]]; then
+    echo "training preflight failed with status ${training_status}" >&2
+    exit "${training_status}"
+  fi
+fi
+
 echo "job_id=${SLURM_JOB_ID}"
 echo "host=$(hostname)"
 echo "git_commit=${NOVELTY_GIT_COMMIT}"
