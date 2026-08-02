@@ -18,16 +18,18 @@ reported as a sensitivity analysis.
 |---|---|---|
 | B2a/B2b/B2c versus B3 | Training on four reusable teacher responses should recover more teacher modes than any single-response selection. Best-1 may raise quality while increasing training-target similarity. | No ModeRecall or cluster-count gain for B3 across the threshold curve. |
 | B3 versus B4 | With identical diverse-4 rows, GEM should reduce SFT overfitting and retain more generation diversity than cross-entropy SFT. | B4 has no coverage/JSD advantage, or gains only lexical uniqueness without semantic modes. |
-| C1 versus C2 | Forward KL is expected to be more mode-covering; reverse KL is expected to be more mode-seeking, potentially trading recall for precision/quality. | Reverse KL improves recall and JSD without a precision/quality trade-off, or forward KL is more collapsed. |
+| C1 versus C2 | As a finite-step heuristic, forward KL may emphasize teacher-head coverage while reverse KL may be more selective, potentially trading recall for precision/quality. The direction is exploratory rather than a consequence guaranteed by KL geometry. | Reverse KL improves recall and JSD without a precision/quality trade-off, or forward KL is more collapsed. |
 | C1 static versus D1 on-policy | Student rollouts should reduce train/inference exposure mismatch, improving test quality or teacher-distribution alignment. | D1 fails to improve quality/JSD and merely increases training-target similarity. |
 | D1 versus D2 versus D3 | Generalized JSD should lie between forward- and reverse-KL behavior; the direction and size are empirical. | A result at only one clustering threshold is not sufficient evidence. |
 | C3 versus C1/C2 | DistiLLM's skew loss and adaptive replay may offer a better efficiency/quality compromise, but its shorter hardware-feasible context is a confound that must be reported. | Any comparison that hides truncation or unequal effective examples is invalid. |
 | E2 versus E4 | Privileged historical hypotheses/inspirations should make the self-teacher's token feedback more useful, increasing quality/feasibility. | E2 matches E4 or only copies training targets more closely. |
 | E2 versus E3 | Reverse-KL OPSD may be more selective and mode-seeking than forward-KL OPSD. | E3 increases coverage robustly without the expected selectivity trade-off. |
 
-The forward/reverse-KL prediction is an inference from divergence geometry and the MiniLLM/GKD
-literature; it is not assumed to hold automatically at the sequence-semantic level. GKD motivates
-the exposure-mismatch contrast, GEM directly motivates the B3/B4 isolation, DistiLLM motivates the
+The forward/reverse-KL prediction is a finite-optimization heuristic motivated by the MiniLLM/GKD
+literature; it is not assumed to hold automatically at the sequence-semantic level. Wu et al.
+specifically challenge a blanket mode-seeking/mode-covering interpretation for LLM distillation and
+find different early emphasis on distribution tails versus heads instead. GKD motivates the
+exposure-mismatch contrast, GEM directly motivates the B3/B4 isolation, DistiLLM motivates the
 skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context comparison.
 
 ## Analysis rules
@@ -65,6 +67,10 @@ any central semantic-coverage claim.
   <https://proceedings.iclr.cc/paper_files/paper/2024/file/5be69a584901a26c521c2b51e40a4c20-Paper-Conference.pdf>
 - Gu et al., *MiniLLM: Knowledge Distillation of Large Language Models*, ICLR 2024:
   <https://proceedings.iclr.cc/paper_files/paper/2024/hash/8ac015d409635f196f9e3e9dcfb9a94e-Abstract-Conference.html>
+- Wu et al., *Rethinking Kullback-Leibler Divergence in Knowledge Distillation for Large Language
+  Models*, COLING 2025: <https://aclanthology.org/2025.coling-main.383/>
+- Le Bronnec et al., *Exploring Precision and Recall to Assess the Quality and Diversity of LLMs*,
+  ACL 2024: <https://aclanthology.org/2024.acl-long.616/>
 - Li et al., *Preserving Diversity in Supervised Fine-Tuning of Large Language Models*, ICLR 2025:
   <https://openreview.net/forum?id=NQEe7B7bSw>
 - Ko et al., *DistiLLM: Towards Streamlined Distillation for Large Language Models*, ICML 2024:

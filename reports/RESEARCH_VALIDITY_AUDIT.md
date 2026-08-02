@@ -42,6 +42,16 @@ not a results report and does not promote any baseline.
    its ablations support literature grounding rather than standalone rubric judging. This study has
    no frozen retrieval corpus for the temporal test, so literature novelty remains outside the
    automated claim boundary instead of being improvised after results are visible.
+9. KL direction does not guarantee a mode-level result in practical LLM distillation. Wu et al.
+   challenge the common claim that reverse KL is inherently mode-seeking and forward KL inherently
+   mean-seeking in this setting; they instead identify different early emphasis on distribution
+   tails and heads before eventual convergence. Consequently, C1-versus-C2 is a matched finite-step
+   empirical contrast, not a proof of KL geometry from the sign of ModeRecall or ModePrecision.
+10. Quality and diversity can trade off under instruction tuning and preference optimization.
+    Le Bronnec et al. adapt distributional precision and recall to open-ended language generation
+    and report this trade-off empirically. That supports retaining teacher-mode precision, recall,
+    judge quality, and feasibility as separate outcomes rather than selecting a winner from one
+    aggregate score.
 
 ## Consequences for this study
 
@@ -79,3 +89,7 @@ not a results report and does not promote any baseline.
   <https://aclanthology.org/2025.acl-long.1181/>
 - Shahid et al., *Literature-Grounded Novelty Assessment of Scientific Ideas*, SDP 2025:
   <https://aclanthology.org/2025.sdp-1.9/>
+- Wu et al., *Rethinking Kullback-Leibler Divergence in Knowledge Distillation for Large Language
+  Models*, COLING 2025: <https://aclanthology.org/2025.coling-main.383/>
+- Le Bronnec et al., *Exploring Precision and Recall to Assess the Quality and Diversity of LLMs*,
+  ACL 2024: <https://aclanthology.org/2024.acl-long.616/>
