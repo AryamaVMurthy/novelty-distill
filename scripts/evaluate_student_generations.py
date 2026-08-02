@@ -219,6 +219,7 @@ def main() -> None:
         },
         "overall": _mean_metrics(primary_metrics),
         "prompt_metrics": primary_metrics,
+        "prompt_metrics_by_threshold": metrics_by_threshold,
         "threshold_sensitivity": {
             threshold: _mean_metrics(prompt_metrics)
             for threshold, prompt_metrics in metrics_by_threshold.items()
