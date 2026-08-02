@@ -29,6 +29,7 @@ output_name="${OUTPUT_NAME:-sglang-smoke}"
 output_run_id="${OUTPUT_RUN_ID:-${SLURM_JOB_ID}}"
 generation_concurrency="${GENERATION_CONCURRENCY:-1}"
 disable_cuda_graph="${DISABLE_CUDA_GRAPH:-0}"
+deterministic_inference="${DETERMINISTIC_INFERENCE:-1}"
 lora_name="${LORA_NAME:-}"
 lora_path="${LORA_PATH:-}"
 calibration_config="${CALIBRATION_CONFIG:-}"
@@ -47,6 +48,10 @@ if ! [[ "${generation_concurrency}" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if [[ "${disable_cuda_graph}" != 0 && "${disable_cuda_graph}" != 1 ]]; then
   echo "DISABLE_CUDA_GRAPH must be 0 or 1" >&2
+  exit 2
+fi
+if [[ "${deterministic_inference}" != 0 && "${deterministic_inference}" != 1 ]]; then
+  echo "DETERMINISTIC_INFERENCE must be 0 or 1" >&2
   exit 2
 fi
 if [[ "${output_name}" == */* || "${output_name}" == *..* || "${output_run_id}" == */* || "${output_run_id}" == *..* ]]; then
@@ -195,8 +200,10 @@ server_args=(
   --port "${port}"
   --mem-fraction-static 0.75
   --disable-piecewise-cuda-graph
-  --enable-deterministic-inference
 )
+if [[ "${deterministic_inference}" == 1 ]]; then
+  server_args+=(--enable-deterministic-inference)
+fi
 if [[ "${disable_cuda_graph}" == 1 ]]; then
   server_args+=(--disable-cuda-graph)
 fi
