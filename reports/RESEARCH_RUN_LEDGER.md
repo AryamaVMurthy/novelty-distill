@@ -73,7 +73,7 @@ requires C3 success before evaluation fan-out.
 Controller 18125 replaces pending controller 18120, whose immutable export still named cancelled
 cluster job 18039. Its internal target dependency is validation gate 18122. It submits A1 and
 historical A3 controls plus 19 trained model chains. Each trained
-model chain has three resumable generation passes, two resumable judge passes, two cached joint
+model chain has three resumable generation passes, two resumable judge passes, two cached anchored
 evaluation passes, and strict checkpoint preflight. The final CPU analysis requires all aligned evaluation artifacts,
 runs the frozen prompt-paired contrasts with per-metric Holm correction, and reports per-prompt
 favorable/tied/unfavorable directions over every declared clustering threshold.

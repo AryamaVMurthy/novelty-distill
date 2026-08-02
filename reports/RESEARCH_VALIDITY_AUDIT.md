@@ -59,8 +59,10 @@ not a results report and does not promote any baseline.
 - K=16 samples are repeated observations within a prompt; prompt is the statistical unit.
 - Quality, feasibility, ModeRecall, ModePrecision, ClusterJSD, and quality-adjusted coverage remain
   separate outcomes. No unique-string or single-threshold result is called semantic diversity.
-- Teacher and student samples are embedded and clustered jointly, with the complete 0.70--0.95
-  threshold curve retained.
+- Teacher samples are clustered first and their partition is frozen across methods. Students are
+  assigned to the nearest qualifying teacher mode, while unmatched students are clustered into
+  separately named novel modes. This avoids method-dependent teacher-mode merging through student
+  bridge samples; the complete 0.70--0.95 threshold curve is still retained.
 - Finish reasons and completion-token diagnostics are preserved beside every score so truncation
   cannot masquerade as a method effect.
 - Raw prompt-level metrics and all eight training-teacher samples are retained for reannotation.

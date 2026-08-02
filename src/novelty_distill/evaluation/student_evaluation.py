@@ -1,4 +1,4 @@
-"""Prompt-level metrics comparing student samples with jointly clustered teacher samples."""
+"""Prompt-level metrics comparing student samples with teacher-anchored semantic modes."""
 
 import math
 import statistics
@@ -24,7 +24,7 @@ def evaluate_joint_embeddings(
     student_feasibility_scores: Iterable[int],
     threshold: float,
 ) -> dict[str, Any]:
-    """Cluster teacher/student samples jointly and compute training-set proximity."""
+    """Anchor student samples to fixed teacher modes and compute training-set proximity."""
 
     teacher = tuple(tuple(float(value) for value in row) for row in teacher_embeddings)
     student = tuple(tuple(float(value) for value in row) for row in student_embeddings)
@@ -39,20 +39,61 @@ def evaluate_joint_embeddings(
     }
     if len(dimensions) != 1:
         raise ValueError("all embeddings must share one dimension")
-    labels = cluster_cosine_embeddings(
-        (*normalized_teacher, *normalized_student), threshold=threshold
+    teacher_labels, student_labels = anchor_student_clusters(
+        teacher_embeddings=normalized_teacher,
+        student_embeddings=normalized_student,
+        threshold=threshold,
     )
     nearest = tuple(
         max(_dot(embedding, target) for target in normalized_targets)
         for embedding in normalized_student
     )
     return summarize_student_prompt(
-        teacher_clusters=labels[: len(normalized_teacher)],
-        student_clusters=labels[len(normalized_teacher) :],
+        teacher_clusters=teacher_labels,
+        student_clusters=student_labels,
         student_quality_scores=student_quality_scores,
         student_feasibility_scores=student_feasibility_scores,
         nearest_training_target_similarities=nearest,
     )
+
+
+def anchor_student_clusters(
+    *,
+    teacher_embeddings: Iterable[Iterable[float]],
+    student_embeddings: Iterable[Iterable[float]],
+    threshold: float,
+) -> tuple[tuple[str, ...], tuple[str, ...]]:
+    """Freeze teacher modes, then assign students without letting them merge those modes."""
+
+    teacher = _normalize(
+        tuple(tuple(float(value) for value in row) for row in teacher_embeddings)
+    )
+    student = _normalize(
+        tuple(tuple(float(value) for value in row) for row in student_embeddings)
+    )
+    if not teacher or not student:
+        raise ValueError("teacher and student embeddings must both be non-empty")
+    if len({len(row) for row in (*teacher, *student)}) != 1:
+        raise ValueError("teacher and student embeddings must share one dimension")
+    teacher_labels = cluster_cosine_embeddings(teacher, threshold=threshold)
+    student_labels = [""] * len(student)
+    unmatched_indices: list[int] = []
+    for student_index, embedding in enumerate(student):
+        similarities = tuple(_dot(embedding, target) for target in teacher)
+        nearest_index = max(range(len(teacher)), key=lambda index: similarities[index])
+        if similarities[nearest_index] >= threshold:
+            student_labels[student_index] = teacher_labels[nearest_index]
+        else:
+            unmatched_indices.append(student_index)
+    if unmatched_indices:
+        novel_labels = cluster_cosine_embeddings(
+            tuple(student[index] for index in unmatched_indices), threshold=threshold
+        )
+        for student_index, novel_label in zip(
+            unmatched_indices, novel_labels, strict=True
+        ):
+            student_labels[student_index] = f"student-novel-{novel_label.removeprefix('cluster-')}"
+    return teacher_labels, tuple(student_labels)
 
 
 def summarize_student_prompt(
@@ -63,7 +104,7 @@ def summarize_student_prompt(
     student_feasibility_scores: Iterable[int],
     nearest_training_target_similarities: Iterable[float],
 ) -> dict[str, Any]:
-    """Summarize one prompt after assigning teacher and student joint cluster labels."""
+    """Summarize one prompt after assigning teacher-anchored student cluster labels."""
 
     teacher = tuple(teacher_clusters)
     student = tuple(student_clusters)

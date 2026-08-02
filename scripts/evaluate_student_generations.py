@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate judged student samples against jointly clustered teacher samples."""
+"""Evaluate judged student samples against fixed teacher-anchored semantic modes."""
 
 import argparse
 import hashlib
@@ -19,11 +19,11 @@ from novelty_distill.evaluation.embeddings import (
 )
 from novelty_distill.evaluation.score_shards import load_score_shard
 from novelty_distill.evaluation.student_evaluation import (
+    anchor_student_clusters,
     summarize_generation_diagnostics,
     summarize_quality_dimensions,
     summarize_student_prompt,
 )
-from novelty_distill.evaluation.teacher_annotation import cluster_cosine_embeddings
 
 
 def parse_args() -> argparse.Namespace:
@@ -183,12 +183,14 @@ def main() -> None:
             student_embeddings = [
                 embedding_by_text[str(record["text"])] for record in student_records
             ]
-            labels = cluster_cosine_embeddings(
-                [*teacher_embeddings, *student_embeddings], threshold=threshold
+            teacher_labels, student_labels = anchor_student_clusters(
+                teacher_embeddings=teacher_embeddings,
+                student_embeddings=student_embeddings,
+                threshold=threshold,
             )
             semantic_metrics = summarize_student_prompt(
-                teacher_clusters=labels[:teacher_samples],
-                student_clusters=labels[teacher_samples:],
+                teacher_clusters=teacher_labels,
+                student_clusters=student_labels,
                 student_quality_scores=(
                     float(record["quality_score"]) for record in student_records
                 ),
@@ -219,6 +221,12 @@ def main() -> None:
         "teacher_samples_per_prompt": teacher_samples,
         "student_samples_per_prompt": student_samples,
         "primary_cosine_threshold": primary_threshold,
+        "semantic_clustering": {
+            "teacher_partition": "connected_components",
+            "student_assignment": "nearest_teacher_if_cosine_at_least_threshold",
+            "unmatched_student_partition": "connected_components",
+            "teacher_modes_are_fixed_across_methods": True,
+        },
         "embedding": {
             "model": annotation["embedding_model"],
             "revision": annotation["embedding_revision"],

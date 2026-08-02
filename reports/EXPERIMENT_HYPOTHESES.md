@@ -7,10 +7,12 @@ It distinguishes predictions motivated by prior work from findings produced by t
 
 All comparisons use the same temporal-test prompt IDs and K=16 generation controls. The primary
 prompt-level outcomes are judge quality and feasibility, teacher ModeRecall@16, ModePrecision@16,
-ClusterJSD, quality-adjusted coverage, and nearest-training-target similarity. Semantic labels are
-assigned by clustering each teacher/student sample set jointly; independently numbered clusters
-are not comparable. The declared cosine threshold is 0.82, with the complete 0.70--0.95 curve
-reported as a sensitivity analysis.
+ClusterJSD, quality-adjusted coverage, and nearest-training-target similarity. Teacher samples are
+clustered first to freeze one teacher-mode partition per prompt. Student samples join their nearest
+teacher mode only when cosine similarity reaches the threshold; unmatched students are clustered
+as novel student modes. This prevents a student bridge from merging teacher modes differently by
+method. The declared cosine threshold is 0.82, with the complete 0.70--0.95 curve reported as a
+sensitivity analysis.
 
 ## Pre-run predictions
 

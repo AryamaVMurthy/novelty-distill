@@ -1,6 +1,7 @@
 import pytest
 
 from novelty_distill.evaluation.student_evaluation import (
+    anchor_student_clusters,
     evaluate_joint_embeddings,
     summarize_generation_diagnostics,
     summarize_quality_dimensions,
@@ -76,6 +77,17 @@ def test_joint_embedding_evaluation_shares_cluster_labels_and_finds_training_nei
     assert summary["teacher_mode_precision"] == pytest.approx(0.5)
     assert summary["nearest_training_target_similarity_mean"] == pytest.approx(0.5, abs=1e-4)
     assert summary["nearest_training_target_similarity_max"] == pytest.approx(1.0, abs=1e-4)
+
+
+def test_teacher_anchoring_prevents_student_bridge_from_merging_teacher_modes() -> None:
+    teacher, student = anchor_student_clusters(
+        teacher_embeddings=((1.0, 0.0), (0.0, 1.0)),
+        student_embeddings=((2**-0.5, 2**-0.5),),
+        threshold=0.7,
+    )
+
+    assert teacher == ("cluster-000", "cluster-001")
+    assert student == ("cluster-000",)
 
 
 def test_generation_diagnostics_expose_length_stops_and_token_distribution() -> None:
