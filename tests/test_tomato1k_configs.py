@@ -47,3 +47,16 @@ def test_tomato1k_configs_share_main_models_data_size_and_optimizer_budget() -> 
     }
     assert effective_examples == {1000}
     assert {sft.seed, gkd.seed, opsd.seed, gem.seed, distillm.seed} == {17}
+
+
+def test_main_model_smokes_exercise_the_memory_heavy_backends() -> None:
+    gkd = load_trl_run_spec(Path("configs/training/gkd_main_model_smoke.yaml"))
+    opsd = load_opsd_run_spec(Path("configs/training/opsd_main_model_smoke.yaml"))
+    distillm = load_distillm_run_spec(
+        Path("configs/training/distillm_main_model_smoke.yaml")
+    )
+
+    assert gkd.model == opsd.model == distillm.student_model == STUDENT
+    assert gkd.teacher_model == distillm.teacher_model == TEACHER
+    assert gkd.max_new_tokens == opsd.max_completion_length == 512
+    assert gkd.max_steps == opsd.max_steps == distillm.max_steps == 1
