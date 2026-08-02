@@ -4,10 +4,38 @@ from novelty_distill.config import load_baseline_registry
 from novelty_distill.data.tomato import prepare_tomato_record
 from novelty_distill.training.trl import (
     build_trl_rows,
+    encode_prompt_preserving_chatml_example,
     load_canonical_examples,
     load_trl_run_spec,
     override_trl_baseline,
 )
+
+
+def test_gkd_collator_preserves_prompt_and_truncates_completion_tail() -> None:
+    class CharacterTokenizer:
+        def apply_chat_template(self, messages, **kwargs):
+            assert kwargs["tokenize"] is False
+            return "PP" if len(messages) == 1 else "PPabcdefgh"
+
+        def __call__(self, text, **kwargs):
+            assert kwargs["add_special_tokens"] is False
+            return {"input_ids": [ord(character) for character in text]}
+
+    encoded = encode_prompt_preserving_chatml_example(
+        {
+            "messages": [
+                {"role": "user", "content": "problem"},
+                {"role": "assistant", "content": "long completion"},
+            ]
+        },
+        tokenizer=CharacterTokenizer(),
+        max_length=6,
+    )
+
+    assert encoded["prompt_ids"] == [ord("P"), ord("P")]
+    assert encoded["input_ids"] == [ord(char) for char in "PPabcd"]
+    assert encoded["labels"] == [-100, -100, *[ord(char) for char in "abcd"]]
+    assert encoded["truncated_completion_tokens"] == 4
 
 
 def test_human_sft_uses_canonical_human_target_as_completion() -> None:

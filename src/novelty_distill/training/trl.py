@@ -4,7 +4,7 @@ import json
 import os
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -155,6 +155,110 @@ def build_trl_rows(
     return tuple(rows)
 
 
+def encode_prompt_preserving_chatml_example(
+    example: Mapping[str, Any], *, tokenizer: Any, max_length: int
+) -> dict[str, list[int] | int]:
+    """Encode ChatML while preserving the full prompt and completion prefix."""
+
+    messages = example.get("messages")
+    if not isinstance(messages, list) or len(messages) < 2:
+        raise ValueError("GKD examples require at least user and assistant messages")
+    formatted_prompt = tokenizer.apply_chat_template(
+        messages[:-1], tokenize=False, add_generation_prompt=True
+    )
+    formatted_message = tokenizer.apply_chat_template(
+        messages, tokenize=False, add_generation_prompt=False
+    )
+    prompt_ids = list(
+        tokenizer(
+            formatted_prompt,
+            truncation=False,
+            padding=False,
+            add_special_tokens=False,
+        )["input_ids"]
+    )
+    message_ids = list(
+        tokenizer(
+            formatted_message,
+            truncation=False,
+            padding=False,
+            add_special_tokens=False,
+        )["input_ids"]
+    )
+    if message_ids[: len(prompt_ids)] != prompt_ids:
+        raise ValueError("full ChatML message does not preserve the rendered prompt prefix")
+    if len(prompt_ids) >= max_length:
+        raise ValueError(
+            f"GKD prompt length {len(prompt_ids)} leaves no completion budget at {max_length}"
+        )
+    completion_ids = message_ids[len(prompt_ids) :]
+    completion_budget = max_length - len(prompt_ids)
+    kept_completion = completion_ids[:completion_budget]
+    if not kept_completion:
+        raise ValueError("GKD example has no assistant completion tokens")
+    input_ids = [*prompt_ids, *kept_completion]
+    return {
+        "input_ids": input_ids,
+        "attention_mask": [1] * len(input_ids),
+        "labels": [-100] * len(prompt_ids) + kept_completion,
+        "prompt_ids": prompt_ids,
+        "prompt_attention_mask": [1] * len(prompt_ids),
+        "truncated_completion_tokens": len(completion_ids) - len(kept_completion),
+    }
+
+
+class PromptPreservingChatMLCollator:
+    """Official-GKD tensor schema with an explicit prompt-preserving truncation policy."""
+
+    def __init__(self, tokenizer: Any, *, max_length: int) -> None:
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+
+    def __call__(self, examples: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+        import torch
+
+        encoded = tuple(
+            encode_prompt_preserving_chatml_example(
+                example, tokenizer=self.tokenizer, max_length=self.max_length
+            )
+            for example in examples
+        )
+        return {
+            "input_ids": _left_pad(
+                tuple(item["input_ids"] for item in encoded),
+                value=self.tokenizer.pad_token_id,
+                torch=torch,
+            ),
+            "attention_mask": _left_pad(
+                tuple(item["attention_mask"] for item in encoded), value=0, torch=torch
+            ),
+            "labels": _left_pad(
+                tuple(item["labels"] for item in encoded), value=-100, torch=torch
+            ),
+            "prompts": _left_pad(
+                tuple(item["prompt_ids"] for item in encoded),
+                value=self.tokenizer.pad_token_id,
+                torch=torch,
+            ),
+            "prompt_attention_mask": _left_pad(
+                tuple(item["prompt_attention_mask"] for item in encoded),
+                value=0,
+                torch=torch,
+            ),
+        }
+
+
+def _left_pad(sequences: Sequence[Any], *, value: int, torch: Any) -> Any:
+    if not sequences:
+        raise ValueError("cannot pad an empty GKD batch")
+    width = max(len(sequence) for sequence in sequences)
+    output = torch.full((len(sequences), width), value, dtype=torch.long)
+    for index, sequence in enumerate(sequences):
+        if sequence:
+            output[index, -len(sequence) :] = torch.tensor(sequence, dtype=torch.long)
+    return output
+
+
 def execute_trl_training(
     spec: TRLRunSpec,
     *,
@@ -246,6 +350,7 @@ def execute_trl_training(
         "seed": spec.seed,
         "data_seed": spec.seed,
     }
+    gkd_context_audit: dict[str, int | float] | None = None
     if baseline.backend == "trl_sft":
         from trl import SFTConfig, SFTTrainer
 
@@ -294,6 +399,21 @@ def execute_trl_training(
             max_new_tokens=spec.max_new_tokens,
             seq_kd=False,
         )
+        encoded_audit = tuple(
+            encode_prompt_preserving_chatml_example(
+                row, tokenizer=tokenizer, max_length=spec.max_length
+            )
+            for row in rows
+        )
+        truncated_tokens = tuple(
+            int(item["truncated_completion_tokens"]) for item in encoded_audit
+        )
+        gkd_context_audit = {
+            "rows": len(rows),
+            "truncated_rows": sum(value > 0 for value in truncated_tokens),
+            "truncated_row_rate": sum(value > 0 for value in truncated_tokens) / len(rows),
+            "truncated_completion_tokens": sum(truncated_tokens),
+        }
         trainer = GKDTrainer(
             model=student_model,
             teacher_model=teacher_model,
@@ -301,6 +421,9 @@ def execute_trl_training(
             train_dataset=train_dataset,
             processing_class=tokenizer,
             peft_config=peft_config,
+            data_collator=PromptPreservingChatMLCollator(
+                tokenizer, max_length=spec.max_length
+            ),
         )
         if os.environ.get("NOVELTY_GKD_DIAGNOSTIC") == "1":
             probe = trainer.data_collator([rows[0]])
@@ -351,6 +474,7 @@ def execute_trl_training(
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
         "metrics": train_result.metrics,
+        "gkd_context_audit": gkd_context_audit,
         "final_dir": str(final_dir),
     }
     metadata_path = output_dir / "run_metadata.json"
