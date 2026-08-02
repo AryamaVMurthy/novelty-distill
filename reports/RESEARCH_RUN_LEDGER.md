@@ -93,6 +93,7 @@ score/evaluation/controller jobs 18080, 18088, 18090, and 18099 were cancelled b
 | Work | Job | Contract |
 |---|---:|---|
 | DistiLLM deployability smoke | 18092 | four GPUs; after target gate 18132; must produce a loadable full checkpoint after real updates |
+| DistiLLM SGLang load gate | 18141 | after smoke 18092; C3 production cannot start until the full checkpoint generates successfully |
 | Primary TRL/OPSD/GEM matrix | 18097 | indices 0-11 and 13-18, at most two concurrent tasks, after target gate 18132 and `afterany:18098` |
 | TRL/OPSD bounded resumes | 18117 | indices 0-4, 6-11, and 13-18; `afterany:18097`; 25-step checkpoints |
 | C3 DistiLLM | 18098 | index 12, four GPUs, 12-hour bound; after target gate 18132 and smoke 18092 |
@@ -136,6 +137,13 @@ Exact pinned-tokenizer audit 18143 then passed all 1,000 task-adapter rows: zero
 collisions, maximum prompt length 453 under the 480-token cap, and one best-1 completion truncated
 by 19 tokens at the 896-token full-chat cap. Job 18142 was a shell-wrapper failure before the audit
 started; it produced no data or model artifact.
+The first small regression 18144 failed before model loading because its obsolete 192-token cap
+correctly rejected the 223-token Qwen3 prompt. After raising only this systems-smoke cap, retry
+18145 completed in 00:00:51: one official optimizer step at loss 0.8328, peak observed GPU memory
+46,472 MiB, exactly two normalized separators, a complete step log, and a 3,441,191,930-byte full
+student weight file. Its two 512-token pilot completion truncations are smoke-only; the production
+896-token rate remains the exact 1/1,000, 19-token audit above. Per-invocation byte offsets now
+isolate official log audits while preserving all earlier retry history.
 
 Job 18097 and the first A0/A1 resume passes wait until C3 job 18098 terminates. This reserves the
 all-GPU sequence 18092 -> 18098 before one-GPU work can occupy a released device. Their `afterany`
