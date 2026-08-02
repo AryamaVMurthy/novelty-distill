@@ -20,10 +20,15 @@ def main() -> None:
     parser.add_argument("--manifest", type=Path, default=Path("third_party/manifest.yaml"))
     parser.add_argument("--official-root", type=Path, required=True)
     parser.add_argument("--baseline-id")
+    parser.add_argument("--run-suffix", default="smoke")
     args = parser.parse_args()
 
     metadata = execute_opsd_training(
-        override_opsd_baseline(load_opsd_run_spec(args.config), args.baseline_id),
+        override_opsd_baseline(
+            load_opsd_run_spec(args.config),
+            args.baseline_id,
+            run_suffix=args.run_suffix,
+        ),
         scratch_root=args.scratch_root,
         registry_path=args.registry,
         manifest_path=args.manifest,

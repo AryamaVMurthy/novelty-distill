@@ -18,10 +18,15 @@ def main() -> None:
     parser.add_argument("--scratch-root", type=Path, required=True)
     parser.add_argument("--registry", type=Path, default=Path("configs/baselines.yaml"))
     parser.add_argument("--baseline-id")
+    parser.add_argument("--run-suffix", default="smoke")
     args = parser.parse_args()
 
     metadata = execute_trl_training(
-        override_trl_baseline(load_trl_run_spec(args.config), args.baseline_id),
+        override_trl_baseline(
+            load_trl_run_spec(args.config),
+            args.baseline_id,
+            run_suffix=args.run_suffix,
+        ),
         scratch_root=args.scratch_root,
         registry_path=args.registry,
     )

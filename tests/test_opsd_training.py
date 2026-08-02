@@ -85,3 +85,6 @@ def test_opsd_smoke_config_can_select_each_supported_ablation() -> None:
 
     assert override_opsd_baseline(base, "E3").output_dir == Path("checkpoints/E3-smoke")
     assert override_opsd_baseline(base, "E4").baseline_id == "E4"
+    assert override_opsd_baseline(
+        base, "E2", run_suffix="tomato1k-seed17"
+    ).output_dir == Path("checkpoints/E2-tomato1k-seed17")

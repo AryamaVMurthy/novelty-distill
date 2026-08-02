@@ -137,3 +137,13 @@ def test_teacher_seqkd_config_requires_the_versioned_target_artifact() -> None:
     assert spec.baseline_id == "B2b"
     assert spec.teacher_targets == Path("data/teacher-targets.json")
     assert spec.output_dir == Path("checkpoints/B2b-smoke")
+
+
+def test_baseline_override_can_name_a_non_smoke_run() -> None:
+    spec = override_trl_baseline(
+        load_trl_run_spec(Path("configs/training/sft_smoke.yaml")),
+        "B2b",
+        run_suffix="tomato1k-seed17",
+    )
+
+    assert spec.output_dir == Path("checkpoints/B2b-tomato1k-seed17")

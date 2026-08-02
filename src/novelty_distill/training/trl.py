@@ -62,18 +62,23 @@ def load_trl_run_spec(path: Path) -> TRLRunSpec:
         return TRLRunSpec.model_validate(yaml.safe_load(handle))
 
 
-def override_trl_baseline(spec: TRLRunSpec, baseline_id: str | None) -> TRLRunSpec:
-    """Reuse one backend config while keeping each smoke output isolated by baseline ID."""
+def override_trl_baseline(
+    spec: TRLRunSpec, baseline_id: str | None, *, run_suffix: str = "smoke"
+) -> TRLRunSpec:
+    """Reuse one backend config while keeping each staged output isolated."""
 
     if baseline_id is None:
         return spec
     cleaned = baseline_id.strip()
     if not cleaned or "/" in cleaned or ".." in cleaned:
         raise ValueError("baseline override must be a safe non-empty ID")
+    suffix = run_suffix.strip()
+    if not suffix or "/" in suffix or ".." in suffix:
+        raise ValueError("run suffix must be a safe non-empty name")
     return spec.model_copy(
         update={
             "baseline_id": cleaned,
-            "output_dir": Path("checkpoints") / f"{cleaned}-smoke",
+            "output_dir": Path("checkpoints") / f"{cleaned}-{suffix}",
         }
     )
 

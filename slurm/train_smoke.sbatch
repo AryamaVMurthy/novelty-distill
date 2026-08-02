@@ -21,7 +21,17 @@ repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 training_backend="${TRAINING_BACKEND:-trl}"
-if [[ "${BASELINE_MATRIX:-0}" == 1 ]]; then
+matrix_mode="${BASELINE_MATRIX:-0}"
+if [[ "${matrix_mode}" == "tomato1k" ]]; then
+  run_suffix="${RUN_SUFFIX:-tomato1k-seed17}"
+else
+  run_suffix="${RUN_SUFFIX:-smoke}"
+fi
+if [[ -z "${run_suffix}" || "${run_suffix}" == */* || "${run_suffix}" == *..* ]]; then
+  echo "RUN_SUFFIX must be a path-safe non-empty name" >&2
+  exit 2
+fi
+if [[ "${matrix_mode}" == 1 ]]; then
   matrix_ids=(
     B2a B2b B2c B3
     C1-human C1-best1 C1-diverse4 C2-human C2-best1 C2-diverse4 D2 D3
@@ -51,6 +61,38 @@ if [[ "${BASELINE_MATRIX:-0}" == 1 ]]; then
   training_backend="${matrix_backends[$matrix_index]}"
   RUN_CONFIG="${matrix_configs[$matrix_index]}"
   echo "matrix_index=${matrix_index} baseline_id=${BASELINE_ID} backend=${training_backend}"
+elif [[ "${matrix_mode}" == "tomato1k" ]]; then
+  matrix_ids=(
+    B1 B2a B2b B2c B3 B4
+    C1-human C1-best1 C1-diverse4 C2-human C2-best1 C2-diverse4 C3
+    D1 D2 D3 E2 E3 E4
+  )
+  matrix_backends=(
+    trl trl trl trl trl gem
+    trl trl trl trl trl trl distillm
+    trl trl trl opsd opsd opsd
+  )
+  matrix_configs=(
+    configs/training/sft_tomato1k.yaml configs/training/sft_tomato1k.yaml
+    configs/training/sft_tomato1k.yaml configs/training/sft_tomato1k.yaml
+    configs/training/sft_tomato1k.yaml configs/training/gem_tomato1k.yaml
+    configs/training/gkd_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/gkd_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/gkd_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/distillm_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/gkd_tomato1k.yaml configs/training/gkd_tomato1k.yaml
+    configs/training/opsd_tomato1k.yaml configs/training/opsd_tomato1k.yaml
+    configs/training/opsd_tomato1k.yaml
+  )
+  matrix_index="${SLURM_ARRAY_TASK_ID:?tomato1k matrix requires a Slurm array task}"
+  if ((matrix_index < 0 || matrix_index >= ${#matrix_ids[@]})); then
+    echo "SLURM_ARRAY_TASK_ID must be between 0 and $((${#matrix_ids[@]} - 1))" >&2
+    exit 1
+  fi
+  BASELINE_ID="${matrix_ids[$matrix_index]}"
+  training_backend="${matrix_backends[$matrix_index]}"
+  RUN_CONFIG="${matrix_configs[$matrix_index]}"
+  echo "matrix=tomato1k index=${matrix_index} baseline_id=${BASELINE_ID} backend=${training_backend}"
 fi
 if [[ "${training_backend}" == "opsd" ]]; then
   run_config="${RUN_CONFIG:-configs/training/opsd_smoke.yaml}"
@@ -148,7 +190,7 @@ if [[ "${training_backend}" == "opsd" ]]; then
     --official-root "${scratch_root}/official"
   )
   if [[ -n "${BASELINE_ID:-}" ]]; then
-    opsd_args+=(--baseline-id "${BASELINE_ID}")
+    opsd_args+=(--baseline-id "${BASELINE_ID}" --run-suffix "${run_suffix}")
   fi
   "${venv_dir}/bin/python" "${repo_dir}/scripts/run_opsd_baseline.py" "${opsd_args[@]}"
 elif [[ "${training_backend}" == "trl" ]]; then
@@ -158,7 +200,7 @@ elif [[ "${training_backend}" == "trl" ]]; then
     --registry "${repo_dir}/configs/baselines.yaml"
   )
   if [[ -n "${BASELINE_ID:-}" ]]; then
-    trl_args+=(--baseline-id "${BASELINE_ID}")
+    trl_args+=(--baseline-id "${BASELINE_ID}" --run-suffix "${run_suffix}")
   fi
   "${venv_dir}/bin/python" "${repo_dir}/scripts/run_trl_baseline.py" "${trl_args[@]}"
 elif [[ "${training_backend}" == "gem" ]]; then
@@ -179,7 +221,7 @@ fi
 
 metadata_path="$("${venv_dir}/bin/python" -c 'import sys, yaml; from pathlib import Path; payload=yaml.safe_load(Path(sys.argv[1]).read_text()); print(Path(sys.argv[2]) / payload["output_dir"] / "run_metadata.json")' "${config_path}" "${scratch_root}")"
 if [[ -n "${BASELINE_ID:-}" ]] && [[ "${training_backend}" == "trl" || "${training_backend}" == "opsd" ]]; then
-  metadata_path="${scratch_root}/checkpoints/${BASELINE_ID}-smoke/run_metadata.json"
+  metadata_path="${scratch_root}/checkpoints/${BASELINE_ID}-${run_suffix}/run_metadata.json"
 fi
 cat "${metadata_path}"
 echo "end_time=$(date --iso-8601=seconds)"

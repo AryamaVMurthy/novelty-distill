@@ -52,18 +52,23 @@ def load_opsd_run_spec(path: Path) -> OPSDRunSpec:
         return OPSDRunSpec.model_validate(yaml.safe_load(handle))
 
 
-def override_opsd_baseline(spec: OPSDRunSpec, baseline_id: str | None) -> OPSDRunSpec:
-    """Reuse the OPSD runtime controls for E2/E3/E4 smoke baselines."""
+def override_opsd_baseline(
+    spec: OPSDRunSpec, baseline_id: str | None, *, run_suffix: str = "smoke"
+) -> OPSDRunSpec:
+    """Reuse the OPSD runtime controls for staged E2/E3/E4 runs."""
 
     if baseline_id is None:
         return spec
     cleaned = baseline_id.strip()
     if cleaned not in {"E2", "E3", "E4"}:
-        raise ValueError("OPSD smoke override must be E2, E3, or E4")
+        raise ValueError("OPSD baseline override must be E2, E3, or E4")
+    suffix = run_suffix.strip()
+    if not suffix or "/" in suffix or ".." in suffix:
+        raise ValueError("run suffix must be a safe non-empty name")
     return spec.model_copy(
         update={
             "baseline_id": cleaned,
-            "output_dir": Path("checkpoints") / f"{cleaned}-smoke",
+            "output_dir": Path("checkpoints") / f"{cleaned}-{suffix}",
         }
     )
 
