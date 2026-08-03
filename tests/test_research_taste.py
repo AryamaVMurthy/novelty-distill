@@ -111,7 +111,33 @@ def test_research_taste_response_validates_labels_and_diagnostics() -> None:
     assert result.opportunity_pattern == "explanation_gap"
     assert result.method_paradigm == "formal_conceptual_derivation"
     assert result.bottleneck_specificity == 3
+    assert result.axis_swap_repaired is False
     assert result.request_id == "chatcmpl-taste-1"
+
+
+def test_research_taste_response_repairs_only_an_exact_axis_swap() -> None:
+    result = parse_research_taste_response(
+        _response(
+            opportunity="formal_conceptual_derivation",
+            method="explanation_gap",
+        ),
+        _spec(),
+    )
+
+    assert result.opportunity_pattern == "explanation_gap"
+    assert result.method_paradigm == "formal_conceptual_derivation"
+    assert result.axis_swap_repaired is True
+
+
+def test_research_taste_response_does_not_guess_a_partial_axis_swap() -> None:
+    with pytest.raises(ValueError, match="invalid structured"):
+        parse_research_taste_response(
+            _response(
+                opportunity="explanation_gap",
+                method="explanation_gap",
+            ),
+            _spec(),
+        )
 
 
 def test_research_taste_response_accepts_one_json_markdown_fence() -> None:
@@ -165,6 +191,7 @@ def test_research_taste_summary_reports_k_sample_category_coverage() -> None:
             "surface_stitching_score": 0,
             "bottleneck_specificity": 3,
             "boilerplate_score": 0,
+            "axis_swap_repaired": True,
         },
         {
             "prompt_id": "p1",
@@ -217,6 +244,7 @@ def test_research_taste_summary_reports_k_sample_category_coverage() -> None:
     assert summary["synthesis_method_rate"] == 0.5
     assert summary["surface_stitching_rate"] == 0.5
     assert summary["bottleneck_specificity_mean"] == pytest.approx(1.75)
+    assert summary["axis_swap_repair_rate"] == 0.25
 
 
 def test_research_taste_summary_rejects_duplicate_prompt_sample_keys() -> None:
@@ -245,6 +273,7 @@ def test_research_taste_markdown_surfaces_prompt_conditioning_diagnostics() -> N
         "method_prompt_unanimity_rate": 0.8,
         "bridge_opportunity_rate": 0.3,
         "synthesis_method_rate": 0.4,
+        "axis_swap_repair_rate": 0.125,
     }
     zero_jsd = {"jensen_shannon_divergence": 0.0}
     result = {
@@ -267,6 +296,8 @@ def test_research_taste_markdown_surfaces_prompt_conditioning_diagnostics() -> N
 
     assert "Opp. within-prompt H" in report
     assert "| A3 | 0.0000 | 0.0000 | 0.5000 | 0.6000 | 0.1000 |" in report
+    assert "Axis-swap repair" in report
+    assert "0.1250" in report
     assert "A3 has K=1" in report
 
 

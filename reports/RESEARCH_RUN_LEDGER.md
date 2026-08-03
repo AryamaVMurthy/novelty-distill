@@ -725,3 +725,15 @@ frozen-decoding contract.
   by 19 tokens, while all prompts fit its separate 480-token prompt cap.
 - GKD on-policy sampling is explicitly overwritten on the official trainer after construction and
   recorded in run metadata. Model defaults are not accepted as implicit experimental controls.
+
+## 2026-08-03 research-taste axis-swap recovery
+
+Research-taste annotation job 18585 failed after completing 135 valid A0 prompt shards because
+four samples for prompt `2025_41085166` repeatedly returned an opportunity label in the method
+field and a method label in the opportunity field. Resume job 18586 was held before consuming a
+GPU. The parser now repairs only the lossless case where both supplied labels are valid members of
+the opposite, disjoint taxonomy axes; partial or unknown mismatches still fail closed. Every
+repair is persisted as `axis_swap_repaired: true`, summarized as an axis-swap repair rate, and
+surfaced in the Markdown report. Existing valid shards remain schema-compatible with a default
+false diagnostic. Focused parser, shard, summary, and report tests cover the change; the 135 valid
+shards are retained for deterministic resume rather than recomputed.

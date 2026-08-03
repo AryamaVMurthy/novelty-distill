@@ -83,6 +83,7 @@ class ResearchTasteAnnotation(BaseModel):
 class JudgedResearchTaste(ResearchTasteAnnotation):
     """A validated annotation plus request-level provenance."""
 
+    axis_swap_repaired: bool = False
     request_id: str = Field(min_length=1)
     model: str = Field(min_length=1)
 
@@ -90,6 +91,7 @@ class JudgedResearchTaste(ResearchTasteAnnotation):
 class ResearchTasteRecord(ResearchTasteAnnotation):
     """One stored annotation aligned to a generated sample."""
 
+    axis_swap_repaired: bool = False
     prompt_id: str = Field(min_length=1)
     sample_index: int = Field(ge=0)
 
@@ -208,14 +210,33 @@ def parse_research_taste_response(
         and lines[-1] == "```"
     ):
         content = "\n".join(lines[1:-1]).strip()
+    repaired = False
     try:
-        annotation = ResearchTasteAnnotation.model_validate(json.loads(content))
+        raw_annotation = json.loads(content)
+        try:
+            annotation = ResearchTasteAnnotation.model_validate(raw_annotation)
+        except ValueError:
+            if (
+                isinstance(raw_annotation, dict)
+                and raw_annotation.get("opportunity_pattern") in METHOD_PARADIGMS
+                and raw_annotation.get("method_paradigm") in OPPORTUNITY_PATTERNS
+            ):
+                raw_annotation = dict(raw_annotation)
+                raw_annotation["opportunity_pattern"], raw_annotation["method_paradigm"] = (
+                    raw_annotation["method_paradigm"],
+                    raw_annotation["opportunity_pattern"],
+                )
+                annotation = ResearchTasteAnnotation.model_validate(raw_annotation)
+                repaired = True
+            else:
+                raise
     except (json.JSONDecodeError, ValueError, TypeError) as error:
         raise ValueError(
             "annotator returned invalid structured research-taste annotation"
         ) from error
     return JudgedResearchTaste(
         **annotation.model_dump(mode="json"),
+        axis_swap_repaired=repaired,
         request_id=request_id,
         model=str(response.get("model", spec.model)),
     )
@@ -364,6 +385,9 @@ def summarize_research_taste(records: Sequence[Mapping[str, Any]]) -> dict[str, 
         "boilerplate_score_mean": statistics.fmean(
             record.boilerplate_score for record in normalized
         ),
+        "axis_swap_repair_rate": statistics.fmean(
+            record.axis_swap_repaired for record in normalized
+        ),
     }
 
 
@@ -437,8 +461,9 @@ def render_research_taste_markdown(
         "",
         "| Method | Opp. JSD vs human | Method JSD vs human | Opp. entropy | "
         "Method entropy | Opp. within-prompt H | Method within-prompt H | "
-        "Opp. unanimous | Method unanimous | Bridge rate | Synthesis rate |",
-        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+        "Opp. unanimous | Method unanimous | Bridge rate | Synthesis rate | "
+        "Axis-swap repair |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
     ]
     for method, analysis in result["methods"].items():
         summary = analysis["summary_all_samples"]
@@ -469,7 +494,8 @@ def render_research_taste_markdown(
             f"{_format_number(summary['opportunity_prompt_unanimity_rate'])} | "
             f"{_format_number(summary['method_prompt_unanimity_rate'])} | "
             f"{_format_number(summary['bridge_opportunity_rate'])} | "
-            f"{_format_number(summary['synthesis_method_rate'])} |"
+            f"{_format_number(summary['synthesis_method_rate'])} | "
+            f"{_format_number(summary['axis_swap_repair_rate'])} |"
         )
     lines.extend(
         [
@@ -487,6 +513,8 @@ def render_research_taste_markdown(
             "- Within-prompt entropy/unanimity is informative only for K>1. A3 has K=1, so its "
             "zero entropy and complete unanimity are structural rather than behavioral.",
             "- The automatic labels remain descriptive until the declared human validation passes.",
+            "- Axis-swap repair is a deterministic parser diagnostic: it records outputs whose "
+            "two labels were valid members of the opposite, disjoint taxonomy axes.",
             "",
             f"Configuration status: `{config['status']}`.",
             "",
