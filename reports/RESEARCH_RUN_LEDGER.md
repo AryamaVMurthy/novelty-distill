@@ -477,6 +477,26 @@ indices; a full 1,658-prompt, 23-method, 10,000-resample synthetic summary compl
 10.86 seconds with 120,924 KiB maximum RSS. Real runtime will therefore be dominated by validated
 cache-file reads rather than bootstrap memory.
 
+At 21:40 IST on 2026-08-03, the paper review was extended to Amin et al., *Escaping the Mode
+Lottery: Multi-Response Training Improves Language Model Generalization*, arXiv:2606.00544v1.
+Its separation of response multiplicity from response selection exposed a confound in the original
+five-run exposure study. Commits `7cc4edc` and `ee6ac33` therefore add `F2-random4`, an independent
+value-blind Random-4-of-8 implementation derived from the immutable teacher bank. The matched
+`F2-random4` versus `B2a-4x` contrast isolates multiplicity; `B3-4x` versus `F2-random4` isolates
+coverage-aware selection. This amendment was frozen before any trained-model temporal metric was
+available and remains secondary. The cited author's public repository had no explicit license at
+commit `8f389da41ad3c8441c9569f746a9a040cf388ddc`, so no external code was copied.
+
+The low-priority F2 chain is now staged behind primary controller 18222: training jobs 18519 ->
+18520, generation terminal 18523, scoring terminal 18525, evaluation terminal 18527, and
+research-taste terminal 18529. Replacement controller 18530 joins all six exposure evaluation and
+taste terminals to the future primary analysis. The superseded five-method controller 18502 was
+canceled while pending with exactly zero runtime, after 18530 was accepted and its primary
+dependency audited. At the same snapshot, D1 and D2 were both at step 113/125, A1 temporal
+generation contained 1,407/1,658 validated shards, and A0 research-taste annotation contained
+582/1,658 shards. These four active jobs still occupied the available GPUs; none of the newly
+staged low-priority work had begun.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
