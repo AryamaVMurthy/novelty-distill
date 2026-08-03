@@ -536,6 +536,37 @@ finding validates the six-arm exposure design: F2 versus repeated B2a isolates u
 multiplicity, while B3 versus F2 isolates coverage/quality-aware selection. Full provenance,
 deltas, and interpretation limits are recorded in `reports/RANDOM4_TARGET_FINDINGS.md`.
 
+Between 22:00 and 22:34 IST, three additional 2026 preprints were screened before student metrics
+were available. Progressive conditional surprise was retained only as a possible post-promotion,
+embedding-independent collapse diagnostic; IdeaGene-Bench sharpened the human gate to distinguish
+topical distance from coherent mechanism inheritance and limitation repair. IDEAgent's joint
+quality-diversity Yield motivated commit `10b4d51`, which independently implements a secondary
+`viable_semantic_yield` over the existing K=16 samples. It gates relevance, soundness, and clarity
+at 4/5, then exactly finds the largest subset whose every pair is below the current cosine
+threshold. It is reported across the full threshold curve and remains outside the primary Holm
+family because automatic non-obviousness is deliberately absent. Commit `f7f1e31` preserves the
+gate definition in offline tracking provenance. The full repository suite passed with 262 tests
+and two expected local PyTorch-dependent skips. None of the three author repositories supplied a
+usable code/data license at the audited commits, so no external implementation or dataset was
+imported.
+
+At 22:34 IST, D1 and D2 completed all 125 on-policy TOMATO-1k steps with clean Slurm exits. D1
+(forward KL, student trajectories) recorded train loss 0.969608 and runtime 13,524.76 seconds;
+D2 (reverse KL, student trajectories) recorded train loss 1.060318 and runtime 13,638.43 seconds.
+Both used the common 1,000-example/1,000-exposure, seed-17 contract. Because they launched from
+pre-schema commit `98e4a538`, their exact original metadata was preserved and the explicit
+divergence field was migrated using the proving `(lambda, beta)` pairs `(1, 0)` and `(1, 1)`.
+The migration manifest is `audits/tomato1k-divergence-backfill-d1-d2.json`.
+
+The formal 15-method subset audit then passed at
+`audits/tomato1k-training-partial-15.json`. It content-hashed the D1 adapter as `47a46794...` and
+the D2 adapter as `56904eba...` and reproved the same dataset revision, ordered-ID hash, input
+bytes, Qwen3-4B revision, seed, and exposure budget across all completed methods. This is training
+completion evidence, not a performance comparison. The freed slots immediately started D3 job
+18559 and E2 job 18561 from repository commit `f7f1e31`; E3 and E4 remain next in the bounded
+array. At the same snapshot, A1 temporal generation contained 1,490/1,658 validated prompt shards
+and A0 research-taste annotation contained 838/1,658.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
