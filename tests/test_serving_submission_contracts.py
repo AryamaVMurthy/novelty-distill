@@ -165,6 +165,20 @@ def test_single_model_temporal_launcher_can_chain_resumable_taste_annotation() -
     assert '^[0-9]+(_[0-9]+)?$' in script
 
 
+def test_compact_launcher_uses_four_shards_and_budget_matched_evaluation() -> None:
+    launcher = Path("scripts/submit_compact_baselines.sh").read_text(encoding="utf-8")
+    evaluation = Path("slurm/evaluate_student.sbatch").read_text(encoding="utf-8")
+
+    assert 'num_gpu_shards="${NUM_GPU_SHARDS:-4}"' in launcher
+    assert launcher.count('--array="0-3%4"') == 3
+    assert "baseline_ids=(B1 B2b C1-best1 C2-best1 D1)" in launcher
+    assert "TEACHER_SOURCE_SAMPLES_PER_PROMPT=16" in launcher
+    assert "STUDENT_SOURCE_SAMPLES_PER_PROMPT=4" in launcher
+    assert "A0-temporal-k4-from-k16" in launcher
+    assert 'teacher_source_samples_per_prompt="${TEACHER_SOURCE_SAMPLES_PER_PROMPT:-' in evaluation
+    assert '--teacher-source-samples-per-prompt' in evaluation
+
+
 def test_promoted_evaluation_dry_run_binds_models_controls_taste_and_analysis(
     tmp_path: Path,
 ) -> None:

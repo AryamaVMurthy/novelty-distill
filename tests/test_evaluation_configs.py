@@ -40,6 +40,55 @@ def test_evaluation_configs_fix_identical_sampling_across_models() -> None:
     } == {tuple(getattr(student, field) for field in controls)}
 
 
+def test_compact_k4_configs_change_only_sampling_budget() -> None:
+    full = _load("eval_qwen3_4b.yaml")
+    full_adapter = _load("eval_qwen3_4b_lora.yaml")
+    compact = _load("eval_qwen3_4b_k4.yaml")
+    compact_adapter = _load("eval_qwen3_4b_lora_k4.yaml")
+
+    assert compact.samples_per_prompt == 4
+    assert compact_adapter.samples_per_prompt == 4
+    ignored = {"samples_per_prompt"}
+    assert {
+        key: value
+        for key, value in compact.model_dump(mode="json").items()
+        if key not in ignored
+    } == {
+        key: value
+        for key, value in full.model_dump(mode="json").items()
+        if key not in ignored
+    }
+    assert {
+        key: value
+        for key, value in compact_adapter.model_dump(mode="json").items()
+        if key not in ignored
+    } == {
+        key: value
+        for key, value in full_adapter.model_dump(mode="json").items()
+        if key not in ignored
+    }
+
+
+def test_compact_contrasts_are_five_budget_matched_distillation_questions() -> None:
+    config = yaml.safe_load(
+        (ROOT / "configs/evaluation/compact_baseline_contrasts.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert config["study"] == "tomato1k-compact-k4"
+    assert config["claim_scope"] == "descriptive_baseline_comparison_only"
+    assert len(config["contrasts"]) == 5
+    assert {contrast["id"] for contrast in config["contrasts"]} == {
+        "B1-vs-A0",
+        "B2b-vs-B1",
+        "C1-best1-vs-B2b",
+        "C2-best1-vs-C1-best1",
+        "D1-vs-C1-best1",
+    }
+    assert "sampling-budget matched at K=4" in config["sampling_note"]
+
+
 def test_production_teacher_uses_calibrated_concise_official_decoding() -> None:
     production = _load("teacher.yaml")
     evaluation = _load("eval_qwen3_14b.yaml")

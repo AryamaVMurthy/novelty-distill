@@ -17,7 +17,7 @@ from novelty_distill.evaluation.embeddings import (
     embed_texts,
     embedding_cache_fingerprint,
 )
-from novelty_distill.evaluation.score_shards import load_score_shard
+from novelty_distill.evaluation.score_shards import load_score_shard_prefix
 from novelty_distill.evaluation.semantic_modes import viable_semantic_yield
 from novelty_distill.evaluation.student_evaluation import (
     anchor_student_clusters,
@@ -40,21 +40,34 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--samples-per-prompt", type=int, default=16)
     parser.add_argument("--teacher-samples-per-prompt", type=int)
     parser.add_argument("--student-samples-per-prompt", type=int)
+    parser.add_argument("--teacher-source-samples-per-prompt", type=int)
+    parser.add_argument("--student-source-samples-per-prompt", type=int)
     return parser.parse_args()
 
 
-def _load_scores(directory: Path, *, samples_per_prompt: int) -> dict[str, list[dict[str, Any]]]:
+def _load_scores(
+    directory: Path,
+    *,
+    source_samples_per_prompt: int,
+    selected_samples_per_prompt: int,
+) -> dict[str, list[dict[str, Any]]]:
     by_prompt: dict[str, list[dict[str, Any]]] = {}
     paths = sorted(directory.glob("*.json"))
     if not paths:
         raise ValueError(f"no score shards found in {directory}")
     for path in paths:
-        payload = load_score_shard(path, samples_per_prompt=samples_per_prompt)
+        payload = load_score_shard_prefix(
+            path,
+            source_samples_per_prompt=source_samples_per_prompt,
+            selected_samples_per_prompt=selected_samples_per_prompt,
+        )
         ordered = payload["records"]
         prompt_id = str(payload.get("prompt_id", ""))
         if not prompt_id or any(str(record.get("prompt_id")) != prompt_id for record in ordered):
             raise ValueError(f"score shard {path} has inconsistent prompt ids")
-        if [int(record["sample_index"]) for record in ordered] != list(range(samples_per_prompt)):
+        if [int(record["sample_index"]) for record in ordered] != list(
+            range(selected_samples_per_prompt)
+        ):
             raise ValueError(f"score shard {path} has non-contiguous sample indices")
         if prompt_id in by_prompt:
             raise ValueError(f"duplicate score prompt id {prompt_id}")
@@ -121,10 +134,20 @@ def main() -> None:
         raise ValueError("samples per prompt must be positive")
     teacher_samples = args.teacher_samples_per_prompt or args.samples_per_prompt
     student_samples = args.student_samples_per_prompt or args.samples_per_prompt
-    if teacher_samples <= 0 or student_samples <= 0:
-        raise ValueError("teacher and student samples per prompt must be positive")
-    teacher = _load_scores(args.teacher_score_dir, samples_per_prompt=teacher_samples)
-    student = _load_scores(args.student_score_dir, samples_per_prompt=student_samples)
+    teacher_source_samples = args.teacher_source_samples_per_prompt or teacher_samples
+    student_source_samples = args.student_source_samples_per_prompt or student_samples
+    if min(teacher_samples, student_samples, teacher_source_samples, student_source_samples) <= 0:
+        raise ValueError("teacher and student sample counts per prompt must be positive")
+    teacher = _load_scores(
+        args.teacher_score_dir,
+        source_samples_per_prompt=teacher_source_samples,
+        selected_samples_per_prompt=teacher_samples,
+    )
+    student = _load_scores(
+        args.student_score_dir,
+        source_samples_per_prompt=student_source_samples,
+        selected_samples_per_prompt=student_samples,
+    )
     if teacher.keys() != student.keys():
         missing_teacher = sorted(student.keys() - teacher.keys())
         missing_student = sorted(teacher.keys() - student.keys())
@@ -235,6 +258,8 @@ def main() -> None:
         "num_prompts": len(primary_metrics),
         "teacher_samples_per_prompt": teacher_samples,
         "student_samples_per_prompt": student_samples,
+        "teacher_source_samples_per_prompt": teacher_source_samples,
+        "student_source_samples_per_prompt": student_source_samples,
         "primary_cosine_threshold": primary_threshold,
         "semantic_clustering": {
             "teacher_partition": "complete_linkage",

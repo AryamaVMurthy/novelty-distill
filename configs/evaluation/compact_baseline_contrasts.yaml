@@ -1,0 +1,45 @@
+schema_version: 1
+study: tomato1k-compact-k4
+purpose: basic_distillation_baselines
+claim_scope: descriptive_baseline_comparison_only
+sampling_note: >-
+  A0 reuses the deterministic first four samples from its validated K=16 source; every trained
+  method is newly generated at K=4 with the same decoding controls. A1 teacher modes likewise use
+  the first four samples from its validated K=16 source. All declared contrasts are therefore
+  sampling-budget matched at K=4.
+bootstrap_samples: 10000
+seed: 17
+metrics:
+  - student_feasibility_mean
+  - student_soundness_mean
+  - teacher_mode_recall
+  - viable_semantic_yield
+descriptive_metrics:
+  - student_quality_mean
+  - student_relevance_mean
+  - student_feasibility_mean
+  - student_soundness_mean
+  - student_clarity_mean
+  - student_instruction_compliance_mean
+  - student_semantic_clusters
+  - teacher_mode_recall
+  - teacher_mode_precision
+  - cluster_jsd
+  - quality_adjusted_coverage
+  - viable_semantic_yield
+  - nearest_training_target_similarity_mean
+  - length_stop_rate
+  - completion_tokens_mean
+threshold_metric_directions:
+  student_semantic_clusters: higher
+  teacher_mode_recall: higher
+  teacher_mode_precision: higher
+  cluster_jsd: lower
+  quality_adjusted_coverage: higher
+  viable_semantic_yield: higher
+contrasts:
+  - {id: B1-vs-A0, reference: A0, treatment: B1}
+  - {id: B2b-vs-B1, reference: B1, treatment: B2b}
+  - {id: C1-best1-vs-B2b, reference: B2b, treatment: C1-best1}
+  - {id: C2-best1-vs-C1-best1, reference: C1-best1, treatment: C2-best1}
+  - {id: D1-vs-C1-best1, reference: C1-best1, treatment: D1}

@@ -66,6 +66,9 @@ def main() -> None:
     payload = {
         "schema_version": 2,
         "git_commit": git_commit,
+        "study": config.get("study"),
+        "claim_scope": config.get("claim_scope"),
+        "sampling_note": config.get("sampling_note"),
         "bootstrap_samples": config["bootstrap_samples"],
         "seed": config["seed"],
         "holm_family": (

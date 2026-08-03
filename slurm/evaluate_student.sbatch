@@ -24,13 +24,18 @@ target_name="${TARGET_NAME:-teacher-targets-tomato1k-v1.json}"
 output_name="${OUTPUT_NAME:-}"
 teacher_samples_per_prompt="${TEACHER_SAMPLES_PER_PROMPT:-16}"
 student_samples_per_prompt="${STUDENT_SAMPLES_PER_PROMPT:-16}"
+teacher_source_samples_per_prompt="${TEACHER_SOURCE_SAMPLES_PER_PROMPT:-${teacher_samples_per_prompt}}"
+student_source_samples_per_prompt="${STUDENT_SOURCE_SAMPLES_PER_PROMPT:-${student_samples_per_prompt}}"
 for value in "${teacher_score_id}" "${student_score_id}" "${score_namespace}" "${target_name}" "${output_name}"; do
   if [[ -z "${value}" || "${value}" == */* || "${value}" == *..* ]]; then
     echo "score IDs, namespace, target, and output names must be non-empty path-safe names" >&2
     exit 2
   fi
 done
-for value in "${teacher_samples_per_prompt}" "${student_samples_per_prompt}"; do
+for value in \
+  "${teacher_samples_per_prompt}" "${student_samples_per_prompt}" \
+  "${teacher_source_samples_per_prompt}" "${student_source_samples_per_prompt}"
+do
   if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
     echo "teacher and student samples per prompt must be positive integers" >&2
     exit 2
@@ -72,6 +77,8 @@ flock -u 8
   --embedding-cache-dir "${scratch_root}/cache/embeddings" \
   --output "${scratch_root}/evaluations/tomato/${output_name}.json" \
   --teacher-samples-per-prompt "${teacher_samples_per_prompt}" \
-  --student-samples-per-prompt "${student_samples_per_prompt}"
+  --student-samples-per-prompt "${student_samples_per_prompt}" \
+  --teacher-source-samples-per-prompt "${teacher_source_samples_per_prompt}" \
+  --student-source-samples-per-prompt "${student_source_samples_per_prompt}"
 
 test -s "${scratch_root}/evaluations/tomato/${output_name}.json"

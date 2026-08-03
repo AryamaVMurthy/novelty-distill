@@ -113,6 +113,27 @@ def load_score_shard(path: Path, *, samples_per_prompt: int) -> dict[str, Any]:
     return payload
 
 
+def load_score_shard_prefix(
+    path: Path,
+    *,
+    source_samples_per_prompt: int,
+    selected_samples_per_prompt: int,
+) -> dict[str, Any]:
+    """Validate a complete source shard and return its deterministic first-K prefix."""
+
+    if selected_samples_per_prompt <= 0:
+        raise ValueError("selected samples per prompt must be positive")
+    if selected_samples_per_prompt > source_samples_per_prompt:
+        raise ValueError(
+            f"cannot select {selected_samples_per_prompt} samples from "
+            f"a {source_samples_per_prompt}-sample score shard"
+        )
+    payload = load_score_shard(path, samples_per_prompt=source_samples_per_prompt)
+    payload["text_hashes"] = payload["text_hashes"][:selected_samples_per_prompt]
+    payload["records"] = payload["records"][:selected_samples_per_prompt]
+    return payload
+
+
 def score_run_status(
     *,
     generation_dir: Path,

@@ -5,6 +5,7 @@ import pytest
 
 from novelty_distill.evaluation.score_shards import (
     load_score_shard,
+    load_score_shard_prefix,
     shard_score_paths,
     validate_score_shard,
 )
@@ -110,3 +111,52 @@ def test_load_score_shard_rejects_quality_inconsistent_with_dimensions(tmp_path)
 
     with pytest.raises(ValueError, match="quality score"):
         load_score_shard(path, samples_per_prompt=1)
+
+
+def test_load_score_shard_prefix_validates_full_source_then_selects_first_k(tmp_path) -> None:
+    path = tmp_path / "score.json"
+    texts = [f"response-{index}" for index in range(4)]
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 2,
+                "prompt_id": "p1",
+                "text_hashes": [hashlib.sha256(text.encode()).hexdigest() for text in texts],
+                "judge": {"model": "judge", "revision": "a" * 40, "max_tokens": 128},
+                "records": [
+                    {
+                        "prompt_id": "p1",
+                        "sample_index": index,
+                        "text": text,
+                        "finish_reason": "stop",
+                        "completion_tokens": 4,
+                        "dimensions": {
+                            "relevance": 5,
+                            "feasibility": 5,
+                            "soundness": 5,
+                            "clarity": 5,
+                            "instruction_compliance": 5,
+                        },
+                        "quality_score": 1.0,
+                        "request_id": f"request-{index}",
+                        "model": "judge",
+                    }
+                    for index, text in enumerate(texts)
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    payload = load_score_shard_prefix(
+        path, source_samples_per_prompt=4, selected_samples_per_prompt=2
+    )
+
+    assert [record["sample_index"] for record in payload["records"]] == [0, 1]
+    assert payload["text_hashes"] == [
+        hashlib.sha256(text.encode()).hexdigest() for text in texts[:2]
+    ]
+    with pytest.raises(ValueError, match="cannot select"):
+        load_score_shard_prefix(
+            path, source_samples_per_prompt=4, selected_samples_per_prompt=5
+        )
