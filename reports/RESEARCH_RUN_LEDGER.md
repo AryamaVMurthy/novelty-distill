@@ -526,6 +526,16 @@ Commit `fa1ae14` also places the migration ahead of the final full-matrix audit.
 current-schema metadata as `not_required`, legacy migrated metadata as `already_migrated`, and
 missing legacy declarations as a one-time backfill; any mismatch still terminates analysis.
 
+At 22:00 IST, the preregistered teacher-target diagnostic for the nested random-4 control completed
+without GPU inference. Its immutable result is
+`evaluations/teacher-targets-random4-teacher-1k-v1/analysis.json` on scratch, produced by commit
+`033ca707`. Random-4 preserved random-1 mean quality (0.826950 versus 0.827300) while increasing
+automatic semantic modes per prompt from 1.000 to 2.584. Diverse-4 reached 0.866088 quality and
+3.146 modes, so it changes both response multiplicity and target selection. This pre-student
+finding validates the six-arm exposure design: F2 versus repeated B2a isolates unbiased
+multiplicity, while B3 versus F2 isolates coverage/quality-aware selection. Full provenance,
+deltas, and interpretation limits are recorded in `reports/RANDOM4_TARGET_FINDINGS.md`.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
