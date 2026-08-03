@@ -107,3 +107,12 @@ an independently implemented 50-permutation Decan score on the already generated
 sets is eligible as a secondary cross-metric check. The public author repository had no explicit
 license at commit `75855641dc138ba6e7e44c227a7e4c880beefada`, so it is not vendored or installed.
 Primary source: <https://arxiv.org/abs/2606.01811>.
+
+Zhou et al., *Ideas Have Genomes: Benchmarking Scientific Lineage Reasoning and Lineage-Grounded
+Idea Generation* (arXiv:2607.08758v1, 2026), distinguish topical proximity from coherent inheritance
+of a parent mechanism and repair of a known limitation. This sharpens the later expert-review rubric,
+but IG-Arena is not a drop-in benchmark for the frozen temporal task: it changes the input contract to
+lineage packets and uses a model-judge Population-Evolution Score. It is therefore screened as
+methodological guidance, not staged as another automatic endpoint. The released repository declared
+its license `TBD` at commit `938fa9edfe54bee9a78359b42810b9c20857e432`; no code or data is reused.
+Primary source: <https://arxiv.org/abs/2607.08758>.

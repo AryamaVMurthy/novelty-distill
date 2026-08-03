@@ -84,6 +84,17 @@ not a results report and does not promote any baseline.
     eligible as a post-promotion, fixed-base-model robustness check on the existing K=16 samples.
     The public implementation had no explicit license at commit
     `75855641dc138ba6e7e44c227a7e4c880beefada`, so no code is imported.
+15. Topical or embedding distance does not prove that an idea coherently extends its cited research
+    lineage. IdeaGene-Bench separates inherited mechanisms, repaired limitations, meaningful
+    variation, and selection value; its results show that fluent proposals can fail these joint
+    lineage constraints. That distinction reinforces this study's mechanism/intervention-focused
+    embedding instruction, but an automatic Population-Evolution Score would reintroduce an
+    LLM-judge dependency and a different task contract. The benchmark is therefore not inserted
+    into the primary matrix. Any promoted expert review should additionally check whether a claimed
+    parent mechanism is actually inherited and whether the proposed intervention repairs the stated
+    limitation, rather than counting topical distance as novelty. The public benchmark repository
+    declared its license `TBD` at commit `938fa9edfe54bee9a78359b42810b9c20857e432`, so its code and
+    data are not imported.
 
 ## Consequences for this study
 
@@ -139,8 +150,9 @@ not a results report and does not promote any baseline.
   odd-one-out judgments of mechanism/intervention equivalence. Until that exists, conclusions are
   explicitly limited to the fixed Qwen judge and Qwen embedding operational definitions.
 - Expert review for any promoted scientific-novelty claim must separately label literature-grounded
-  novelty, narrow/source-bound restatement, and mechanism/intervention equivalence. The automated
-  quality mean and the historical-target similarity are not substitutes for those labels.
+  novelty, narrow/source-bound restatement, mechanism/intervention equivalence, claimed-parent
+  inheritance, and limitation-to-intervention repair coherence. The automated quality mean and the
+  historical-target similarity are not substitutes for those labels.
 
 ## Primary source log
 
@@ -174,3 +186,5 @@ not a results report and does not promote any baseline.
   `e97b7895d8c16e8438ab869f752a37f19908da4c`.
 - Shanahan et al., *"I've Seen How This Goes": Characterizing Diversity via Progressive
   Conditional Surprise*, arXiv preprint, 2026: <https://arxiv.org/abs/2606.01811>.
+- Zhou et al., *Ideas Have Genomes: Benchmarking Scientific Lineage Reasoning and Lineage-Grounded
+  Idea Generation*, arXiv preprint, 2026: <https://arxiv.org/abs/2607.08758>.
