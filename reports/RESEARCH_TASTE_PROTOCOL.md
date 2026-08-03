@@ -27,6 +27,15 @@ synthesis/unification methods relative to realized human-paper ideas. Their task
 annotator, and literature inputs differ from TOMATO, so those percentages are motivation for this
 analysis rather than expected values or evidence about our outputs.
 
+In their matched 11,683-paper corpus, the human reference has normalized entropy 0.926 on the
+opportunity axis and 0.920 on the method axis; the nine main LLM settings span 0.550--0.758 and
+0.723--0.879, respectively. Their reasoning ablation is also relevant to experimental control:
+Qwen3-8B thinking raises bridge mass from 49.7% to 71.1%, synthesis mass from 38.7% to 52.2%, and
+human-opportunity TVD from 0.382 to 0.590. Our teacher, students, historical renderer, and annotator
+were already frozen with thinking disabled before this paper-derived analysis was added. We cite
+the ablation as a reason to report that control explicitly, not as post-hoc evidence favoring any
+distillation method.
+
 ## Research question
 
 Does distillation preserve or change two different kinds of scientific-idea breadth?
