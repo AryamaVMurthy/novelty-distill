@@ -100,6 +100,7 @@ def test_offline_export_logs_configs_metrics_tables_and_metadata_artifacts(
     assert len(fake.runs) == 2
     training_run, evaluation_run = fake.runs
     assert training_run.kwargs["mode"] == "offline"
+    assert training_run.kwargs["reinit"] == "finish_previous"
     assert training_run.kwargs["config"]["baseline_id"] == "B1"
     assert "example_ids" not in training_run.kwargs["config"]
     assert training_run.summary["train_loss"] == 1.25
@@ -147,6 +148,7 @@ def test_final_analysis_jobs_export_offline_tracking_snapshots() -> None:
         encoding="utf-8"
     )
     data_requirements = Path("environments/data.in").read_text(encoding="utf-8")
+    exporter = Path("scripts/export_wandb_snapshot.py").read_text(encoding="utf-8")
 
     assert "wandb==0.22.3" in data_requirements
     for script in (primary, exploratory):
@@ -154,3 +156,5 @@ def test_final_analysis_jobs_export_offline_tracking_snapshots() -> None:
         assert "wandb-export-manifest.json" in script
         assert '--run-dir "${scratch_root}/wandb"' in script
     assert "C3-tomato1k-seed17-l896-4gpu/run_metadata.json" in primary
+    for variable in ("WANDB_DIR", "WANDB_DATA_DIR", "WANDB_CACHE_DIR", "WANDB_CONFIG_DIR"):
+        assert f'os.environ.setdefault("{variable}"' in exporter

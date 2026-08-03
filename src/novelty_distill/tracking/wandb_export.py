@@ -199,7 +199,7 @@ def export_wandb_records(
             "config": _config(payload),
             "mode": mode,
             "dir": str(run_dir),
-            "reinit": True,
+            "reinit": "finish_previous",
         }
         if entity is not None:
             init_args["entity"] = entity

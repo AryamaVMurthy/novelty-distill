@@ -23,6 +23,12 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    args.run_dir.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault("WANDB_DIR", str(args.run_dir))
+    os.environ.setdefault("WANDB_DATA_DIR", str(args.run_dir / "data"))
+    os.environ.setdefault("WANDB_CACHE_DIR", str(args.run_dir / "cache"))
+    os.environ.setdefault("WANDB_CONFIG_DIR", str(args.run_dir / "config"))
+
     import wandb
 
     result = export_wandb_records(
