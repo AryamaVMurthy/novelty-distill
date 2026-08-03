@@ -59,6 +59,7 @@ repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/data"
 evaluation_root="${scratch_root}/evaluations/tomato"
 taste_root="${scratch_root}/research-taste"
+score_root="${scratch_root}/evaluation-scores"
 official_root="${scratch_root}/evaluations/official"
 if [[ "${model_profile}" == main ]]; then
   run_infix="tomato${train_size}"
@@ -78,6 +79,9 @@ control_a3_eval_id="${CONTROL_A3_EVAL_ID:-A3-${run_infix}-temporal-k1}"
 control_a0_taste_id="${CONTROL_A0_TASTE_ID:-${default_a0_taste}}"
 control_a1_taste_id="${CONTROL_A1_TASTE_ID:-${default_a1_taste}}"
 control_a3_taste_id="${CONTROL_A3_TASTE_ID:-${default_a3_taste}}"
+control_a0_score_id="${CONTROL_A0_SCORE_ID:-${control_a0_taste_id}}"
+control_a1_score_id="${CONTROL_A1_SCORE_ID:-${control_a1_taste_id}}"
+control_a3_score_id="${CONTROL_A3_SCORE_ID:-A3-temporal-k1}"
 
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
@@ -104,6 +108,11 @@ taste_inputs=(
   --input "A1=${taste_root}/${control_a1_taste_id}"
   --input "A3=${taste_root}/${control_a3_taste_id}"
 )
+geometry_inputs=(
+  --input "A0=${score_root}/${control_a0_score_id}"
+  --input "A1=${score_root}/${control_a1_score_id}"
+  --input "A3=${score_root}/${control_a3_score_id}"
+)
 wandb_inputs=(
   --input "${evaluation_root}/${control_a0_eval_id}.json"
   --input "${evaluation_root}/${control_a1_eval_id}.json"
@@ -115,6 +124,9 @@ for control_id in "${control_a0_eval_id}" "${control_a1_eval_id}" "${control_a3_
 done
 for control_taste in "${control_a0_taste_id}" "${control_a1_taste_id}" "${control_a3_taste_id}"; do
   test -d "${taste_root}/${control_taste}"
+done
+for control_score in "${control_a0_score_id}" "${control_a1_score_id}" "${control_a3_score_id}"; do
+  test -d "${score_root}/${control_score}"
 done
 
 for seed in "${seeds[@]}"; do
@@ -133,12 +145,14 @@ for seed in "${seeds[@]}"; do
     test -s "${metadata_path}"
     test -s "${evaluation_root}/${eval_id}.json"
     test -d "${taste_root}/${eval_id}"
+    test -d "${score_root}/${eval_id}"
     audit_args+=(
       --baseline-id "${baseline_id}"
       --input "${baseline_id}=${metadata_path}"
     )
     collector_inputs+=(--input "${baseline_id}:${seed}=${evaluation_root}/${eval_id}.json")
     taste_inputs+=(--input "${baseline_id}-seed${seed}=${taste_root}/${eval_id}")
+    geometry_inputs+=(--input "${baseline_id}-seed${seed}=${score_root}/${eval_id}")
     wandb_inputs+=(--input "${metadata_path}" --input "${evaluation_root}/${eval_id}.json")
     if [[ "${run_official}" == 1 ]]; then
       official_path="${official_root}/${eval_id}/combined.json"
@@ -174,6 +188,13 @@ threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
   --config "${repo_dir}/configs/evaluation/research_taste.yaml" \
   --output "${output_dir}/research-taste-secondary.json" \
   --markdown "${output_dir}/research-taste-findings.md"
+"${venv_dir}/bin/python" "${repo_dir}/scripts/analyze_same_prompt_geometry.py" \
+  "${geometry_inputs[@]}" \
+  --embedding-cache-dir "${scratch_root}/cache/embeddings" \
+  --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+  --analysis-config "${repo_dir}/configs/evaluation/same_prompt_geometry.yaml" \
+  --output "${output_dir}/same-prompt-geometry-secondary.json" \
+  --markdown "${output_dir}/same-prompt-geometry-findings.md"
 if [[ "${run_official}" == 1 ]]; then
   "${venv_dir}/bin/python" "${repo_dir}/scripts/collect_seeded_official_metrics.py" \
     "${official_inputs[@]}" \
@@ -188,6 +209,7 @@ wandb_inputs+=(
   --input "${output_dir}/seeded-collection-manifest.json"
   --input "${output_dir}/primary-contrasts.json"
   --input "${output_dir}/research-taste-secondary.json"
+  --input "${output_dir}/same-prompt-geometry-secondary.json"
 )
 "${venv_dir}/bin/python" "${repo_dir}/scripts/export_wandb_snapshot.py" \
   "${wandb_inputs[@]}" \
@@ -201,6 +223,8 @@ test -s "${output_dir}/primary-contrasts.json"
 test -s "${output_dir}/findings.md"
 test -s "${output_dir}/research-taste-secondary.json"
 test -s "${output_dir}/research-taste-findings.md"
+test -s "${output_dir}/same-prompt-geometry-secondary.json"
+test -s "${output_dir}/same-prompt-geometry-findings.md"
 if [[ "${run_official}" == 1 ]]; then
   test -s "${output_dir}/official-benchmarks.json"
   test -s "${output_dir}/official-benchmarks.md"

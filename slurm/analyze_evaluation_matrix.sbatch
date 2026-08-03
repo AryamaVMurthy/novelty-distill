@@ -22,6 +22,7 @@ repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/data"
 evaluation_root="${scratch_root}/evaluations/tomato"
 taste_root="${scratch_root}/research-taste"
+score_root="${scratch_root}/evaluation-scores"
 output_dir="${evaluation_root}/analysis-seed17"
 
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
@@ -55,12 +56,19 @@ taste_inputs=(
   --input "A1=${taste_root}/A1-temporal-k16-seed17000"
   --input "A3=${taste_root}/A3-temporal-k1"
 )
+geometry_inputs=(
+  --input "A0=${score_root}/A0-temporal-k16-seed17000"
+  --input "A1=${score_root}/A1-temporal-k16-seed17000"
+  --input "A3=${score_root}/A3-temporal-k1"
+)
 for baseline_id in "${baseline_ids[@]}"; do
   eval_id="${baseline_id}-tomato1k-seed17-temporal-k16"
   test -s "${evaluation_root}/${eval_id}.json"
   collector_inputs+=(--input "${baseline_id}=${evaluation_root}/${eval_id}.json")
   test -d "${taste_root}/${eval_id}"
   taste_inputs+=(--input "${baseline_id}=${taste_root}/${eval_id}")
+  test -d "${score_root}/${eval_id}"
+  geometry_inputs+=(--input "${baseline_id}=${score_root}/${eval_id}")
 done
 test -s "${evaluation_root}/A0-temporal-k16-seed17000.json"
 test -s "${evaluation_root}/A1-temporal-k16-seed17000.json"
@@ -68,6 +76,9 @@ test -s "${evaluation_root}/A3-temporal-k1.json"
 test -d "${taste_root}/A0-temporal-k16-seed17000"
 test -d "${taste_root}/A1-temporal-k16-seed17000"
 test -d "${taste_root}/A3-temporal-k1"
+test -d "${score_root}/A0-temporal-k16-seed17000"
+test -d "${score_root}/A1-temporal-k16-seed17000"
+test -d "${score_root}/A3-temporal-k1"
 
 training_audit_inputs=()
 for baseline_id in "${baseline_ids[@]}"; do
@@ -103,6 +114,13 @@ threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
   --config "${repo_dir}/configs/evaluation/research_taste.yaml" \
   --output "${output_dir}/research-taste-secondary.json" \
   --markdown "${output_dir}/research-taste-findings.md"
+"${venv_dir}/bin/python" "${repo_dir}/scripts/analyze_same_prompt_geometry.py" \
+  "${geometry_inputs[@]}" \
+  --embedding-cache-dir "${scratch_root}/cache/embeddings" \
+  --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+  --analysis-config "${repo_dir}/configs/evaluation/same_prompt_geometry.yaml" \
+  --output "${output_dir}/same-prompt-geometry-secondary.json" \
+  --markdown "${output_dir}/same-prompt-geometry-findings.md"
 "${venv_dir}/bin/python" "${repo_dir}/scripts/prepare_research_taste_calibration.py" \
   "${taste_inputs[@]}" \
   --prompts "${scratch_root}/data/tomato-open-test-1658.jsonl" \
@@ -120,6 +138,7 @@ wandb_inputs=(
   --input "${output_dir}/training-matrix-audit.json"
   --input "${output_dir}/primary-contrasts.json"
   --input "${output_dir}/research-taste-secondary.json"
+  --input "${output_dir}/same-prompt-geometry-secondary.json"
 )
 for baseline_id in "${baseline_ids[@]}"; do
   eval_id="${baseline_id}-tomato1k-seed17-temporal-k16"
@@ -146,6 +165,8 @@ test -s "${output_dir}/primary-contrasts.json"
 test -s "${output_dir}/findings.md"
 test -s "${output_dir}/research-taste-secondary.json"
 test -s "${output_dir}/research-taste-findings.md"
+test -s "${output_dir}/same-prompt-geometry-secondary.json"
+test -s "${output_dir}/same-prompt-geometry-findings.md"
 test -s "${output_dir}/research-taste-human-calibration.jsonl"
 test -s "${output_dir}/research-taste-human-calibration-key.json"
 test -s "${output_dir}/research-taste-human-calibration-instructions.md"

@@ -22,6 +22,7 @@ repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/data"
 evaluation_root="${scratch_root}/evaluations/tomato"
 taste_root="${scratch_root}/research-taste"
+score_root="${scratch_root}/evaluation-scores"
 output_dir="${evaluation_root}/analysis-exposure4x-seed17"
 primary_methods=(B2a B2b B2c B3 B4)
 sensitivity_methods=(B2a-4x B2b-4x B2c-4x B3-4x B4-4x)
@@ -46,6 +47,11 @@ taste_inputs=(
   --input "A1=${taste_root}/A1-temporal-k16-seed17000"
   --input "A3=${taste_root}/A3-temporal-k1"
 )
+geometry_inputs=(
+  --input "A0=${score_root}/A0-temporal-k16-seed17000"
+  --input "A1=${score_root}/A1-temporal-k16-seed17000"
+  --input "A3=${score_root}/A3-temporal-k1"
+)
 wandb_inputs=()
 for method in "${primary_methods[@]}"; do
   eval_id="${method}-tomato1k-seed17-temporal-k16"
@@ -53,6 +59,8 @@ for method in "${primary_methods[@]}"; do
   test -d "${taste_root}/${eval_id}"
   collector_inputs+=(--input "${method}=${evaluation_root}/${eval_id}.json")
   taste_inputs+=(--input "${method}=${taste_root}/${eval_id}")
+  test -d "${score_root}/${eval_id}"
+  geometry_inputs+=(--input "${method}=${score_root}/${eval_id}")
   wandb_inputs+=(--input "${evaluation_root}/${eval_id}.json")
 done
 
@@ -67,6 +75,8 @@ for method in "${sensitivity_methods[@]}"; do
   audit_inputs+=(--input "${method}=${metadata_path}")
   collector_inputs+=(--input "${method}=${evaluation_root}/${eval_id}.json")
   taste_inputs+=(--input "${method}=${taste_root}/${eval_id}")
+  test -d "${score_root}/${eval_id}"
+  geometry_inputs+=(--input "${method}=${score_root}/${eval_id}")
   wandb_inputs+=(--input "${metadata_path}" --input "${evaluation_root}/${eval_id}.json")
 done
 
@@ -91,11 +101,19 @@ done
   --config "${repo_dir}/configs/evaluation/research_taste.yaml" \
   --output "${output_dir}/research-taste-secondary.json" \
   --markdown "${output_dir}/research-taste-findings.md"
+"${venv_dir}/bin/python" "${repo_dir}/scripts/analyze_same_prompt_geometry.py" \
+  "${geometry_inputs[@]}" \
+  --embedding-cache-dir "${scratch_root}/cache/embeddings" \
+  --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+  --analysis-config "${repo_dir}/configs/evaluation/same_prompt_geometry.yaml" \
+  --output "${output_dir}/same-prompt-geometry-secondary.json" \
+  --markdown "${output_dir}/same-prompt-geometry-findings.md"
 
 wandb_inputs+=(
   --input "${output_dir}/training-matrix-audit.json"
   --input "${output_dir}/secondary-contrasts.json"
   --input "${output_dir}/research-taste-secondary.json"
+  --input "${output_dir}/same-prompt-geometry-secondary.json"
 )
 "${venv_dir}/bin/python" "${repo_dir}/scripts/export_wandb_snapshot.py" \
   "${wandb_inputs[@]}" \
@@ -107,4 +125,6 @@ test -s "${output_dir}/secondary-contrasts.json"
 test -s "${output_dir}/findings.md"
 test -s "${output_dir}/research-taste-secondary.json"
 test -s "${output_dir}/research-taste-findings.md"
+test -s "${output_dir}/same-prompt-geometry-secondary.json"
+test -s "${output_dir}/same-prompt-geometry-findings.md"
 test -s "${output_dir}/wandb-export-manifest.json"

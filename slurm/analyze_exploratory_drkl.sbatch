@@ -22,6 +22,7 @@ repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/data"
 evaluation_root="${scratch_root}/evaluations/tomato"
 taste_root="${scratch_root}/research-taste"
+score_root="${scratch_root}/evaluation-scores"
 output_dir="${evaluation_root}/analysis-seed17/exploratory-drkl"
 
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
@@ -41,6 +42,11 @@ flock -u 8
 
 methods=(C2-best1 C2-diverse4 F1-best1 F1-diverse4)
 collector_inputs=()
+geometry_inputs=(
+  --input "A0=${score_root}/A0-temporal-k16-seed17000"
+  --input "A1=${score_root}/A1-temporal-k16-seed17000"
+  --input "A3=${score_root}/A3-temporal-k1"
+)
 for method in "${methods[@]}"; do
   if [[ "${method}" == F1-* ]]; then
     eval_id="${method}-exploratory-drkl-tomato1k-seed17-temporal-k16"
@@ -48,7 +54,9 @@ for method in "${methods[@]}"; do
     eval_id="${method}-tomato1k-seed17-temporal-k16"
   fi
   test -s "${evaluation_root}/${eval_id}.json"
+  test -d "${score_root}/${eval_id}"
   collector_inputs+=(--input "${method}=${evaluation_root}/${eval_id}.json")
+  geometry_inputs+=(--input "${method}=${score_root}/${eval_id}")
 done
 
 matrix_path="${output_dir}/prompt-metrics.jsonl"
@@ -84,10 +92,18 @@ done
   --config "${repo_dir}/configs/evaluation/research_taste.yaml" \
   --output "${output_dir}/research-taste-secondary.json" \
   --markdown "${output_dir}/research-taste-findings.md"
+"${venv_dir}/bin/python" "${repo_dir}/scripts/analyze_same_prompt_geometry.py" \
+  "${geometry_inputs[@]}" \
+  --embedding-cache-dir "${scratch_root}/cache/embeddings" \
+  --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
+  --analysis-config "${repo_dir}/configs/evaluation/same_prompt_geometry.yaml" \
+  --output "${output_dir}/same-prompt-geometry-secondary.json" \
+  --markdown "${output_dir}/same-prompt-geometry-findings.md"
 
 wandb_inputs=(
   --input "${output_dir}/contrasts.json"
   --input "${output_dir}/research-taste-secondary.json"
+  --input "${output_dir}/same-prompt-geometry-secondary.json"
 )
 for method in "${methods[@]}"; do
   if [[ "${method}" == F1-* ]]; then
@@ -115,4 +131,6 @@ test -s "${output_dir}/contrasts.json"
 test -s "${output_dir}/findings.md"
 test -s "${output_dir}/research-taste-secondary.json"
 test -s "${output_dir}/research-taste-findings.md"
+test -s "${output_dir}/same-prompt-geometry-secondary.json"
+test -s "${output_dir}/same-prompt-geometry-findings.md"
 test -s "${output_dir}/wandb-export-manifest.json"

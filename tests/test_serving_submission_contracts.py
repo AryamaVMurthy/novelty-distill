@@ -230,6 +230,13 @@ def test_promoted_evaluation_dry_run_binds_models_controls_taste_and_analysis(
     assert run["environment"]["LORA_PATH"].endswith("/final")
     assert result["analysis"]["environment"]["PROMOTED_METHODS"] == "B1"
     assert result["analysis"]["environment"]["TRAIN_SEEDS"] == "17"
+    assert result["analysis"]["environment"]["CONTROL_A0_SCORE_ID"] == (
+        "A0-temporal-k16-seed17000"
+    )
+    assert result["analysis"]["environment"]["CONTROL_A1_SCORE_ID"] == (
+        "A1-temporal-k16-seed17000"
+    )
+    assert result["analysis"]["environment"]["CONTROL_A3_SCORE_ID"] == "A3-temporal-k1"
     assert json.loads(output.read_text(encoding="utf-8")) == result
 
 

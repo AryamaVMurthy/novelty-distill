@@ -465,6 +465,14 @@ because it also requires human--human kappa >= 0.80. Neither the author reposito
 declares a reuse license, so only the independently implemented taxonomy analysis is active; the
 released dataset is not silently added to the official benchmark suite.
 
+Before any trained-model temporal metric existed, the source audit froze a second paper-derived
+diagnostic from TasteGap's same-paper geometry analysis. It reuses only the exact
+normalized Qwen3 embedding cache already produced by evaluation and measures, per prompt, each
+method's cosine affinity to A1, affinity to A3, teacher-minus-human affinity, and within-method
+concentration. Ten-thousand-resample prompt bootstraps and A0 deltas are descriptive; missing cache
+vectors fail rather than triggering new inference. The path is wired into primary, exposure, DRKL,
+and promoted analysis jobs and specified in `reports/SAME_PROMPT_GEOMETRY_PROTOCOL.md`.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are

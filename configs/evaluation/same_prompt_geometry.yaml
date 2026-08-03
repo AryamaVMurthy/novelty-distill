@@ -1,0 +1,18 @@
+schema_version: 1
+status: secondary_descriptive
+source:
+  title: Measuring the Gap Between Human and LLM Research Ideas
+  authors: [Ziyu Chen, Yilun Zhao, Arman Cohan]
+  arxiv: "2607.01233"
+  year: 2026
+analysis:
+  human_method: A3
+  teacher_method: A1
+  base_method: A0
+  interpretation: >-
+    Positive teacher-minus-human affinity means that prompt-matched outputs are closer to the
+    external teacher than to the historical human idea under the frozen embedding representation.
+bootstrap:
+  resamples: 10000
+  seed: 17
+  confidence_level: 0.95

@@ -264,6 +264,10 @@ def main() -> None:
             for label in ("A0", "A1", "A3")
         },
         **{
+            f"CONTROL_{label}_SCORE_ID": controls[label]["score_id"]
+            for label in ("A0", "A1", "A3")
+        },
+        **{
             f"CONTROL_{label}_TASTE_ID": control_taste_ids[label]
             for label in ("A0", "A1", "A3")
         },
