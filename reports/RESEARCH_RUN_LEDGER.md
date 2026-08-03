@@ -380,6 +380,10 @@ primary matrix. Their matched controls and interpretation boundary are recorded 
 then submits their resumable temporal generation, scoring, evaluation, and research-taste chains.
 Its final analysis additionally waits for the primary analysis job recovered from controller
 18222, guaranteeing that the matched C2 and A1/A3 artifacts are complete before any F1 contrast.
+One-step integration job 18400 then exercised the actual TRL subclass on the fourth GPU while the
+three primary recovery jobs ran. It completed in 20 seconds with finite loss 1.0041895, recorded
+`diversity_aware_reverse_kl` and gamma 0.5, and produced a readable LoRA adapter. This verifies the
+end-to-end implementation path; it is systems evidence rather than an ideation result.
 
 ## UltraFeedback systems pilot
 
