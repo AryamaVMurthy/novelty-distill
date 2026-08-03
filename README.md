@@ -193,6 +193,8 @@ adapter points its existing OpenRouter-compatible client at the local SGLang URL
 
 The verified Turing smoke results and their limitations are recorded in
 [`reports/TURING_SMOKE_FINDINGS.md`](reports/TURING_SMOKE_FINDINGS.md).
+The concise separation between current scientific evidence and live execution gates is maintained
+in [`reports/CURRENT_RESEARCH_STATUS.md`](reports/CURRENT_RESEARCH_STATUS.md).
 The research-scale Slurm graph is frozen in
 [`reports/RESEARCH_RUN_LEDGER.md`](reports/RESEARCH_RUN_LEDGER.md), and the claim boundary informed
 by current primary literature is in

@@ -747,3 +747,11 @@ only. As defense in depth, `train_smoke.sbatch` now takes a nonblocking lock key
 `run_metadata.json` path before its completion check and retains it through process exit. A
 misconfigured retry therefore fails explicitly instead of concurrently writing an adapter or full
 checkpoint. The behavior was added test-first and the batch script passes Bash syntax validation.
+
+## 2026-08-04 A1 temporal generation completion
+
+Teacher generation job 18357 completed cleanly in 05:30:09, bringing the frozen A1 temporal run to
+all 1,658 prompt shards and 26,528 Qwen3-14B samples. Idempotent resume job 18358 then validated the
+complete tree and exited successfully in 12 seconds without regenerating a prompt. Qwen3-32B-FP8
+score pass 18201 started immediately, with pass 18202 retained as an `afterany` resumable second
+pass. This is a complete generation-population gate, not yet an A1 quality or mode finding.
