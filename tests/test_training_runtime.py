@@ -35,9 +35,16 @@ def test_invocation_runtime_validates_checkpoint_and_runtime_contract() -> None:
             end_step=125,
             metrics={"train_runtime": 1.0},
         )
-    with pytest.raises(ValueError, match="end after its start"):
+    finalization = invocation_runtime(
+        last_checkpoint="/scratch/run/checkpoint-125",
+        end_step=125,
+        metrics={"train_runtime": 1.0},
+    )
+    assert finalization["optimizer_steps"] == 0
+    assert finalization["seconds_per_optimizer_step"] is None
+    with pytest.raises(ValueError, match="cannot end before"):
         invocation_runtime(
-            last_checkpoint="/scratch/run/checkpoint-125",
+            last_checkpoint="/scratch/run/checkpoint-126",
             end_step=125,
             metrics={"train_runtime": 1.0},
         )

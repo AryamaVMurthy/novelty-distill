@@ -12,7 +12,7 @@ def invocation_runtime(
     last_checkpoint: str | None,
     end_step: int,
     metrics: Mapping[str, Any],
-) -> dict[str, float | int]:
+) -> dict[str, float | int | None]:
     """Describe only the optimizer-step span covered by one trainer invocation."""
 
     start_step = 0
@@ -21,8 +21,8 @@ def invocation_runtime(
         if match is None:
             raise ValueError("last checkpoint has no numeric checkpoint step")
         start_step = int(match.group(1))
-    if isinstance(end_step, bool) or not isinstance(end_step, int) or end_step <= start_step:
-        raise ValueError("trainer invocation must end after its start step")
+    if isinstance(end_step, bool) or not isinstance(end_step, int) or end_step < start_step:
+        raise ValueError("trainer invocation cannot end before its start step")
     runtime = metrics.get("train_runtime")
     if (
         isinstance(runtime, bool)
@@ -38,5 +38,7 @@ def invocation_runtime(
         "end_step": end_step,
         "optimizer_steps": optimizer_steps,
         "runtime_seconds": runtime_seconds,
-        "seconds_per_optimizer_step": runtime_seconds / optimizer_steps,
+        "seconds_per_optimizer_step": (
+            runtime_seconds / optimizer_steps if optimizer_steps else None
+        ),
     }
