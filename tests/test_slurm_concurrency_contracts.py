@@ -3,6 +3,18 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 
 
+def test_cpu_only_jobs_stay_below_turing_gpu_billing_threshold() -> None:
+    for path in sorted((ROOT / "slurm").glob("*.sbatch")):
+        script = path.read_text(encoding="utf-8")
+        if "#SBATCH --gres=gpu:" in script:
+            continue
+        cpu_lines = [
+            line for line in script.splitlines() if line.startswith("#SBATCH --cpus-per-task=")
+        ]
+        if cpu_lines:
+            assert int(cpu_lines[0].partition("=")[2]) <= 2, path.name
+
+
 def test_training_environment_mutations_are_serialized() -> None:
     script = (ROOT / "slurm" / "train_smoke.sbatch").read_text(encoding="utf-8")
 

@@ -644,6 +644,13 @@ Initial job 18595 was cancelled while pending at zero elapsed time because Turin
 added GPU billing to its four-CPU request; the two-CPU replacement completed in three seconds with
 an empty `SLURM_JOB_GPUS` field and did not displace research compute.
 
+That observed scheduler behavior also exposed five not-yet-released CPU-only scripts requesting
+four cores: primary, promoted, exposure-sensitivity, and DRKL analyses plus the historical-control
+preparation job. They now request two cores, below Turing's automatic GPU-billing threshold. A
+repository-wide Slurm contract test rejects any CPU-only batch script above that threshold; the
+full suite passed with 268 tests and two expected local skips. No already-running allocation or
+experimental contract changed.
+
 The first 18 E2 optimizer steps then exposed an upstream optional-loss defect: every finite logged
 loss was negative under `jsd_token_clip: 0.05`. Source tracing showed that the pinned OPSD trainer
 upper-clips signed per-vocabulary KL/JSD contributions before summing them. Only their vocabulary
