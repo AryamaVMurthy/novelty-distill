@@ -139,12 +139,13 @@ KL, and skew KL have different numerical scales.
 | D1 | forward KL / student trajectories | 1,000 | 1,000 | 13,524.8 | ~39,500 |
 | D2 | reverse KL / student trajectories | 1,000 | 1,000 | 13,638.4 | ~39,500 |
 
-All eleven completed LoRA artifacts above B4/C3 open as 132,187,888-byte rank-16 adapters with
+All thirteen completed LoRA artifacts above B4/C3 open as 132,187,888-byte rank-16 adapters with
 504 non-empty tensors. B4 is a structurally valid 8,044,981,992-byte, 398-tensor native-BF16 full
 model; C3's full-checkpoint and BF16-cast serving evidence is recorded below. The three long human
 targets in C1/C2 account for 1,446 completion-tail tokens and materially increase runtime and peak
 memory relative to the teacher-target views; this context-cost difference must remain visible in
-method comparisons.
+method comparisons. D1/D2 peak memory is the approximately 38.6-GiB live observation rather than
+a profiler-derived maximum, hence the tilde in the table.
 
 The checkpoint-125 trainer histories provide a separate convergence diagnostic. Values below are
 25-step window means, so they are comparable only within an objective and are not downstream
