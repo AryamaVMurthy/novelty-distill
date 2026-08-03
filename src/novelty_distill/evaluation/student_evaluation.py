@@ -191,6 +191,18 @@ def summarize_quality_dimensions(
     }
 
 
+def meets_viability_gate(dimensions: Mapping[str, Any], *, minimum: int = 4) -> bool:
+    """Require strong relevance, soundness, and clarity without score compensation."""
+
+    if not 1 <= minimum <= 5:
+        raise ValueError("viability minimum must be in [1, 5]")
+    validated = QualityDimensions.model_validate(dimensions)
+    return all(
+        getattr(validated, name) >= minimum
+        for name in ("relevance", "soundness", "clarity")
+    )
+
+
 def _normalize(rows: tuple[tuple[float, ...], ...]) -> tuple[tuple[float, ...], ...]:
     normalized = []
     for row in rows:

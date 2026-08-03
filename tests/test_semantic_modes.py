@@ -1,6 +1,10 @@
 import pytest
 
-from novelty_distill.evaluation.semantic_modes import mode_metrics, quality_adjusted_coverage
+from novelty_distill.evaluation.semantic_modes import (
+    mode_metrics,
+    quality_adjusted_coverage,
+    viable_semantic_yield,
+)
 
 
 def test_mode_metrics_distinguish_overlap_from_distribution_shift() -> None:
@@ -26,3 +30,24 @@ def test_quality_adjusted_coverage_counts_only_best_output_per_mode() -> None:
     )
 
     assert score == pytest.approx(1.4)
+
+
+def test_viable_semantic_yield_counts_largest_mutually_distinct_set() -> None:
+    result = viable_semantic_yield(
+        embeddings=((1.0, 0.0), (0.99, 0.01), (0.0, 1.0)),
+        eligible=(True, True, True),
+        similarity_threshold=0.95,
+    )
+
+    assert result == 2
+
+
+def test_viable_semantic_yield_is_zero_without_viable_responses() -> None:
+    assert (
+        viable_semantic_yield(
+            embeddings=((1.0, 0.0), (0.0, 1.0)),
+            eligible=(False, False),
+            similarity_threshold=0.95,
+        )
+        == 0
+    )

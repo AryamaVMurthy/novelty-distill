@@ -142,6 +142,9 @@ def test_contrast_config_keeps_rubric_axes_descriptive() -> None:
         "completion_tokens_mean",
     } <= set(config["descriptive_metrics"])
     assert "student_instruction_compliance_mean" not in config["metrics"]
+    assert "viable_semantic_yield" in config["descriptive_metrics"]
+    assert "viable_semantic_yield" not in config["metrics"]
+    assert config["threshold_metric_directions"]["viable_semantic_yield"] == "higher"
 
 
 def test_primary_teacher_cluster_threshold_is_nondegenerate_before_student_evaluation() -> None:

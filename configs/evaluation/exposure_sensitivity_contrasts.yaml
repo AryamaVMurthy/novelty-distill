@@ -22,6 +22,7 @@ descriptive_metrics:
   - teacher_mode_precision
   - cluster_jsd
   - quality_adjusted_coverage
+  - viable_semantic_yield
   - nearest_training_target_similarity_mean
   - length_stop_rate
   - completion_tokens_mean
@@ -31,6 +32,7 @@ threshold_metric_directions:
   teacher_mode_precision: higher
   cluster_jsd: lower
   quality_adjusted_coverage: higher
+  viable_semantic_yield: higher
 contrasts:
   - {id: B2a-4x-vs-B2a, reference: B2a, treatment: B2a-4x}
   - {id: B2b-4x-vs-B2b, reference: B2b, treatment: B2b-4x}

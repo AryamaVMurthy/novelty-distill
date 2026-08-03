@@ -95,6 +95,17 @@ not a results report and does not promote any baseline.
     limitation, rather than counting topical distance as novelty. The public benchmark repository
     declared its license `TBD` at commit `938fa9edfe54bee9a78359b42810b9c20857e432`, so its code and
     data are not imported.
+16. Quality and diversity should also be inspected conjunctively, not only as two marginal means.
+    IDEAgent's Yield filters individually viable ideas and finds the largest mutually distinct
+    subset, preventing repeated high-quality paraphrases and numerous weak outliers from looking
+    equally useful. This study adds an independently implemented secondary diagnostic over its
+    already generated K=16 samples: a response must receive at least 4/5 for relevance, soundness,
+    and clarity, and every retained pair must fall below the current semantic cosine threshold.
+    Exact maximum-cardinality search is feasible at K=16 and is reported over the full threshold
+    curve. It is called `viable_semantic_yield`, not scientific-novelty Yield, because the fixed
+    judge does not assess non-obviousness and the gates are operational rather than human
+    calibrated. It remains outside the primary metric family. The author repository had no
+    explicit license at commit `121376126a4864ee5436ea5a23ffc8dc0f7842c5`, so no code is reused.
 
 ## Consequences for this study
 
@@ -188,3 +199,5 @@ not a results report and does not promote any baseline.
   Conditional Surprise*, arXiv preprint, 2026: <https://arxiv.org/abs/2606.01811>.
 - Zhou et al., *Ideas Have Genomes: Benchmarking Scientific Lineage Reasoning and Lineage-Grounded
   Idea Generation*, arXiv preprint, 2026: <https://arxiv.org/abs/2607.08758>.
+- Amin et al., *IDEAgent: Agentic Quality-Diversity Search for Research Idea Generation*, arXiv
+  preprint, 2026: <https://arxiv.org/abs/2607.22375>.

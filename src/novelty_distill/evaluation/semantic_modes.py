@@ -63,6 +63,67 @@ def quality_adjusted_coverage(
     return sum(best_by_cluster.values())
 
 
+def viable_semantic_yield(
+    *,
+    embeddings: Iterable[Iterable[float]],
+    eligible: Iterable[bool],
+    similarity_threshold: float,
+) -> int:
+    """Count the largest mutually distinct subset of individually viable responses."""
+
+    rows = tuple(tuple(float(value) for value in row) for row in embeddings)
+    flags = tuple(bool(value) for value in eligible)
+    if not rows or len(rows) != len(flags):
+        raise ValueError("embeddings and eligibility flags must have the same non-zero length")
+    if not -1 <= similarity_threshold <= 1:
+        raise ValueError("similarity threshold must be between -1 and 1")
+    dimensions = {len(row) for row in rows}
+    if dimensions == {0} or len(dimensions) != 1:
+        raise ValueError("embeddings must share one non-zero dimension")
+    normalized: list[tuple[float, ...]] = []
+    for row in rows:
+        if any(not math.isfinite(value) for value in row):
+            raise ValueError("embeddings must contain only finite values")
+        norm = math.sqrt(sum(value * value for value in row))
+        if norm == 0:
+            raise ValueError("embeddings must be non-zero")
+        normalized.append(tuple(value / norm for value in row))
+
+    candidates = tuple(index for index, flag in enumerate(flags) if flag)
+    if not candidates:
+        return 0
+    adjacency = [0] * len(candidates)
+    for left in range(len(candidates)):
+        for right in range(left + 1, len(candidates)):
+            similarity = sum(
+                a * b
+                for a, b in zip(
+                    normalized[candidates[left]], normalized[candidates[right]], strict=True
+                )
+            )
+            if similarity < similarity_threshold:
+                adjacency[left] |= 1 << right
+                adjacency[right] |= 1 << left
+
+    best = 0
+
+    def expand(available: int, size: int) -> None:
+        nonlocal best
+        if size + available.bit_count() <= best:
+            return
+        while available:
+            vertex_bit = available & -available
+            vertex = vertex_bit.bit_length() - 1
+            available ^= vertex_bit
+            expand(available & adjacency[vertex], size + 1)
+            if size + available.bit_count() <= best:
+                break
+        best = max(best, size)
+
+    expand((1 << len(candidates)) - 1, 0)
+    return best
+
+
 def _kl(distribution: dict[str, float], reference: dict[str, float]) -> float:
     return sum(
         probability * math.log2(probability / reference[label])

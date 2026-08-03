@@ -18,8 +18,10 @@ from novelty_distill.evaluation.embeddings import (
     embedding_cache_fingerprint,
 )
 from novelty_distill.evaluation.score_shards import load_score_shard
+from novelty_distill.evaluation.semantic_modes import viable_semantic_yield
 from novelty_distill.evaluation.student_evaluation import (
     anchor_student_clusters,
+    meets_viability_gate,
     summarize_generation_diagnostics,
     summarize_quality_dimensions,
     summarize_student_prompt,
@@ -203,6 +205,14 @@ def main() -> None:
                 ),
                 nearest_training_target_similarities=nearest_by_prompt[prompt_id],
             )
+            semantic_metrics["viable_semantic_yield"] = viable_semantic_yield(
+                embeddings=student_embeddings,
+                eligible=(
+                    meets_viability_gate(record["dimensions"])
+                    for record in student_records
+                ),
+                similarity_threshold=threshold,
+            )
             diagnostics = summarize_generation_diagnostics(
                 finish_reasons=(str(record["finish_reason"]) for record in student_records),
                 completion_tokens=(int(record["completion_tokens"]) for record in student_records),
@@ -232,6 +242,17 @@ def main() -> None:
             "student_admission_requires_all_teacher_mode_members": True,
             "unmatched_student_partition": "complete_linkage",
             "teacher_modes_are_fixed_across_methods": True,
+        },
+        "viable_semantic_yield": {
+            "status": "secondary_descriptive",
+            "quality_gate": {
+                "relevance_minimum": 4,
+                "soundness_minimum": 4,
+                "clarity_minimum": 4,
+            },
+            "distinctness": "pairwise_embedding_cosine_below_current_threshold",
+            "aggregation": "exact_maximum_cardinality_mutually_distinct_subset",
+            "non_obviousness_not_automatically_judged": True,
         },
         "embedding": {
             "model": annotation["embedding_model"],

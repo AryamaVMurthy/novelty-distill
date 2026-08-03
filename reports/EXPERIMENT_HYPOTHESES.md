@@ -56,6 +56,11 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
   inside those bounds; this 1k gate does not define such a bound post hoc.
 - Treat quality and coverage as separate axes. Do not claim a diversity win from unique strings,
   cluster count alone, or a quality-adjusted-coverage increase caused only by judge score.
+- `viable_semantic_yield` is a secondary joint diagnostic inspired by IDEAgent, not a ninth primary
+  outcome. Per prompt it filters samples with relevance, soundness, and clarity all at least 4/5,
+  then exactly counts the largest subset whose every pair has cosine similarity below the current
+  clustering threshold. Report its complete threshold curve. It cannot establish non-obviousness or
+  literature novelty because those properties are deliberately absent from the automatic judge.
 - Teacher-mode precision and low JSD are teacher-distribution fidelity outcomes, not monotonic
   scientific-value measures. A valid mode absent from eight teacher samples lowers precision just
   as an irrelevant mode does; interpret it beside judged quality, student-only mode count, and
