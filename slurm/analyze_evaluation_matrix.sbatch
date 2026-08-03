@@ -35,6 +35,7 @@ export UV_LINK_MODE=copy
 mkdir -p "${scratch_root}/locks"
 exec 8>"${scratch_root}/locks/venv-data.lock"
 flock -x 8
+uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/data.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 flock -u 8
 mkdir -p "${output_dir}"

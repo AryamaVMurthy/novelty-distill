@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 import tempfile
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor
@@ -39,6 +40,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--base-url", default="http://127.0.0.1:30000")
     parser.add_argument("--timeout", type=float, default=600)
     parser.add_argument("--concurrency", type=int, default=1)
+    parser.add_argument("--attempts", type=int, default=3)
     return parser.parse_args()
 
 
@@ -73,10 +75,48 @@ def _post(url: str, payload: dict[str, Any], timeout: float) -> Mapping[str, Any
     return body
 
 
+def _request_annotation(
+    *,
+    endpoint: str,
+    payload: dict[str, Any],
+    timeout: float,
+    annotator: ResearchTasteSpec,
+    attempts: int,
+    prompt_id: str,
+    sample_index: int,
+) -> Any:
+    """Retry transient or malformed judge responses without losing the whole shard."""
+
+    for attempt in range(1, attempts + 1):
+        try:
+            return parse_research_taste_response(
+                _post(endpoint, payload, timeout), annotator
+            )
+        except (httpx.HTTPError, ValueError) as error:
+            if attempt == attempts:
+                raise
+            print(
+                json.dumps(
+                    {
+                        "annotation_retry": prompt_id,
+                        "sample_index": sample_index,
+                        "attempt": attempt,
+                        "error": str(error),
+                    },
+                    sort_keys=True,
+                ),
+                file=sys.stderr,
+                flush=True,
+            )
+    raise RuntimeError("research-taste annotation attempts were exhausted")  # pragma: no cover
+
+
 def main() -> None:
     args = parse_args()
     if args.concurrency <= 0:
         raise ValueError("concurrency must be positive")
+    if args.attempts <= 0:
+        raise ValueError("attempts must be positive")
     generation_spec = GenerationSpec.model_validate(
         yaml.safe_load(args.generation_config.read_text(encoding="utf-8"))
     )
@@ -100,8 +140,14 @@ def main() -> None:
             response=record.text,
             spec=annotator,
         )
-        judged = parse_research_taste_response(
-            _post(endpoint, payload, args.timeout), annotator
+        judged = _request_annotation(
+            endpoint=endpoint,
+            payload=payload,
+            timeout=args.timeout,
+            annotator=annotator,
+            attempts=args.attempts,
+            prompt_id=prompt_id,
+            sample_index=record.sample_index,
         )
         return {
             "prompt_id": prompt_id,

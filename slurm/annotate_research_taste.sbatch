@@ -25,6 +25,7 @@ generation_config="${GENERATION_CONFIG:?set GENERATION_CONFIG}"
 prompts_path="${PROMPTS_PATH:?set PROMPTS_PATH}"
 taste_namespace="${TASTE_NAMESPACE:-research-taste}"
 taste_concurrency="${TASTE_CONCURRENCY:-8}"
+taste_attempts="${TASTE_ATTEMPTS:-3}"
 for safe_value in "${generation_job_id}" "${generation_name}" "${taste_namespace}"; do
   if [[ -z "${safe_value}" || "${safe_value}" == */* || "${safe_value}" == *..* ]]; then
     echo "generation IDs, names, and namespaces must be path-safe" >&2
@@ -33,6 +34,10 @@ for safe_value in "${generation_job_id}" "${generation_name}" "${taste_namespace
 done
 if ! [[ "${taste_concurrency}" =~ ^[1-9][0-9]*$ ]]; then
   echo "TASTE_CONCURRENCY must be a positive integer" >&2
+  exit 2
+fi
+if ! [[ "${taste_attempts}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "TASTE_ATTEMPTS must be a positive integer" >&2
   exit 2
 fi
 
@@ -142,4 +147,5 @@ fi
   --output-dir "${output_dir}" \
   --taste-config "${taste_config}" \
   --concurrency "${taste_concurrency}" \
+  --attempts "${taste_attempts}" \
   --base-url "http://127.0.0.1:${port}"

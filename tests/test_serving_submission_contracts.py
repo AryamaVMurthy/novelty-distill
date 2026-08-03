@@ -63,6 +63,11 @@ def test_research_taste_job_is_resumable_and_uses_the_pinned_annotator() -> None
     assert "configs/evaluation/research_taste.yaml" in script
     assert 'annotator_model="Qwen/Qwen3-32B-FP8"' in script
     assert 'flock -x 8' in script
+    assert 'taste_attempts="${TASTE_ATTEMPTS:-3}"' in script
+    assert '--attempts "${taste_attempts}"' in script
+    annotator = Path("scripts/annotate_research_taste.py").read_text(encoding="utf-8")
+    assert "def _request_annotation(" in annotator
+    assert "for attempt in range(1, attempts + 1):" in annotator
 
 
 def test_quality_score_job_forwards_deterministic_prompt_shard_coordinates() -> None:

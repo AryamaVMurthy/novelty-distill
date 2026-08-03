@@ -111,6 +111,7 @@ def test_research_taste_is_attributed_frozen_and_secondary() -> None:
     )
 
     assert config["status"] == "secondary_descriptive"
+    assert config["annotator_max_tokens"] >= 512
     assert config["source"]["arxiv"] == "2607.01233"
     assert config["source"]["publication_status"] == "preprint"
     assert tuple(config["opportunity_patterns"]) == OPPORTUNITY_PATTERNS

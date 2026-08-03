@@ -347,6 +347,13 @@ variants, and E1. E1 is explicitly `fail_closed` because the pinned official OPS
 does not expose static-trajectory off-policy training. It is neither missing nor silently skipped,
 and it cannot enter the executable matrix without a reviewed upstream implementation.
 
+Commit `1bfddd0` adds deterministic offline W&B backfill from immutable training, evaluation, and
+analysis JSON rather than making credentials or a remote service part of training correctness.
+Commit `916a1bd` routes W&B run, data, cache, and configuration directories to scratch. A real
+W&B 0.22.3 B1 export on node01 wrote the config, numeric summary, metric table, and metadata
+artifact; an immediate repeat exported zero records and left exactly one offline run directory.
+Final primary and DRKL analysis jobs now require their export manifests before succeeding.
+
 ### 2026-08-03 transient DNS recovery
 
 The overnight A1 generation job 18162 reached 1,110/1,658 prompts before its six-hour limit, while
@@ -385,6 +392,13 @@ while the three primary recovery jobs ran. Best-1 completed in 20 seconds with f
 and finite loss 0.9756892. Both recorded `diversity_aware_reverse_kl` and gamma 0.5 and produced
 readable LoRA adapters. This verifies both end-to-end implementation paths; it is systems evidence
 rather than an ideation result.
+
+Research-taste jobs 18403 and 18404 exposed a deterministic structured-output edge case: the
+32B annotator returned one whitespace-heavy JSON object truncated at the original 192-token cap,
+so the concurrent batch stopped after preserving two complete prompt shards. The annotation
+contract now allows 512 output tokens and performs three bounded request-level retries while
+retaining the same pinned model, zero-temperature decoding, strict schema, and resumable shard
+validation. This is a serving-reliability change, not a taxonomy or outcome change.
 
 ## UltraFeedback systems pilot
 

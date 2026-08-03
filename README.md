@@ -120,6 +120,12 @@ submission helper stages the small batch script under `~/.cache/novelty-distill-
 `sbatch` directly; it does not create an interactive control allocation. Each compute job then
 synchronizes the pinned branch under a shared repository lock.
 
+Final primary and exploratory analyses also backfill the pinned W&B SDK from immutable JSON
+provenance. The default is credential-free `WANDB_MODE=offline`; configs, metric tables, and small
+metadata artifacts stay under `/scratch/$USER/novelty-distill/wandb`, while model weights remain in
+their content-bound checkpoint paths. Set `WANDB_MODE=online`, `WANDB_PROJECT`, and optionally
+`WANDB_ENTITY` only when live upload is intended. Export manifests make identical reruns no-ops.
+
 GEM and DistiLLM additionally require the versioned teacher-target artifact produced from the
 permanent eight-sample teacher generation set; their launchers intentionally fail rather than
 substitute human targets.
