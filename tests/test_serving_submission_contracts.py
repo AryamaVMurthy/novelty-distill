@@ -58,6 +58,8 @@ def test_official_evaluation_supports_scratch_cached_dtype_override() -> None:
     assert '--lora-paths "${lora_name}=${lora_path}"' in script
     assert 'base_served_model="novelty-base"' in script
     assert 'result_root="${scratch_root}/evaluations/official/${eval_id}"' in script
+    assert 'model_path="${scratch_root}/${model_path}"' in script
+    assert 'lora_path="${scratch_root}/${lora_path}"' in script
 
 
 def test_research_taste_job_is_resumable_and_uses_the_pinned_annotator() -> None:
@@ -229,6 +231,72 @@ def test_promoted_evaluation_dry_run_binds_models_controls_taste_and_analysis(
     assert json.loads(output.read_text(encoding="utf-8")) == result
 
 
+def test_promoted_evaluation_can_plan_official_suite_after_temporal_gate(
+    tmp_path: Path,
+) -> None:
+    manifest = tmp_path / "training.json"
+    output = tmp_path / "evaluation.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "model_profile": "main",
+                "train_size": 20000,
+                "seeds": [17],
+                "promoted_indices": [12],
+                "baseline_ids": ["C3"],
+                "target_name": "teacher-targets-tomato20000-v1.json",
+                "target_gate_job_id": 950,
+                "runs": [
+                    {
+                        "baseline_id": "C3",
+                        "matrix_index": 12,
+                        "seed": 17,
+                        "backend": "distillm",
+                        "training_dependency": "951",
+                        "metadata_path": (
+                            "checkpoints/C3-tomato20000-seed17-l896-4gpu/run_metadata.json"
+                        ),
+                        "model_path": "checkpoints/C3-tomato20000-seed17-l896-4gpu/5000",
+                        "served_model_name": "Qwen/Qwen3-4B",
+                        "model_revision": "revision",
+                        "lora_path": None,
+                        "model_dtype": "bfloat16",
+                        "generation_config": "configs/generation/eval_qwen3_4b.yaml",
+                        "evaluation_id": "C3-tomato20000-seed17-temporal-k16",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "scripts/submit_promoted_evaluations.py",
+            "--manifest",
+            str(manifest),
+            "--teacher-score-job-id",
+            "952",
+            "--output",
+            str(output),
+            "--run-official",
+            "--dry-run",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    result = json.loads(completed.stdout)
+
+    official = result["runs"][0]["official"]
+    assert official["environment"]["MODEL_PATH"].endswith("/5000")
+    assert official["environment"]["MODEL_DTYPE"] == "bfloat16"
+    assert official["dependency_source"] == "temporal.evaluation_final"
+    assert result["analysis"]["environment"]["RUN_OFFICIAL"] == "1"
+
+
 def test_promoted_analysis_is_seed_balanced_artifact_audited_and_secondary_taste_aware() -> None:
     script = Path("slurm/analyze_promoted_matrix.sbatch").read_text(encoding="utf-8")
 
@@ -238,6 +306,7 @@ def test_promoted_analysis_is_seed_balanced_artifact_audited_and_secondary_taste
     assert '--baseline-id "${baseline_id}"' in script
     assert "training-matrix-audit-seed${seed}.json" in script
     assert "scripts/analyze_research_taste.py" in script
+    assert "scripts/collect_seeded_official_metrics.py" in script
     assert "scripts/export_wandb_snapshot.py" in script
 
 

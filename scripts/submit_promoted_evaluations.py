@@ -58,6 +58,24 @@ def _submit_model(environment: dict[str, str]) -> dict[str, Any]:
     return result
 
 
+def _submit_official(environment: dict[str, str]) -> dict[str, Any]:
+    completed = subprocess.run(
+        [str(ROOT / "scripts/submit_official_model_evaluation.sh")],
+        cwd=ROOT,
+        env={**os.environ, **environment},
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    try:
+        result = json.loads(completed.stdout.strip().splitlines()[-1])
+    except (IndexError, json.JSONDecodeError) as error:
+        raise RuntimeError("official evaluation launcher did not return its graph JSON") from error
+    if not result.get("combined"):
+        raise RuntimeError("official evaluation launcher omitted its combined-result job")
+    return result
+
+
 def _control_plan(
     *,
     label: str,
@@ -107,6 +125,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--control-a1-taste-id")
     parser.add_argument("--control-a3-taste-id", default="A3-temporal-k1")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--run-official", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
@@ -201,14 +220,29 @@ def main() -> None:
             if not isinstance(lora_path, str) or not lora_path or "," in lora_path:
                 raise ValueError("manifest lora_path must be null or a comma-free string")
             environment.update({"LORA_NAME": "student-adapter", "LORA_PATH": lora_path})
-        planned_runs.append(
-            {
-                "baseline_id": baseline_id,
-                "seed": seed,
-                "environment": environment,
-                "command": ["scripts/submit_model_evaluation.sh"],
+        planned_run = {
+            "baseline_id": baseline_id,
+            "seed": seed,
+            "environment": environment,
+            "command": ["scripts/submit_model_evaluation.sh"],
+        }
+        if args.run_official:
+            official_environment = {
+                "EVAL_ID": environment["EVAL_ID"],
+                "MODEL_PATH": environment["MODEL_PATH"],
+                "MODEL_REVISION": environment["MODEL_REVISION"],
+                "MODEL_DTYPE": environment["MODEL_DTYPE"],
             }
-        )
+            if lora_path is not None:
+                official_environment.update(
+                    {"LORA_NAME": "novelty-model", "LORA_PATH": lora_path}
+                )
+            planned_run["official"] = {
+                "environment": official_environment,
+                "command": ["scripts/submit_official_model_evaluation.sh"],
+                "dependency_source": "temporal.evaluation_final",
+            }
+        planned_runs.append(planned_run)
 
     control_taste_ids = {
         "A0": a0_taste_id,
@@ -224,6 +258,7 @@ def main() -> None:
         "TRAIN_SIZE": str(train_size),
         "PROMOTED_METHODS": ",".join(methods),
         "TRAIN_SEEDS": ",".join(str(seed) for seed in seeds),
+        "RUN_OFFICIAL": "1" if args.run_official else "0",
         **{
             f"CONTROL_{label}_EVAL_ID": controls[label]["evaluation_id"]
             for label in ("A0", "A1", "A3")
@@ -259,6 +294,13 @@ def main() -> None:
             terminal_jobs.extend(
                 (run["submitted"]["evaluation_final"], run["submitted"]["taste_final"])
             )
+            if args.run_official:
+                official = run["official"]
+                official["environment"]["DEPENDENCY_JOB_ID"] = run["submitted"][
+                    "evaluation_final"
+                ]
+                official["submitted"] = _submit_official(official["environment"])
+                terminal_jobs.append(official["submitted"]["combined"])
         dependency = "afterok:" + ":".join(terminal_jobs)
         export_arg = "ALL," + ",".join(
             f"{key}={value}" for key, value in analysis_environment.items()

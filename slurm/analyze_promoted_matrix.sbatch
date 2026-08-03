@@ -20,6 +20,11 @@ model_profile="${MODEL_PROFILE:-main}"
 train_size="${TRAIN_SIZE:?set promoted TRAIN_SIZE}"
 promoted_methods="${PROMOTED_METHODS:?set comma-separated promoted baseline IDs}"
 train_seeds="${TRAIN_SEEDS:?set comma-separated promoted training seeds}"
+run_official="${RUN_OFFICIAL:-0}"
+if [[ "${run_official}" != 0 && "${run_official}" != 1 ]]; then
+  echo "RUN_OFFICIAL must be 0 or 1" >&2
+  exit 2
+fi
 case "${model_profile}:${train_size}" in
   main:5000|main:20000|replication:1000|replication:5000|replication:20000) ;;
   *) echo "unsupported promoted model profile and train size" >&2; exit 2 ;;
@@ -54,6 +59,7 @@ repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/data"
 evaluation_root="${scratch_root}/evaluations/tomato"
 taste_root="${scratch_root}/research-taste"
+official_root="${scratch_root}/evaluations/official"
 if [[ "${model_profile}" == main ]]; then
   run_infix="tomato${train_size}"
   default_a0_taste="A0-temporal-k16-seed17000"
@@ -103,6 +109,7 @@ wandb_inputs=(
   --input "${evaluation_root}/${control_a1_eval_id}.json"
   --input "${evaluation_root}/${control_a3_eval_id}.json"
 )
+official_inputs=()
 for control_id in "${control_a0_eval_id}" "${control_a1_eval_id}" "${control_a3_eval_id}"; do
   test -s "${evaluation_root}/${control_id}.json"
 done
@@ -133,6 +140,12 @@ for seed in "${seeds[@]}"; do
     collector_inputs+=(--input "${baseline_id}:${seed}=${evaluation_root}/${eval_id}.json")
     taste_inputs+=(--input "${baseline_id}-seed${seed}=${taste_root}/${eval_id}")
     wandb_inputs+=(--input "${metadata_path}" --input "${evaluation_root}/${eval_id}.json")
+    if [[ "${run_official}" == 1 ]]; then
+      official_path="${official_root}/${eval_id}/combined.json"
+      test -s "${official_path}"
+      official_inputs+=(--input "${baseline_id}:${seed}=${official_path}")
+      wandb_inputs+=(--input "${official_path}")
+    fi
   done
   "${venv_dir}/bin/python" "${repo_dir}/scripts/audit_training_matrix.py" \
     "${audit_args[@]}"
@@ -161,6 +174,15 @@ threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
   --config "${repo_dir}/configs/evaluation/research_taste.yaml" \
   --output "${output_dir}/research-taste-secondary.json" \
   --markdown "${output_dir}/research-taste-findings.md"
+if [[ "${run_official}" == 1 ]]; then
+  "${venv_dir}/bin/python" "${repo_dir}/scripts/collect_seeded_official_metrics.py" \
+    "${official_inputs[@]}" \
+    --methods "${promoted_methods}" \
+    --seeds "${train_seeds}" \
+    --output "${output_dir}/official-benchmarks.json" \
+    --markdown "${output_dir}/official-benchmarks.md"
+  wandb_inputs+=(--input "${output_dir}/official-benchmarks.json")
+fi
 
 wandb_inputs+=(
   --input "${output_dir}/seeded-collection-manifest.json"
@@ -179,4 +201,8 @@ test -s "${output_dir}/primary-contrasts.json"
 test -s "${output_dir}/findings.md"
 test -s "${output_dir}/research-taste-secondary.json"
 test -s "${output_dir}/research-taste-findings.md"
+if [[ "${run_official}" == 1 ]]; then
+  test -s "${output_dir}/official-benchmarks.json"
+  test -s "${output_dir}/official-benchmarks.md"
+fi
 test -s "${output_dir}/wandb-export-manifest.json"

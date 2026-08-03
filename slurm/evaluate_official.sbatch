@@ -33,6 +33,12 @@ repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 inference_venv="${scratch_root}/venvs/inference"
+if [[ "${model_path}" == checkpoints/* ]]; then
+  model_path="${scratch_root}/${model_path}"
+fi
+if [[ "${lora_path}" == checkpoints/* ]]; then
+  lora_path="${scratch_root}/${lora_path}"
+fi
 server_log="${scratch_root}/logs/eval-sglang-${SLURM_JOB_ID}.log"
 server_pid=""
 port="${PORT:-$((20000 + SLURM_JOB_ID % 20000))}"

@@ -105,6 +105,10 @@ uv run python scripts/submit_promoted_evaluations.py \
 Add `--dry-run` to validate and inspect the exact graph without submitting it. Replication runs
 must additionally name their independently generated 1.7B/8B control score and taste artifacts;
 the launcher fails closed instead of reusing main-study model controls.
+Use `--run-official` for the final 20k graph to schedule the full NoveltyBench and three-domain
+HypoSpace suite after each temporal evaluation gate. The final analysis then requires every
+combined suite and reports seed-balanced benchmark means and variation; omit it at the 5k
+method-selection stage to avoid spending benchmark compute on non-final models.
 
 The 1.7B/8B replication is a separate model profile with its own Qwen3-8B teacher samples and
 targets. Start it only after the main study works, beginning with its independent 1k gate:
