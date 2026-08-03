@@ -634,6 +634,16 @@ host-memory requests were reduced to 70 GiB each. Slurm reread the four requests
 preserving their GPU, time-limit, dependency, configuration, checkpoint, seed, data, and optimizer
 contracts. This is a scheduling correction, not an experimental change.
 
+CPU-only replay job 18596 then revalidated the complete canonical TOMATO family directly from the
+saved artifacts. Across both open and composition tasks it checked 1,000-, 5,000-, and 20,000-row
+training sets plus the 1,658-row test set; every row schema, dataset revision, prompt hash, paired
+task ID set, strict train-set nesting relation, and train/test disjointness check passed. The replay
+manifest at `audits/tomato-family-manifest-replay-20260803.json` is byte-identical to the original
+`data/tomato-family-manifest.json`, with SHA-256 `4a8f3f815d966aee2eb711b702b6e9cf958a75c238505ae38139e5692b456301`.
+Initial job 18595 was cancelled while pending at zero elapsed time because Turing automatically
+added GPU billing to its four-CPU request; the two-CPU replacement completed in three seconds with
+an empty `SLURM_JOB_GPUS` field and did not displace research compute.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
