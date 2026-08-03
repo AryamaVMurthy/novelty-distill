@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 
 import pytest
 
@@ -14,6 +15,7 @@ from novelty_distill.evaluation.research_taste import (
     compare_label_distributions,
     compare_research_taste_records,
     parse_research_taste_response,
+    render_research_taste_markdown,
     research_taste_protocol_hash,
     summarize_research_taste,
 )
@@ -203,6 +205,14 @@ def test_research_taste_summary_reports_k_sample_category_coverage() -> None:
     assert summary["opportunity_category_coverage_mean"] == pytest.approx(1.5)
     assert summary["method_category_coverage_mean"] == pytest.approx(1.5)
     assert summary["joint_category_coverage_mean"] == pytest.approx(1.5)
+    assert summary["opportunity_within_prompt_normalized_entropy_mean"] == pytest.approx(
+        0.5 / math.log2(7)
+    )
+    assert summary["method_within_prompt_normalized_entropy_mean"] == pytest.approx(
+        0.5 / math.log2(7)
+    )
+    assert summary["opportunity_prompt_unanimity_rate"] == 0.5
+    assert summary["method_prompt_unanimity_rate"] == 0.5
     assert summary["bridge_opportunity_rate"] == 0.5
     assert summary["synthesis_method_rate"] == 0.5
     assert summary["surface_stitching_rate"] == 0.5
@@ -223,6 +233,41 @@ def test_research_taste_summary_rejects_duplicate_prompt_sample_keys() -> None:
 
     with pytest.raises(ValueError, match="duplicate prompt/sample"):
         summarize_research_taste((record, record))
+
+
+def test_research_taste_markdown_surfaces_prompt_conditioning_diagnostics() -> None:
+    summary = {
+        "opportunity_normalized_entropy": 0.5,
+        "method_normalized_entropy": 0.6,
+        "opportunity_within_prompt_normalized_entropy_mean": 0.1,
+        "method_within_prompt_normalized_entropy_mean": 0.2,
+        "opportunity_prompt_unanimity_rate": 0.9,
+        "method_prompt_unanimity_rate": 0.8,
+        "bridge_opportunity_rate": 0.3,
+        "synthesis_method_rate": 0.4,
+    }
+    zero_jsd = {"jensen_shannon_divergence": 0.0}
+    result = {
+        "methods": {
+            "A3": {
+                "summary_all_samples": summary,
+                "all_samples": {
+                    "vs_human": {
+                        "opportunity_pattern": zero_jsd,
+                        "method_paradigm": zero_jsd,
+                    }
+                },
+            }
+        }
+    }
+
+    report = render_research_taste_markdown(
+        result, {"status": "secondary_descriptive"}
+    )
+
+    assert "Opp. within-prompt H" in report
+    assert "| A3 | 0.0000 | 0.0000 | 0.5000 | 0.6000 | 0.1000 |" in report
+    assert "A3 has K=1" in report
 
 
 def test_research_taste_comparison_requires_the_same_prompt_population() -> None:

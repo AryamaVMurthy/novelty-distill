@@ -615,6 +615,15 @@ hash `55d9ba2b...`, with all 16 records, 16 unique request IDs, exact diagnostic
 This proves the repaired deployment path, not taxonomy accuracy; human calibration remains the
 claim gate.
 
+After 35 repaired A0 prompt shards, an ordered partial integrity screen found opportunity labels
+unanimous within 82.9% of prompts and method labels unanimous within 54.3%. These are not outcome
+estimates. They exposed a construct risk specific to transferring TasteGap onto TOMATO: an explicit
+mechanism question may determine the opportunity label before the response does. The secondary
+summary and Markdown report now freeze mean normalized within-prompt entropy and prompt-unanimity
+rate on both axes. Near-zero conditional entropy must qualify any global taste-distance claim; A3's
+K=1 values are explicitly marked mathematically degenerate. This diagnostic was added before any
+trained-model temporal generation existed.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are

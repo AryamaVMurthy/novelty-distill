@@ -12,6 +12,7 @@ import yaml
 from novelty_distill.evaluation.research_taste import (
     ResearchTasteRecord,
     analyze_research_taste_matrix,
+    render_research_taste_markdown,
     research_taste_protocol_hash,
 )
 from novelty_distill.evaluation.taste_shards import load_research_taste_shard
@@ -92,73 +93,6 @@ def _tree_provenance(path: Path) -> dict[str, Any]:
     }
 
 
-def _number(value: float) -> str:
-    return f"{value:.4f}"
-
-
-def _interval(metric: dict[str, float]) -> str:
-    return (
-        f"{_number(metric['estimate'])} "
-        f"[{_number(metric['ci_low'])}, {_number(metric['ci_high'])}]"
-    )
-
-
-def _markdown(result: dict[str, Any], config: dict[str, Any]) -> str:
-    lines = [
-        "# Research-taste secondary analysis",
-        "",
-        "This is a descriptive secondary analysis and does not alter the frozen primary outcomes.",
-        "The taxonomy is attributed to Chen, Zhao, and Cohan (2026), arXiv:2607.01233.",
-        "Headline claims require the human-agreement gate declared in the configuration.",
-        "",
-        "## All-sample distributions",
-        "",
-        "| Method | Opp. JSD vs human | Method JSD vs human | Opp. entropy | "
-        "Method entropy | Bridge rate | Synthesis rate |",
-        "|---|---:|---:|---:|---:|---:|---:|",
-    ]
-    for method, analysis in result["methods"].items():
-        summary = analysis["summary_all_samples"]
-        comparison = analysis["all_samples"]["vs_human"]
-        bootstrap = analysis["all_samples"].get("paired_prompt_bootstrap")
-        opportunity_jsd = (
-            _interval(bootstrap["metrics"]["opportunity_jsd_vs_human"])
-            if bootstrap
-            else _number(comparison["opportunity_pattern"]["jensen_shannon_divergence"])
-        )
-        method_jsd = (
-            _interval(bootstrap["metrics"]["method_jsd_vs_human"])
-            if bootstrap
-            else _number(comparison["method_paradigm"]["jensen_shannon_divergence"])
-        )
-        lines.append(
-            f"| {method} | "
-            f"{opportunity_jsd} | "
-            f"{method_jsd} | "
-            f"{_number(summary['opportunity_normalized_entropy'])} | "
-            f"{_number(summary['method_normalized_entropy'])} | "
-            f"{_number(summary['bridge_opportunity_rate'])} | "
-            f"{_number(summary['synthesis_method_rate'])} |"
-        )
-    lines.extend(
-        [
-            "",
-            "## Interpretation contract",
-            "",
-            "- Negative human-JSD delta versus A1 means a method is closer to the human taste "
-            "distribution than the teacher; it does not by itself establish higher idea quality.",
-            "- The all-sample view measures K-sample behavior. The sample-zero view provides a "
-            "matched one-shot sensitivity analysis.",
-            "- Category entropy and semantic-mode coverage measure different forms of diversity.",
-            "- The automatic labels remain descriptive until the declared human validation passes.",
-            "",
-            f"Configuration status: `{config['status']}`.",
-            "",
-        ]
-    )
-    return "\n".join(lines)
-
-
 def main() -> None:
     args = parse_args()
     config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
@@ -186,7 +120,9 @@ def main() -> None:
     args.output.write_text(
         json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
-    args.markdown.write_text(_markdown(result, config), encoding="utf-8")
+    args.markdown.write_text(
+        render_research_taste_markdown(result, config), encoding="utf-8"
+    )
 
 
 if __name__ == "__main__":

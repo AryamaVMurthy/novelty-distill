@@ -298,6 +298,24 @@ def summarize_research_taste(records: Sequence[Mapping[str, Any]]) -> dict[str, 
         len({record.method_paradigm for record in prompt_records})
         for prompt_records in by_prompt.values()
     ]
+    opportunity_within_prompt_entropy = [
+        _normalized_entropy(
+            _shares(
+                tuple(record.opportunity_pattern for record in prompt_records),
+                OPPORTUNITY_PATTERNS,
+            )
+        )
+        for prompt_records in by_prompt.values()
+    ]
+    method_within_prompt_entropy = [
+        _normalized_entropy(
+            _shares(
+                tuple(record.method_paradigm for record in prompt_records),
+                METHOD_PARADIGMS,
+            )
+        )
+        for prompt_records in by_prompt.values()
+    ]
     joint_coverage = [
         len(
             {
@@ -318,6 +336,18 @@ def summarize_research_taste(records: Sequence[Mapping[str, Any]]) -> dict[str, 
         "opportunity_category_coverage_mean": statistics.fmean(opportunity_coverage),
         "method_category_coverage_mean": statistics.fmean(method_coverage),
         "joint_category_coverage_mean": statistics.fmean(joint_coverage),
+        "opportunity_within_prompt_normalized_entropy_mean": statistics.fmean(
+            opportunity_within_prompt_entropy
+        ),
+        "method_within_prompt_normalized_entropy_mean": statistics.fmean(
+            method_within_prompt_entropy
+        ),
+        "opportunity_prompt_unanimity_rate": statistics.fmean(
+            coverage == 1 for coverage in opportunity_coverage
+        ),
+        "method_prompt_unanimity_rate": statistics.fmean(
+            coverage == 1 for coverage in method_coverage
+        ),
         "bridge_opportunity_rate": opportunity_shares[
             "fragmentation_or_bridge_opportunity"
         ],
@@ -378,6 +408,91 @@ def compare_research_taste_records(
             for name in diagnostic_names
         },
     }
+
+
+def _format_number(value: float) -> str:
+    return f"{value:.4f}"
+
+
+def _format_interval(metric: Mapping[str, float]) -> str:
+    return (
+        f"{_format_number(metric['estimate'])} "
+        f"[{_format_number(metric['ci_low'])}, {_format_number(metric['ci_high'])}]"
+    )
+
+
+def render_research_taste_markdown(
+    result: Mapping[str, Any], config: Mapping[str, Any]
+) -> str:
+    """Render the secondary taste report, including prompt-conditioning diagnostics."""
+
+    lines = [
+        "# Research-taste secondary analysis",
+        "",
+        "This is a descriptive secondary analysis and does not alter the frozen primary outcomes.",
+        "The taxonomy is attributed to Chen, Zhao, and Cohan (2026), arXiv:2607.01233.",
+        "Headline claims require the human-agreement gate declared in the configuration.",
+        "",
+        "## All-sample distributions",
+        "",
+        "| Method | Opp. JSD vs human | Method JSD vs human | Opp. entropy | "
+        "Method entropy | Opp. within-prompt H | Method within-prompt H | "
+        "Opp. unanimous | Method unanimous | Bridge rate | Synthesis rate |",
+        "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+    ]
+    for method, analysis in result["methods"].items():
+        summary = analysis["summary_all_samples"]
+        comparison = analysis["all_samples"]["vs_human"]
+        bootstrap = analysis["all_samples"].get("paired_prompt_bootstrap")
+        opportunity_jsd = (
+            _format_interval(bootstrap["metrics"]["opportunity_jsd_vs_human"])
+            if bootstrap
+            else _format_number(
+                comparison["opportunity_pattern"]["jensen_shannon_divergence"]
+            )
+        )
+        method_jsd = (
+            _format_interval(bootstrap["metrics"]["method_jsd_vs_human"])
+            if bootstrap
+            else _format_number(
+                comparison["method_paradigm"]["jensen_shannon_divergence"]
+            )
+        )
+        lines.append(
+            f"| {method} | "
+            f"{opportunity_jsd} | "
+            f"{method_jsd} | "
+            f"{_format_number(summary['opportunity_normalized_entropy'])} | "
+            f"{_format_number(summary['method_normalized_entropy'])} | "
+            f"{_format_number(summary['opportunity_within_prompt_normalized_entropy_mean'])} | "
+            f"{_format_number(summary['method_within_prompt_normalized_entropy_mean'])} | "
+            f"{_format_number(summary['opportunity_prompt_unanimity_rate'])} | "
+            f"{_format_number(summary['method_prompt_unanimity_rate'])} | "
+            f"{_format_number(summary['bridge_opportunity_rate'])} | "
+            f"{_format_number(summary['synthesis_method_rate'])} |"
+        )
+    lines.extend(
+        [
+            "",
+            "## Interpretation contract",
+            "",
+            "- Negative human-JSD delta versus A1 means a method is closer to the human taste "
+            "distribution than the teacher; it does not by itself establish higher idea quality.",
+            "- The all-sample view measures K-sample behavior. The sample-zero view provides a "
+            "matched one-shot sensitivity analysis.",
+            "- Category entropy and semantic-mode coverage measure different forms of diversity.",
+            "- Near-zero within-prompt entropy with near-one unanimity indicates that an axis is "
+            "largely prompt-conditioned; global between-method differences on that axis then "
+            "require extra caution.",
+            "- Within-prompt entropy/unanimity is informative only for K>1. A3 has K=1, so its "
+            "zero entropy and complete unanimity are structural rather than behavioral.",
+            "- The automatic labels remain descriptive until the declared human validation passes.",
+            "",
+            f"Configuration status: `{config['status']}`.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def bootstrap_research_taste_gap(

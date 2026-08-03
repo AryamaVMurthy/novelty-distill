@@ -125,6 +125,8 @@ method sample is annotated. For each method, report:
 - bridge-opportunity and synthesis-method rates;
 - mean surface-stitching, bottleneck-specificity, and boilerplate diagnostics;
 - mean opportunity, method, and joint category coverage among K samples per prompt;
+- mean normalized within-prompt entropy and prompt-unanimity rate for both axes, explicitly
+  diagnosing whether TOMATO's question wording determines the label before model behavior can;
 - the change in human JSD relative to A1, where a negative value means closer to A3 than A1;
 - both the complete K-sample view and deterministic sample-index-zero one-shot sensitivity view.
 
@@ -135,6 +137,16 @@ new confirmatory p-value family.
 
 All comparisons require exactly the same temporal prompt population. K samples are repeated draws
 within a prompt and are never treated as independent research problems.
+Within-prompt entropy and unanimity are interpreted only for K>1 sources; A3's K=1 values are
+mathematically degenerate and cannot be compared with generated-source breadth.
+
+This prompt-conditioning diagnostic was added after inspecting the first 35 repaired A0 prompt
+shards but before any trained-model temporal output or complete A0 distribution was available. In
+that ordered partial set, opportunity labels were unanimous within 82.9% of prompts versus 54.3%
+for method labels. Those partial values are deployment evidence, not reported outcomes. The frozen
+complete-data diagnostic asks whether TOMATO's explicit question wording leaves enough
+within-prompt label variation for a model-taste interpretation and is secondary even if the human
+agreement gate passes.
 
 ## Pre-result expectations
 
