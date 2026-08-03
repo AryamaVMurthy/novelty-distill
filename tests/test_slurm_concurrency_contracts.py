@@ -17,8 +17,15 @@ def test_scale_training_matrix_renders_frozen_exposure_configs() -> None:
     assert '"${matrix_mode}" == "tomato_scale"' in script
     assert "scripts/render_scale_training_config.py" in script
     assert '--train-size "${scale_train_size}"' in script
-    assert '--seed "${scale_seed}"' in script
+    assert '--seed "${scale_seed}" \\\n    --model-profile "${model_profile}"' in script
     assert '--model-profile "${model_profile}"' in script
+
+
+def test_training_can_select_a_validated_exploratory_registry() -> None:
+    script = (ROOT / "slurm" / "train_smoke.sbatch").read_text(encoding="utf-8")
+
+    assert 'baseline_registry="${BASELINE_REGISTRY:-configs/baselines.yaml}"' in script
+    assert '--registry "${repo_dir}/${baseline_registry}"' in script
 
 
 def test_shared_inference_environment_mutations_are_serialized() -> None:

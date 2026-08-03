@@ -1,0 +1,27 @@
+schema_version: 1
+baselines:
+  - id: F1-best1
+    name: exploratory-off-policy-drkl-best-1
+    family: off_policy
+    backend: trl_gkd
+    official_source: arXiv:2604.00223
+    trajectory_source: teacher
+    target_view: best1
+    divergence: diversity_aware_reverse_kl
+    teacher_context: ordinary
+    lmbda: 0.0
+    beta: 1.0
+    drkl_gamma: 0.5
+
+  - id: F1-diverse4
+    name: exploratory-off-policy-drkl-diverse-4
+    family: off_policy
+    backend: trl_gkd
+    official_source: arXiv:2604.00223
+    trajectory_source: teacher
+    target_view: diverse4
+    divergence: diversity_aware_reverse_kl
+    teacher_context: ordinary
+    lmbda: 0.0
+    beta: 1.0
+    drkl_gamma: 0.5

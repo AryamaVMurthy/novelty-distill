@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class BaselineConfig(BaseModel):
@@ -21,12 +21,18 @@ class BaselineConfig(BaseModel):
     non_executable_reason: str = ""
     trajectory_source: Literal["none", "human", "teacher", "student", "static"] = "none"
     target_view: Literal["none", "human", "random1", "best1", "mode1", "diverse4"] = "none"
-    divergence: Literal["none", "forward_kl", "reverse_kl", "generalized_jsd", "skew_kl"] = (
-        "none"
-    )
+    divergence: Literal[
+        "none",
+        "forward_kl",
+        "reverse_kl",
+        "generalized_jsd",
+        "skew_kl",
+        "diversity_aware_reverse_kl",
+    ] = "none"
     teacher_context: Literal["none", "ordinary", "privileged"] = "none"
     lmbda: float | None = None
     beta: float | None = None
+    drkl_gamma: float | None = Field(default=None, gt=0)
 
     @model_validator(mode="after")
     def official_soft_loss_controls_are_complete(self) -> "BaselineConfig":
@@ -40,6 +46,11 @@ class BaselineConfig(BaseModel):
             raise ValueError("fail-closed baselines require a non-executable reason")
         if self.execution_status == "runnable" and self.non_executable_reason:
             raise ValueError("runnable baselines cannot have a non-executable reason")
+        if self.divergence == "diversity_aware_reverse_kl":
+            if self.backend != "trl_gkd" or self.drkl_gamma is None:
+                raise ValueError("diversity-aware reverse KL requires TRL GKD and drkl_gamma")
+        elif self.drkl_gamma is not None:
+            raise ValueError("drkl_gamma is only valid for diversity-aware reverse KL")
         return self
 
 

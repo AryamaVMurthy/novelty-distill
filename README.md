@@ -104,6 +104,16 @@ MODEL_PROFILE=replication TRAIN_SIZE=1000 TARGET_GATE_JOB_ID=<replication-target
 The same launchers extend that profile to 5k and 20k while reusing only nested Qwen3-8B shards.
 Replication outputs use `qwen1p7b` names and are never pooled with the 4B/14B results.
 
+The post-freeze DRKL treatments are isolated from the primary matrix and can be staged behind a
+chosen gate with:
+
+```bash
+START_AFTER_JOB_ID=<primary-gate> scripts/submit_exploratory_drkl.sh
+```
+
+Their attribution, matched controls, and secondary-only interpretation are frozen in
+`reports/EXPLORATORY_TREATMENTS.md`.
+
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
 submission helper stages the small batch script under `~/.cache/novelty-distill-submit` and calls

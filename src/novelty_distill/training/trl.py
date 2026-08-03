@@ -23,6 +23,83 @@ TRLTrainingRow = ChatTrainingRow | PromptCompletionRow
 TeacherTargets = Mapping[str, Mapping[str, Sequence[str]]]
 
 
+def diversity_aware_reverse_kl_loss(
+    student_logits: Any,
+    teacher_logits: Any,
+    labels: Any | None = None,
+    *,
+    gamma: float = 0.5,
+    temperature: float = 1.0,
+    reduction: str = "batchmean",
+) -> Any:
+    """Compute the DRKL objective from Luong, Tran, and Chen (2026).
+
+    The target/non-target decomposition is evaluated in float32 to keep the
+    non-target mass stable for confident large-vocabulary predictions. The
+    target index at each position is the observed completion token.
+    """
+
+    if gamma <= 0:
+        raise ValueError("DRKL gamma must be positive")
+    if temperature <= 0:
+        raise ValueError("DRKL temperature must be positive")
+    if reduction not in {"none", "batchmean", "sum", "mean"}:
+        raise ValueError(f"unsupported DRKL reduction: {reduction}")
+    if labels is None:
+        raise ValueError("DRKL requires target-token labels")
+
+    import torch
+    import torch.nn.functional as functional
+
+    student_log_probs = functional.log_softmax(
+        student_logits.float() / temperature, dim=-1
+    )
+    teacher_log_probs = functional.log_softmax(
+        teacher_logits.float() / temperature, dim=-1
+    )
+    valid = labels != -100
+    safe_labels = labels.masked_fill(~valid, 0).unsqueeze(-1)
+    log_q_target = student_log_probs.gather(-1, safe_labels).squeeze(-1)
+    log_p_target = teacher_log_probs.gather(-1, safe_labels).squeeze(-1)
+
+    # log(1 - exp(x)) for x <= 0, with stable branches around log(1/2).
+    def log1mexp(value: Any) -> Any:
+        value = value.clamp(max=-torch.finfo(value.dtype).eps)
+        cutoff = -0.6931471805599453
+        return torch.where(
+            value < cutoff,
+            torch.log1p(-torch.exp(value)),
+            torch.log(-torch.expm1(value)),
+        )
+
+    log_q_non_target = log1mexp(log_q_target)
+    log_p_non_target = log1mexp(log_p_target)
+    q_target = log_q_target.exp()
+    q_non_target = log_q_non_target.exp()
+
+    target_rkl = q_target * (log_q_target - log_p_target)
+    full_rkl = (
+        student_log_probs.exp() * (student_log_probs - teacher_log_probs)
+    ).sum(dim=-1)
+    normalized_non_target_rkl = (
+        (full_rkl - target_rkl) / q_non_target
+        - log_q_non_target
+        + log_p_non_target
+    )
+    binary_target_rkl = target_rkl + q_non_target * (
+        log_q_non_target - log_p_non_target
+    )
+    token_loss = binary_target_rkl + gamma * normalized_non_target_rkl
+    token_loss = token_loss[valid]
+    if not token_loss.numel():
+        raise ValueError("DRKL received no active completion labels")
+    if reduction == "none":
+        return token_loss
+    if reduction == "sum":
+        return token_loss.sum()
+    return token_loss.mean()
+
+
 class TRLRunSpec(BaseModel):
     """A bounded, reproducible run using an official TRL trainer."""
 
@@ -457,7 +534,35 @@ def execute_trl_training(
             "truncated_row_rate": sum(value > 0 for value in truncated_tokens) / len(rows),
             "truncated_completion_tokens": sum(truncated_tokens),
         }
-        trainer = GKDTrainer(
+        trainer_type = GKDTrainer
+        if baseline.divergence == "diversity_aware_reverse_kl":
+            drkl_gamma = baseline.drkl_gamma
+            if drkl_gamma is None:  # guarded by BaselineConfig; keeps runtime fail-closed
+                raise ValueError("DRKL baseline is missing drkl_gamma")
+
+            class DiversityAwareGKDTrainer(GKDTrainer):
+                def generalized_jsd_loss(
+                    self,
+                    student_logits: Any,
+                    teacher_logits: Any,
+                    labels: Any | None = None,
+                    beta: float = 0.5,
+                    temperature: float = 1.0,
+                    reduction: str = "batchmean",
+                ) -> Any:
+                    del beta
+                    return diversity_aware_reverse_kl_loss(
+                        student_logits,
+                        teacher_logits,
+                        labels,
+                        gamma=drkl_gamma,
+                        temperature=temperature,
+                        reduction=reduction,
+                    )
+
+            trainer_type = DiversityAwareGKDTrainer
+
+        trainer = trainer_type(
             model=student_model,
             teacher_model=teacher_model,
             args=training_args,
@@ -504,6 +609,8 @@ def execute_trl_training(
         "student_thinking": spec.student_thinking,
         "lmbda": baseline.lmbda,
         "beta": baseline.beta,
+        "divergence": baseline.divergence,
+        "drkl_gamma": baseline.drkl_gamma,
         "trajectory_source": baseline.trajectory_source,
         "target_view": baseline.target_view,
         "dataset_revision": examples[0].dataset_revision,

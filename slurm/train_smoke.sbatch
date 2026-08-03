@@ -20,6 +20,11 @@ module load u22/cuda/12.4
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
+baseline_registry="${BASELINE_REGISTRY:-configs/baselines.yaml}"
+if ! [[ "${baseline_registry}" =~ ^configs/[A-Za-z0-9._-]+\.yaml$ ]]; then
+  echo "BASELINE_REGISTRY must name a YAML file directly under configs/" >&2
+  exit 2
+fi
 training_backend="${TRAINING_BACKEND:-trl}"
 matrix_mode="${BASELINE_MATRIX:-0}"
 if [[ "${matrix_mode}" == "tomato1k" ]]; then
@@ -255,7 +260,7 @@ if [[ "${matrix_mode}" == "tomato_scale" ]]; then
     --backend "${training_backend}" \
     --baseline-id "${BASELINE_ID}" \
     --train-size "${scale_train_size}" \
-    --seed "${scale_seed}"
+    --seed "${scale_seed}" \
     --model-profile "${model_profile}"
   config_path="${rendered_config}"
 fi
@@ -314,7 +319,7 @@ elif [[ "${training_backend}" == "trl" ]]; then
   trl_args=(
     --config "${config_path}"
     --scratch-root "${scratch_root}"
-    --registry "${repo_dir}/configs/baselines.yaml"
+    --registry "${repo_dir}/${baseline_registry}"
   )
   if [[ -n "${BASELINE_ID:-}" ]]; then
     trl_args+=(--baseline-id "${BASELINE_ID}" --run-suffix "${run_suffix}")
