@@ -342,6 +342,28 @@ variants, and E1. E1 is explicitly `fail_closed` because the pinned official OPS
 does not expose static-trajectory off-policy training. It is neither missing nor silently skipped,
 and it cannot enter the executable matrix without a reviewed upstream implementation.
 
+### 2026-08-03 transient DNS recovery
+
+The overnight A1 generation job 18162 reached 1,110/1,658 prompts before its six-hour limit, while
+D1 and D2 reached valid checkpoint 75 before their limits. Their first continuation jobs failed
+during repository setup because the login service temporarily could not resolve `github.com`;
+they did not alter model or generation artifacts. Commit `33bbbae` replaces one-shot fetches in
+future submissions with a bounded six-attempt, lock-protected repository synchronizer that refuses
+to continue from a stale commit.
+
+Recovery jobs 18357 -> 18358 resume only A1's 548 missing prompt files. Array 18359, followed by
+one bounded second pass 18360, preflights every existing baseline and resumes only incomplete work.
+B1 and B3 completed on the first recovery pass, and D1/D2 resumed from their preserved checkpoints;
+D3/E2/E3/E4 remain in the same array. The downstream target-validation and evaluation chain was
+rewired to these replacements without weakening any `afterok` gate. No scientific output was
+accepted merely because a Slurm job exited successfully: content-bound manifests and
+`run_metadata.json` completeness checks remain authoritative.
+
+Commit `98e4a53` also prepares, but does not mix into this recovery, a separate Qwen3-1.7B student /
+Qwen3-8B teacher replication profile. Its teacher samples, targets, checkpoints, job identities,
+and analysis namespace are disjoint from the main Qwen3-4B / Qwen3-14B study and will run only
+after the main-stage analysis gate.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
