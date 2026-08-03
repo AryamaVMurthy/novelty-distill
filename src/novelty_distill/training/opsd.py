@@ -14,6 +14,7 @@ from novelty_distill.data.tomato import CanonicalExample
 from novelty_distill.data.training_rows import OPSDTrainingRow, to_opsd_row
 from novelty_distill.official import checkout_official_repository, load_official_repositories
 from novelty_distill.training.provenance import atomic_json, file_provenance
+from novelty_distill.training.runtime import invocation_runtime
 from novelty_distill.training.trl import load_canonical_examples
 
 
@@ -401,6 +402,11 @@ def execute_opsd_training(
     )
     last_checkpoint = get_last_checkpoint(str(output_dir))
     train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
+    invocation = invocation_runtime(
+        last_checkpoint=last_checkpoint,
+        end_step=int(trainer.state.global_step),
+        metrics=train_result.metrics,
+    )
     final_dir = output_dir / "final"
     trainer.save_model(str(final_dir))
     tokenizer.save_pretrained(final_dir)
@@ -441,6 +447,7 @@ def execute_opsd_training(
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
         "metrics": train_result.metrics,
+        "invocation_runtime": invocation,
         "final_dir": str(final_dir),
     }
     atomic_json(output_dir / "run_metadata.json", metadata)

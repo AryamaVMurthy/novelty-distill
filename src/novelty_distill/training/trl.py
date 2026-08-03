@@ -18,6 +18,7 @@ from novelty_distill.data.training_rows import (
     to_prompt_completion_row,
 )
 from novelty_distill.training.provenance import atomic_json, file_provenance
+from novelty_distill.training.runtime import invocation_runtime
 
 TRLTrainingRow = ChatTrainingRow | PromptCompletionRow
 TeacherTargets = Mapping[str, Mapping[str, Sequence[str]]]
@@ -594,6 +595,11 @@ def execute_trl_training(
             )
     last_checkpoint = get_last_checkpoint(str(output_dir))
     train_result = trainer.train(resume_from_checkpoint=last_checkpoint)
+    invocation = invocation_runtime(
+        last_checkpoint=last_checkpoint,
+        end_step=int(trainer.state.global_step),
+        metrics=train_result.metrics,
+    )
     final_dir = output_dir / "final"
     trainer.save_model(str(final_dir))
     tokenizer.save_pretrained(final_dir)
@@ -628,6 +634,7 @@ def execute_trl_training(
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
         "metrics": train_result.metrics,
+        "invocation_runtime": invocation,
         "gkd_context_audit": gkd_context_audit,
         "gkd_generation_controls": gkd_generation_controls,
         "final_dir": str(final_dir),
