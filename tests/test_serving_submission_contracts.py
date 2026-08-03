@@ -131,6 +131,9 @@ def test_promoted_training_launcher_separates_special_resource_backends() -> Non
     assert "--gres=gpu:4" in script
     assert "BASELINE_MATRIX=tomato_scale" in script
     assert 'model_profile="${MODEL_PROFILE:-main}"' in script
+    assert "scripts/render_promoted_training_manifest.py" in script
+    assert 'submission_manifest="${SUBMISSION_MANIFEST:-}"' in script
+    assert "${adapter_job}_${index}" in script
 
 
 def test_official_model_launcher_runs_full_suite_on_four_gpu_jobs() -> None:

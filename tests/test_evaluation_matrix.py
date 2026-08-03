@@ -1,6 +1,11 @@
+import json
+import subprocess
+import sys
+
 import pytest
 
 from novelty_distill.evaluation.matrix import (
+    aggregate_seeded_evaluation_metrics,
     collect_prompt_metric_rows,
     collect_threshold_metric_rows,
 )
@@ -27,9 +32,7 @@ def _evaluation(offset: float = 0.0) -> dict[str, object]:
 
 
 def test_collect_prompt_metric_rows_aligns_methods_and_prompts() -> None:
-    rows = collect_prompt_metric_rows(
-        {"A0": _evaluation(), "B3": _evaluation(offset=0.1)}
-    )
+    rows = collect_prompt_metric_rows({"A0": _evaluation(), "B3": _evaluation(offset=0.1)})
 
     assert rows == (
         {"method": "A0", "prompt_id": "prompt-a", "quality": 0.8, "recall": 1.0},
@@ -78,9 +81,7 @@ def test_collect_prompt_metric_rows_rejects_changed_teacher_partition() -> None:
 
 
 def test_collect_threshold_metric_rows_aligns_methods_thresholds_and_prompts() -> None:
-    rows = collect_threshold_metric_rows(
-        {"A0": _evaluation(), "B3": _evaluation(offset=0.1)}
-    )
+    rows = collect_threshold_metric_rows({"A0": _evaluation(), "B3": _evaluation(offset=0.1)})
 
     assert len(rows) == 8
     assert rows[0] == {
@@ -120,3 +121,66 @@ def test_collect_threshold_metric_rows_rejects_changed_teacher_partition() -> No
 
     with pytest.raises(ValueError, match="teacher partition"):
         collect_threshold_metric_rows({"A0": reference, "B3": candidate})
+
+
+def test_seed_aggregation_requires_balanced_seeds_and_averages_each_prompt() -> None:
+    result = aggregate_seeded_evaluation_metrics(
+        {
+            "B1": {17: _evaluation(), 29: _evaluation(offset=0.2)},
+            "B3": {17: _evaluation(offset=0.1), 29: _evaluation(offset=0.3)},
+        },
+        expected_seeds=(17, 29),
+    )
+
+    assert result["evaluations"]["B1"]["prompt_metrics"]["prompt-a"] == {
+        "quality": pytest.approx(0.9),
+        "recall": 1.0,
+    }
+    assert result["evaluations"]["B3"]["prompt_metrics_by_threshold"]["0.820"]["prompt-b"][
+        "quality"
+    ] == pytest.approx(0.8)
+    assert result["seed_summaries"]["B1"]["17"]["quality_mean"] == pytest.approx(0.75)
+
+    with pytest.raises(ValueError, match="exactly the expected seeds"):
+        aggregate_seeded_evaluation_metrics(
+            {
+                "B1": {17: _evaluation(), 29: _evaluation(offset=0.2)},
+                "B3": {17: _evaluation(offset=0.1)},
+            },
+            expected_seeds=(17, 29),
+        )
+
+
+def test_seeded_collector_writes_prompt_threshold_and_seed_manifests(tmp_path) -> None:
+    inputs = []
+    for method, offset in (("B1", 0.0), ("B3", 0.1)):
+        for seed, seed_offset in ((17, 0.0), (29, 0.2)):
+            path = tmp_path / f"{method}-{seed}.json"
+            path.write_text(json.dumps(_evaluation(offset + seed_offset)), encoding="utf-8")
+            inputs.extend(("--input", f"{method}:{seed}={path}"))
+    output = tmp_path / "prompt.jsonl"
+    threshold = tmp_path / "threshold.jsonl"
+    manifest = tmp_path / "manifest.json"
+
+    subprocess.run(
+        [
+            sys.executable,
+            "scripts/collect_seeded_evaluation_metrics.py",
+            *inputs,
+            "--seeds",
+            "17,29",
+            "--output",
+            str(output),
+            "--threshold-output",
+            str(threshold),
+            "--manifest",
+            str(manifest),
+        ],
+        check=True,
+    )
+
+    prompt_rows = [json.loads(line) for line in output.read_text().splitlines()]
+    result = json.loads(manifest.read_text())
+    assert len(prompt_rows) == 4
+    assert result["expected_seeds"] == [17, 29]
+    assert result["seed_summaries"]["B3"]["29"]["quality_mean"] == pytest.approx(1.05)

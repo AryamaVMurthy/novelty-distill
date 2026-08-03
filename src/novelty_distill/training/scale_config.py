@@ -1,8 +1,129 @@
 """Render scale-equivalent training configs from the validated TOMATO-1k gate."""
 
 import math
+import re
 from collections.abc import Mapping
 from typing import Any
+
+_TOMATO_MATRIX: tuple[tuple[str, str], ...] = (
+    ("B1", "trl"),
+    ("B2a", "trl"),
+    ("B2b", "trl"),
+    ("B2c", "trl"),
+    ("B3", "trl"),
+    ("B4", "gem"),
+    ("C1-human", "trl"),
+    ("C1-best1", "trl"),
+    ("C1-diverse4", "trl"),
+    ("C2-human", "trl"),
+    ("C2-best1", "trl"),
+    ("C2-diverse4", "trl"),
+    ("C3", "distillm"),
+    ("D1", "trl"),
+    ("D2", "trl"),
+    ("D3", "trl"),
+    ("E2", "opsd"),
+    ("E3", "opsd"),
+    ("E4", "opsd"),
+)
+
+
+def build_promoted_training_manifest(
+    *,
+    model_profile: str,
+    train_size: int,
+    promoted_indices: tuple[int, ...],
+    seeds: tuple[int, ...],
+    training_dependencies: Mapping[tuple[int, int], str],
+) -> dict[str, Any]:
+    """Bind every promoted method/seed to its Slurm gate and deployable artifact."""
+
+    valid_sizes = {
+        "main": {5000, 20000},
+        "replication": {1000, 5000, 20000},
+    }
+    if model_profile not in valid_sizes or train_size not in valid_sizes[model_profile]:
+        raise ValueError("invalid model profile and training-size combination")
+    if (
+        not promoted_indices
+        or len(promoted_indices) != len(set(promoted_indices))
+        or any(index < 0 or index >= len(_TOMATO_MATRIX) for index in promoted_indices)
+    ):
+        raise ValueError("promoted indexes must be unique TOMATO matrix indexes")
+    if (
+        not seeds
+        or len(seeds) != len(set(seeds))
+        or any(seed not in {17, 29, 43} for seed in seeds)
+    ):
+        raise ValueError("training seeds must be unique members of 17, 29, and 43")
+    expected_dependencies = {(index, seed) for seed in seeds for index in promoted_indices}
+    if set(training_dependencies) != expected_dependencies:
+        raise ValueError("training dependency mapping is not the full method-by-seed matrix")
+    if any(
+        re.fullmatch(r"[1-9][0-9]*(?:_[0-9]+)?", dependency) is None
+        for dependency in training_dependencies.values()
+    ):
+        raise ValueError("training dependencies must be Slurm job or array-task IDs")
+
+    if model_profile == "main":
+        model = "Qwen/Qwen3-4B"
+        revision = "1cfa9a7208912126459214e8b04321603b3df60c"
+        run_infix = f"tomato{train_size}"
+        target_name = f"teacher-targets-tomato{train_size}-v1.json"
+    else:
+        model = "Qwen/Qwen3-1.7B"
+        revision = "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e"
+        run_infix = f"qwen1p7b-tomato{train_size}"
+        target_name = f"teacher-targets-qwen3-8b-tomato{train_size}-v1.json"
+
+    runs: list[dict[str, Any]] = []
+    for seed in seeds:
+        for index in promoted_indices:
+            baseline_id, backend = _TOMATO_MATRIX[index]
+            run_name = f"{baseline_id}-{run_infix}-seed{seed}"
+            checkpoint_root = f"checkpoints/{run_name}"
+            model_path = model
+            lora_path: str | None = f"{checkpoint_root}/final"
+            model_dtype = "auto"
+            generation_config = "configs/generation/eval_qwen3_4b_lora.yaml"
+            if backend == "gem":
+                model_path = checkpoint_root
+                lora_path = None
+                generation_config = "configs/generation/eval_qwen3_4b.yaml"
+            elif backend == "distillm":
+                steps = math.ceil(train_size / 4)
+                checkpoint_root = f"{checkpoint_root}-l896-4gpu"
+                model_path = f"{checkpoint_root}/{steps}"
+                lora_path = None
+                model_dtype = "bfloat16"
+                generation_config = "configs/generation/eval_qwen3_4b.yaml"
+            runs.append(
+                {
+                    "baseline_id": baseline_id,
+                    "matrix_index": index,
+                    "seed": seed,
+                    "backend": backend,
+                    "training_dependency": training_dependencies[(index, seed)],
+                    "checkpoint_root": checkpoint_root,
+                    "metadata_path": f"{checkpoint_root}/run_metadata.json",
+                    "model_path": model_path,
+                    "model_revision": revision,
+                    "lora_path": lora_path,
+                    "model_dtype": model_dtype,
+                    "generation_config": generation_config,
+                    "evaluation_id": f"{run_name}-temporal-k16",
+                }
+            )
+    return {
+        "schema_version": 1,
+        "model_profile": model_profile,
+        "train_size": train_size,
+        "seeds": list(seeds),
+        "promoted_indices": list(promoted_indices),
+        "baseline_ids": [_TOMATO_MATRIX[index][0] for index in promoted_indices],
+        "target_name": target_name,
+        "runs": runs,
+    }
 
 
 def render_scale_training_config(
