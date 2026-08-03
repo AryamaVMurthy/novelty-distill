@@ -9,7 +9,10 @@ import pytest
 import yaml
 
 from novelty_distill.evaluation.embeddings import EmbeddingCache
-from novelty_distill.evaluation.same_prompt_geometry import analyze_same_prompt_geometry
+from novelty_distill.evaluation.same_prompt_geometry import (
+    analyze_same_prompt_geometry,
+    summarize_same_prompt_geometry_metrics,
+)
 
 
 def _prompt_vectors() -> dict[str, dict[str, tuple[tuple[float, ...], ...]]]:
@@ -252,3 +255,34 @@ def test_same_prompt_geometry_cli_reads_only_validated_cached_embeddings(tmp_pat
     assert result["num_prompts"] == 2
     assert result["methods"]["B1"]["metrics"]["human_cosine_mean"]["estimate"] == 1
     assert "Positive teacher-minus-human affinity" in markdown.read_text(encoding="utf-8")
+
+
+def test_same_prompt_geometry_reuses_identical_bootstrap_draws_across_methods() -> None:
+    names = (
+        "teacher_cosine_mean",
+        "human_cosine_mean",
+        "teacher_minus_human_affinity",
+        "within_method_pair_cosine",
+    )
+    prompts = [f"p{index}" for index in range(9)]
+    base = {
+        prompt: dict(zip(names, (0.6 + index / 100, 0.5, 0.1, 0.7), strict=True))
+        for index, prompt in enumerate(prompts)
+    }
+    treatment = {
+        prompt: dict(zip(names, (0.7, 0.4 + index / 100, 0.3, 0.8), strict=True))
+        for index, prompt in enumerate(prompts)
+    }
+    result = summarize_same_prompt_geometry_metrics(
+        {"A0": base, "B1": treatment, "B2": treatment},
+        samples_per_prompt={"A0": [16] * 9, "B1": [16] * 9, "B2": [16] * 9},
+        reference_by_prompt={prompt: 0.55 for prompt in prompts},
+        human_method="A3",
+        teacher_method="A1",
+        base_method="A0",
+        embedding_dimension=2560,
+        resamples=11,
+        seed=17,
+    )
+
+    assert result["methods"]["B1"]["metrics"] == result["methods"]["B2"]["metrics"]

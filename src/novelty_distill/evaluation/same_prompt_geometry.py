@@ -133,12 +133,12 @@ def summarize_same_prompt_geometry_metrics(
     }
     metric_names = (*_RAW_METRICS, *_DELTA_METRICS)
     alpha = (1 - confidence_level) / 2
-    rng = np.random.default_rng(seed)
 
     methods: dict[str, Any] = {}
     for method, values in extended_by_method.items():
         point = values.mean(axis=0)
         sampled_chunks: list[np.ndarray] = []
+        rng = np.random.default_rng(seed)
         for start in range(0, resamples, bootstrap_batch_size):
             current = min(bootstrap_batch_size, resamples - start)
             indices = rng.integers(
