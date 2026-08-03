@@ -136,6 +136,8 @@ KL, and skew KL have different numerical scales.
 | C2-best1 | reverse KL / best-1 | 1,000 | 1,000 | 489.9 | 40,024 |
 | C2-diverse4 | reverse KL / diverse-4 | 4,000 | 1,000 | 487.7 | 40,078 |
 | C3 | skew KL / best-1 | 1,000 | 1,000 | 1,846.0 | 48,502 |
+| D1 | forward KL / student trajectories | 1,000 | 1,000 | 13,524.8 | ~39,500 |
+| D2 | reverse KL / student trajectories | 1,000 | 1,000 | 13,638.4 | ~39,500 |
 
 All eleven completed LoRA artifacts above B4/C3 open as 132,187,888-byte rank-16 adapters with
 504 non-empty tensors. B4 is a structurally valid 8,044,981,992-byte, 398-tensor native-BF16 full
@@ -161,6 +163,8 @@ quality metrics.
 | C2-human | 3.4503 | 2.9953 | -13.2% | 3.7836 |
 | C2-best1 | 3.4373 | 2.8166 | -18.1% | 3.6726 |
 | C2-diverse4 | 3.4013 | 2.7882 | -18.0% | 3.7093 |
+| D1 | 3.5888 | 2.4294 | -32.3% | 2.0073 |
+| D2 | 3.0138 | 2.6429 | -12.3% | 2.9238 |
 
 All windows are finite and show net loss reduction. The three SeqKD target views end within 1.4%
 of one another. Reverse-KL retains materially larger late-window gradient norms than forward-KL
@@ -574,6 +578,15 @@ it accepted a 12-hour limit for the not-yet-started E3/E4 tasks. Targeted recove
 their current allocations end, rather than waiting for the original whole-array recovery 18360.
 The original recovery remains an idempotent safety net. This scheduling change does not alter data,
 optimizer, seed, checkpoint, or evaluation contracts; it only closes otherwise idle GPU time.
+
+The complete D1/D2 checkpoint-125 trainer histories contain exactly 125 finite, contiguous loss
+and gradient records. D1's first-to-final 25-step mean loss falls from 3.5888 to 2.4294 and its
+first-to-final 10-step mean gradient norm falls from 13.0524 to 1.9936. D2's corresponding loss
+means fall from 3.0138 to 2.6429 and gradient means from 4.0442 to 2.8803. D1's higher early
+variance and lower late loss than D2 are optimizer behavior under different divergence objectives,
+not evidence that D1 generates better ideas; only the frozen temporal evaluation can establish
+that. The minimum observed step losses occur late in both runs (D1 step 96, D2 step 109), while
+both maxima occur in the first four steps, providing a basic convergence sanity check.
 
 ## UltraFeedback systems pilot
 
