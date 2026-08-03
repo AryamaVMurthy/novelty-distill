@@ -402,6 +402,10 @@ generic JSON-schema grammar still allowed unbounded inter-field whitespace, so t
 contract uses an equivalent compact regex grammar that fixes field order, enum values, booleans,
 and score ranges without permitting whitespace loops. This is a serving-reliability change, not a
 taxonomy or outcome change.
+After the incompatible diagnostic shards were moved to the recoverable
+`research-taste-superseded` namespace, job 18415 crossed the formerly failing third prompt under
+the compact grammar without a retry and continued writing validated shards; job 18416 is its
+bounded resumable second pass.
 
 ## UltraFeedback systems pilot
 
