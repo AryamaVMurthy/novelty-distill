@@ -91,6 +91,19 @@ TRAIN_SIZE=20000 TARGET_GATE_JOB_ID=<20k-gate> PROMOTED_INDICES=<indexes> \
 The 5k default is seed 17. The 20k default is the frozen central seed set 17, 29, and 43; neither
 launcher chooses winners before the preceding analysis.
 
+The 1.7B/8B replication is a separate model profile with its own Qwen3-8B teacher samples and
+targets. Start it only after the main study works, beginning with its independent 1k gate:
+
+```bash
+TEACHER_PROFILE=replication TRAIN_SIZE=1000 START_AFTER_JOB_ID=<main-analysis> \
+  scripts/submit_teacher_scale.sh
+MODEL_PROFILE=replication TRAIN_SIZE=1000 TARGET_GATE_JOB_ID=<replication-target-gate> \
+  PROMOTED_INDICES=<central-method-indexes> scripts/submit_promoted_training.sh
+```
+
+The same launchers extend that profile to 5k and 20k while reusing only nested Qwen3-8B shards.
+Replication outputs use `qwen1p7b` names and are never pooled with the 4B/14B results.
+
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
 submission helper stages the small batch script under `~/.cache/novelty-distill-submit` and calls

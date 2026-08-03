@@ -111,6 +111,9 @@ def test_scale_teacher_launcher_uses_four_gpu_arrays_and_global_gates() -> None:
     assert "slurm/validate_score_run.sbatch" in script
     assert "slurm/merge_teacher_clusters.sbatch" in script
     assert "slurm/validate_teacher_targets.sbatch" in script
+    assert 'teacher_profile="${TEACHER_PROFILE:-main}"' in script
+    assert "configs/generation/teacher_qwen3_8b.yaml" in script
+    assert 'generation_id="teacher8b-${train_size}-v1"' in script
 
 
 def test_promoted_training_launcher_separates_special_resource_backends() -> None:
@@ -122,6 +125,7 @@ def test_promoted_training_launcher_separates_special_resource_backends() -> Non
     assert "--array=12" in script
     assert "--gres=gpu:4" in script
     assert "BASELINE_MATRIX=tomato_scale" in script
+    assert 'model_profile="${MODEL_PROFILE:-main}"' in script
 
 
 def test_official_model_launcher_runs_full_suite_on_four_gpu_jobs() -> None:

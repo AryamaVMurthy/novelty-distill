@@ -7,18 +7,23 @@ repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_dir}"
 
 train_size="${TRAIN_SIZE:?set TRAIN_SIZE to 5000 or 20000}"
+model_profile="${MODEL_PROFILE:-main}"
 promoted_indices="${PROMOTED_INDICES:?set comma-separated baseline matrix indexes}"
 target_gate_job_id="${TARGET_GATE_JOB_ID:?set the validated teacher-target job ID}"
-case "${train_size}" in
-  5000)
+case "${model_profile}:${train_size}" in
+  replication:1000)
+    seeds="${TRAIN_SEEDS:-17}"
+    training_passes="${TRAINING_PASSES:-2}"
+    ;;
+  main:5000|replication:5000)
     seeds="${TRAIN_SEEDS:-17}"
     training_passes="${TRAINING_PASSES:-5}"
     ;;
-  20000)
+  main:20000|replication:20000)
     seeds="${TRAIN_SEEDS:-17,29,43}"
     training_passes="${TRAINING_PASSES:-17}"
     ;;
-  *) echo "TRAIN_SIZE must be 5000 or 20000" >&2; exit 2 ;;
+  *) echo "MODEL_PROFILE/TRAIN_SIZE combination is unsupported" >&2; exit 2 ;;
 esac
 if ! [[ "${target_gate_job_id}" =~ ^[0-9]+$ ]]; then
   echo "TARGET_GATE_JOB_ID must be numeric" >&2
@@ -92,7 +97,7 @@ for seed in "${seed_values[@]}"; do
           --time=12:00:00 \
           --mem=128G \
           --dependency="${dependency}" \
-          --export="ALL,BASELINE_MATRIX=tomato_scale,TRAIN_SIZE=${train_size},TRAIN_SEED=${seed}"
+          --export="ALL,BASELINE_MATRIX=tomato_scale,TRAIN_SIZE=${train_size},TRAIN_SEED=${seed},MODEL_PROFILE=${model_profile}"
       )"
     done
     submitted+=("adapter-seed${seed}:${adapter_job}")
@@ -104,7 +109,7 @@ for seed in "${seed_values[@]}"; do
         --time=12:00:00 \
         --mem=128G \
         --dependency="afterok:${target_gate_job_id}" \
-        --export="ALL,BASELINE_MATRIX=tomato_scale,TRAIN_SIZE=${train_size},TRAIN_SEED=${seed}"
+        --export="ALL,BASELINE_MATRIX=tomato_scale,TRAIN_SIZE=${train_size},TRAIN_SEED=${seed},MODEL_PROFILE=${model_profile}"
     )"
     submitted+=("gem-seed${seed}:${gem_job}")
   fi
@@ -116,10 +121,11 @@ for seed in "${seed_values[@]}"; do
         --mem=192G \
         --gres=gpu:4 \
         --dependency="afterok:${target_gate_job_id}" \
-        --export="ALL,BASELINE_MATRIX=tomato_scale,TRAIN_SIZE=${train_size},TRAIN_SEED=${seed}"
+        --export="ALL,BASELINE_MATRIX=tomato_scale,TRAIN_SIZE=${train_size},TRAIN_SEED=${seed},MODEL_PROFILE=${model_profile}"
     )"
     submitted+=("distillm-seed${seed}:${distillm_job}")
   fi
 done
-printf '{"train_size":%s,"promoted_indices":"%s","jobs":"%s"}\n' \
-  "${train_size}" "${promoted_indices}" "$(IFS=','; printf '%s' "${submitted[*]}")"
+printf '{"model_profile":"%s","train_size":%s,"promoted_indices":"%s","jobs":"%s"}\n' \
+  "${model_profile}" "${train_size}" "${promoted_indices}" \
+  "$(IFS=','; printf '%s' "${submitted[*]}")"

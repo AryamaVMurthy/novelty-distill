@@ -12,11 +12,16 @@ def render_scale_training_config(
     baseline_id: str,
     train_size: int,
     seed: int,
+    model_profile: str = "main",
 ) -> dict[str, Any]:
     """Scale paths and exposure budgets without changing method hyperparameters."""
 
-    if train_size not in {5000, 20000}:
-        raise ValueError("scale training size must be 5000 or 20000")
+    if model_profile == "main" and train_size not in {5000, 20000}:
+        raise ValueError("main scale training size must be 5000 or 20000")
+    if model_profile == "replication" and train_size not in {1000, 5000, 20000}:
+        raise ValueError("replication training size must be 1000, 5000, or 20000")
+    if model_profile not in {"main", "replication"}:
+        raise ValueError("model profile must be main or replication")
     if seed not in {17, 29, 43}:
         raise ValueError("scale training seed must be one of 17, 29, or 43")
     if backend not in {"trl", "opsd", "gem", "distillm"}:
@@ -26,8 +31,21 @@ def render_scale_training_config(
     payload["input"] = f"data/tomato-open-train-{train_size}.jsonl"
     payload["max_examples"] = train_size
     payload["seed"] = seed
-    run_name = f"{baseline_id}-tomato{train_size}-seed{seed}"
-    target = f"data/teacher-targets-tomato{train_size}-v1.json"
+    if model_profile == "replication":
+        run_name = f"{baseline_id}-qwen1p7b-tomato{train_size}-seed{seed}"
+        target = f"data/teacher-targets-qwen3-8b-tomato{train_size}-v1.json"
+        if backend == "distillm":
+            payload["student_model"] = "Qwen/Qwen3-1.7B"
+            payload["student_revision"] = "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e"
+        else:
+            payload["model"] = "Qwen/Qwen3-1.7B"
+            payload["revision"] = "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e"
+        if "teacher_model" in payload:
+            payload["teacher_model"] = "Qwen/Qwen3-8B"
+            payload["teacher_revision"] = "b968826d9c46dd6066d109eabc6255188de91218"
+    else:
+        run_name = f"{baseline_id}-tomato{train_size}-seed{seed}"
+        target = f"data/teacher-targets-tomato{train_size}-v1.json"
 
     if backend == "distillm":
         if baseline_id != "C3":

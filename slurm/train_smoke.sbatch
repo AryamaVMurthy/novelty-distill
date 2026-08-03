@@ -27,15 +27,29 @@ if [[ "${matrix_mode}" == "tomato1k" ]]; then
 elif [[ "${matrix_mode}" == "tomato_scale" ]]; then
   scale_train_size="${TRAIN_SIZE:?tomato_scale requires TRAIN_SIZE}"
   scale_seed="${TRAIN_SEED:?tomato_scale requires TRAIN_SEED}"
-  if [[ "${scale_train_size}" != 5000 && "${scale_train_size}" != 20000 ]]; then
-    echo "TRAIN_SIZE must be 5000 or 20000" >&2
+  model_profile="${MODEL_PROFILE:-main}"
+  if [[ "${model_profile}" == main ]]; then
+    valid_scale_sizes="5000 20000"
+  elif [[ "${model_profile}" == replication ]]; then
+    valid_scale_sizes="1000 5000 20000"
+  else
+    echo "MODEL_PROFILE must be main or replication" >&2
+    exit 2
+  fi
+  if [[ " ${valid_scale_sizes} " != *" ${scale_train_size} "* ]]; then
+    echo "TRAIN_SIZE is invalid for MODEL_PROFILE=${model_profile}" >&2
     exit 2
   fi
   if [[ "${scale_seed}" != 17 && "${scale_seed}" != 29 && "${scale_seed}" != 43 ]]; then
     echo "TRAIN_SEED must be 17, 29, or 43" >&2
     exit 2
   fi
-  run_suffix="${RUN_SUFFIX:-tomato${scale_train_size}-seed${scale_seed}}"
+  if [[ "${model_profile}" == replication ]]; then
+    default_run_suffix="qwen1p7b-tomato${scale_train_size}-seed${scale_seed}"
+  else
+    default_run_suffix="tomato${scale_train_size}-seed${scale_seed}"
+  fi
+  run_suffix="${RUN_SUFFIX:-${default_run_suffix}}"
 elif [[ "${matrix_mode}" == "ultrafeedback1k" ]]; then
   run_suffix="${RUN_SUFFIX:-ultrafeedback1k-seed17}"
 else
@@ -242,6 +256,7 @@ if [[ "${matrix_mode}" == "tomato_scale" ]]; then
     --baseline-id "${BASELINE_ID}" \
     --train-size "${scale_train_size}" \
     --seed "${scale_seed}"
+    --model-profile "${model_profile}"
   config_path="${rendered_config}"
 fi
 

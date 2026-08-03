@@ -21,6 +21,7 @@ def main() -> None:
     parser.add_argument("--baseline-id", required=True)
     parser.add_argument("--train-size", type=int, required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--model-profile", choices=("main", "replication"), default="main")
     args = parser.parse_args()
     base = yaml.safe_load(args.base.read_text(encoding="utf-8"))
     rendered = render_scale_training_config(
@@ -29,6 +30,7 @@ def main() -> None:
         baseline_id=args.baseline_id,
         train_size=args.train_size,
         seed=args.seed,
+        model_profile=args.model_profile,
     )
     validators = {
         "trl": TRLRunSpec,

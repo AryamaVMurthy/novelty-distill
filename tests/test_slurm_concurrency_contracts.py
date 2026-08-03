@@ -18,6 +18,7 @@ def test_scale_training_matrix_renders_frozen_exposure_configs() -> None:
     assert "scripts/render_scale_training_config.py" in script
     assert '--train-size "${scale_train_size}"' in script
     assert '--seed "${scale_seed}"' in script
+    assert '--model-profile "${model_profile}"' in script
 
 
 def test_shared_inference_environment_mutations_are_serialized() -> None:
