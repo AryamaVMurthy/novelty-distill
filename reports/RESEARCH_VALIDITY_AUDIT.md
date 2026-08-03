@@ -62,6 +62,16 @@ not a results report and does not promote any baseline.
     boundary prevents a chain of individually close samples from joining endpoints that violate
     that boundary. The production teacher-only audit confirmed this distinction empirically and
     motivated the complete-linkage partition.
+13. AGC-Bench provides a broad, licensed creativity meta-benchmark, but its 67-task text composite
+    tests domain-general creativity rather than this study's conditional scientific-idea
+    distribution. Its scientific-ideation group also includes LiveIdeaBench, which is already a
+    methodological source here, so it is not wholly independent evidence. AGC-Judge is useful as a
+    low-cost LLM-rating proxy, but its authors report that it tracks the source GPT judge more
+    tightly than human ratings on their external story corpus. Therefore an AGC scientific subset
+    is eligible only as a post-promotion robustness evaluation; neither its composite nor
+    AGC-Judge can replace the frozen task-specific outcomes or human gates. The audited release
+    snapshots declare Apache-2.0 for code and CC-BY-4.0 for aggregate data, while individual source
+    datasets retain their own licenses.
 
 ## Consequences for this study
 
@@ -146,3 +156,7 @@ not a results report and does not promote any baseline.
   <https://arxiv.org/abs/2606.16411>
 - SciPy, *Hierarchical/agglomerative linkage methods*:
   <https://docs.scipy.org/doc/scipy/reference/generated/scipy.cluster.hierarchy.linkage.html>
+- Beaty et al., *AGC-Bench: Measuring Artificial General Creativity*, arXiv preprint, 2026:
+  <https://arxiv.org/abs/2607.01152>. Release snapshots checked on 2026-08-03:
+  AGC-Bench dataset `30918045d5c1cf318e698c73469400de2251b9e6` and AGC-Judge
+  `e97b7895d8c16e8438ab869f752a37f19908da4c`.

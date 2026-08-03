@@ -516,6 +516,9 @@ revision `1cfa9a7...`, seed 17, and 1,000 optimizer-example exposures, and it co
 deployable artifact including the full GEM and DistiLLM checkpoints. At this snapshot D1 and D2
 were both at step 115/125, A1 temporal generation had 1,422/1,658 shards, and A0 research-taste
 annotation had 623/1,658 shards.
+Commit `fa1ae14` also places the migration ahead of the final full-matrix audit. It treats native
+current-schema metadata as `not_required`, legacy migrated metadata as `already_migrated`, and
+missing legacy declarations as a one-time backfill; any mismatch still terminates analysis.
 
 ## UltraFeedback systems pilot
 
