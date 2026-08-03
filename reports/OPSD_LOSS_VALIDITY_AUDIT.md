@@ -39,8 +39,8 @@ No invalid adapter or optimizer checkpoint is reused.
 
 Commit `c0f9615` makes `jsd_token_clip` optional and sets it to `null` in every OPSD run
 configuration. This exercises the pinned trainer's existing unclipped generalized-JSD/KL path.
-The change was developed with a failing configuration-contract test and the full local suite then
-passed with 266 tests and two expected PyTorch-dependent skips.
+The change was developed with failing configuration and fail-closed run-spec tests; the full local
+suite then passed with 267 tests and two expected PyTorch-dependent skips.
 
 Qwen3-4B gate 18597 completed one real E2 optimizer step at the same pinned model and OPSD commit.
 It recorded:

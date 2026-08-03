@@ -52,6 +52,11 @@ class OPSDRunSpec(BaseModel):
     def save_cadence_is_bounded(self) -> "OPSDRunSpec":
         if self.save_steps is not None and self.save_steps > self.max_steps:
             raise ValueError("save_steps cannot exceed max_steps")
+        if self.jsd_token_clip is not None:
+            raise ValueError(
+                "OPSD token clipping acts on signed vocabulary contributions before their "
+                "divergence reduction; use jsd_token_clip: null"
+            )
         return self
 
 

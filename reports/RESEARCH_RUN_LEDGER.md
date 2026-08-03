@@ -654,8 +654,9 @@ trajectory logs were preserved at
 reused. Pending E3/E4 and E2 recovery tasks were held before the cancellation.
 
 Commit `c0f9615` sets the optional clip to `null` in all OPSD configurations while retaining the
-pinned official unclipped loss. The configuration-contract test failed before the change and the
-full repaired suite passed with 266 tests plus two expected local skips. Qwen3-4B gate 18597 then
+pinned official unclipped loss. The configuration and fail-closed run-spec tests failed before
+their respective changes, and the full repaired suite passed with 267 tests plus two expected
+local skips. Qwen3-4B gate 18597 then
 completed a real corrected E2 update with loss 1.215773, gradient norm 2.714494, 23.542-second
 runtime, saved `jsd_token_clip: null` metadata, and a loadable adapter. Corrected E3 task 18592 was
 released next; fresh E2 task 18568_16 and E4 remained scheduled behind available resources and the

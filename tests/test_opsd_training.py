@@ -1,8 +1,11 @@
 from pathlib import Path
 
+import pytest
+
 from novelty_distill.config import load_baseline_registry
 from novelty_distill.data.tomato import prepare_tomato_record
 from novelty_distill.training.opsd import (
+    OPSDRunSpec,
     build_opsd_rows,
     load_opsd_run_spec,
     opsd_dataset_kwargs,
@@ -132,3 +135,13 @@ def test_opsd_runs_do_not_clip_signed_vocabulary_contributions() -> None:
     for path in sorted(Path("configs/training").glob("opsd_*.yaml")):
         spec = load_opsd_run_spec(path)
         assert spec.jsd_token_clip is None, path
+
+
+def test_opsd_run_spec_rejects_pre_vocabulary_divergence_clipping() -> None:
+    payload = load_opsd_run_spec(
+        Path("configs/training/opsd_tomato1k.yaml")
+    ).model_dump()
+    payload["jsd_token_clip"] = 0.05
+
+    with pytest.raises(ValueError, match="signed vocabulary contributions"):
+        OPSDRunSpec.model_validate(payload)
