@@ -122,6 +122,16 @@ MODEL_PROFILE=replication TRAIN_SIZE=1000 TARGET_GATE_JOB_ID=<replication-target
 
 The same launchers extend that profile to 5k and 20k while reusing only nested Qwen3-8B shards.
 Replication outputs use `qwen1p7b` names and are never pooled with the 4B/14B results.
+Generate the replication controls once after its 1k target gate; this independently samples and
+scores the untouched 1.7B student and 8B teacher at K=16 and annotates both for research taste:
+
+```bash
+TARGET_JOB_ID=<replication-target-gate> scripts/submit_replication_controls.sh
+```
+
+Pass the returned teacher/student score IDs, final teacher-score job, and taste IDs explicitly to
+`submit_promoted_evaluations.py`. Historical A3 text and its model-independent judge/taste labels
+may be reused, but its target-relative metrics are recomputed against the 8B teacher target bank.
 
 The post-freeze DRKL treatments are isolated from the primary matrix and can be staged behind a
 chosen gate with:

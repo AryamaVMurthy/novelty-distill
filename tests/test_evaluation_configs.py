@@ -111,6 +111,23 @@ def test_replication_student_configs_change_only_model_identity() -> None:
     }
 
 
+def test_replication_teacher_evaluation_changes_only_model_identity() -> None:
+    main = _load("eval_qwen3_14b.yaml")
+    replication = _load("eval_qwen3_8b.yaml")
+
+    assert replication.model == "Qwen/Qwen3-8B"
+    assert replication.revision == "b968826d9c46dd6066d109eabc6255188de91218"
+    assert {
+        key: value
+        for key, value in replication.model_dump(mode="json").items()
+        if key not in {"model", "revision"}
+    } == {
+        key: value
+        for key, value in main.model_dump(mode="json").items()
+        if key not in {"model", "revision"}
+    }
+
+
 def test_contrast_config_keeps_rubric_axes_descriptive() -> None:
     config = yaml.safe_load(
         (ROOT / "configs/evaluation/primary_contrasts.yaml").read_text(encoding="utf-8")

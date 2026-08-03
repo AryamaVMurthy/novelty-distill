@@ -22,7 +22,8 @@ module load u22/cuda/12.4
 generation_job_id="${GENERATION_JOB_ID:?set GENERATION_JOB_ID}"
 generation_name="${GENERATION_NAME:-evaluation-student}"
 generation_config="${GENERATION_CONFIG:?set GENERATION_CONFIG}"
-prompts_path="${PROMPTS_PATH:?set PROMPTS_PATH}"
+prompts_path="${PROMPTS_PATH:-}"
+prompts_name="${PROMPTS_NAME:-}"
 taste_namespace="${TASTE_NAMESPACE:-research-taste}"
 taste_concurrency="${TASTE_CONCURRENCY:-8}"
 taste_attempts="${TASTE_ATTEMPTS:-3}"
@@ -32,6 +33,14 @@ for safe_value in "${generation_job_id}" "${generation_name}" "${taste_namespace
     exit 2
   fi
 done
+if [[ -z "${prompts_path}" && -z "${prompts_name}" ]]; then
+  echo "set PROMPTS_PATH or PROMPTS_NAME" >&2
+  exit 2
+fi
+if [[ -n "${prompts_name}" && ("${prompts_name}" == */* || "${prompts_name}" == *..*) ]]; then
+  echo "PROMPTS_NAME must be a path-safe filename" >&2
+  exit 2
+fi
 if ! [[ "${taste_concurrency}" =~ ^[1-9][0-9]*$ ]]; then
   echo "TASTE_CONCURRENCY must be a positive integer" >&2
   exit 2
@@ -53,6 +62,9 @@ annotator_revision="aa55da1ecc13d006e8b8e4f54579b1ea8c3db2df"
 server_log="${scratch_root}/logs/research-taste-${SLURM_JOB_ID}.log"
 server_pid=""
 port="${PORT:-$((20000 + SLURM_JOB_ID % 20000))}"
+if [[ -n "${prompts_name}" ]]; then
+  prompts_path="${scratch_root}/data/${prompts_name}"
+fi
 if [[ "${generation_config}" != /* ]]; then
   generation_config="${repo_dir}/${generation_config}"
 fi

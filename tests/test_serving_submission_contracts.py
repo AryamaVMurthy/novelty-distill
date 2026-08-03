@@ -72,6 +72,8 @@ def test_research_taste_job_is_resumable_and_uses_the_pinned_annotator() -> None
     assert 'flock -x 8' in script
     assert 'taste_attempts="${TASTE_ATTEMPTS:-3}"' in script
     assert '--attempts "${taste_attempts}"' in script
+    assert 'prompts_name="${PROMPTS_NAME:-}"' in script
+    assert 'prompts_path="${scratch_root}/data/${prompts_name}"' in script
     annotator = Path("scripts/annotate_research_taste.py").read_text(encoding="utf-8")
     assert "def _request_annotation(" in annotator
     assert "for attempt in range(1, attempts + 1):" in annotator
@@ -308,6 +310,21 @@ def test_promoted_analysis_is_seed_balanced_artifact_audited_and_secondary_taste
     assert "scripts/analyze_research_taste.py" in script
     assert "scripts/collect_seeded_official_metrics.py" in script
     assert "scripts/export_wandb_snapshot.py" in script
+
+
+def test_replication_control_launcher_builds_independent_scored_taste_graph() -> None:
+    script = Path("scripts/submit_replication_controls.sh").read_text(encoding="utf-8")
+
+    assert "configs/generation/eval_qwen3_8b.yaml" in script
+    assert "configs/generation/eval_qwen3_1p7b.yaml" in script
+    assert 'teacher_id="A1-qwen8b-temporal-k16-seed17000"' in script
+    assert 'student_id="A0-qwen1p7b-temporal-k16-seed17000"' in script
+    assert "for index in 0 1" in script
+    assert "slurm/sglang_smoke.sbatch" in script
+    assert "slurm/score_teacher.sbatch" in script
+    assert "slurm/annotate_research_taste.sbatch" in script
+    assert script.count("slurm/evaluate_student.sbatch") >= 2
+    assert '"teacher_score_final":"%s"' in script
 
 
 def test_final_controller_submits_research_taste_for_every_generation_family() -> None:
