@@ -14,6 +14,19 @@ uv run ruff check .
 uv run pytest -q
 ```
 
+## Inspect prepared TOMATO records
+
+The prepared datasets are JSONL: one complete JSON object per line. Stream and pretty-print one
+record without loading the full artifact into memory:
+
+```bash
+uv run python scripts/preview_tomato.py /path/to/tomato-open-train-20000.jsonl --index 0
+uv run python scripts/preview_tomato.py /path/to/tomato-open-train-20000.jsonl --id 2022_36254448
+```
+
+An exact paired open/composition record from the pinned canonical artifact is checked in at
+`examples/tomato_record_2022_36254448.json` for direct inspection.
+
 ## Turing smoke path
 
 ```bash

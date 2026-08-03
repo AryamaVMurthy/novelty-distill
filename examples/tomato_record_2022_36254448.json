@@ -1,0 +1,40 @@
+{
+  "open": {
+    "id": "2022_36254448",
+    "student_prompt": "Given the research question and background below, propose one scientifically meaningful hypothesis. Explain its central mechanism, how it differs from existing approaches, and how it could be tested.\n\nResearch question:\n\"How to establish a foundational framework for systematically mapping neuroanatomy and explaining neurological diseases?\"\n\nResearch background:\nPrior to Willis (pre-17th century), neuroanatomy relied on rudimentary dissections (e.g., Vesalian methods) with fragmented descriptions of brain structures. Clinical neurology lacked systematic frameworks:  \n- Neurological symptoms (e.g., paralysis, seizures) were attributed to humoral imbalances or supernatural causes.  \n- No established correlation between symptoms and neuroanatomical lesions.  \n- Brain vasculature remained unmapped, hindering stroke understanding.  \nExisting approaches: Isolated case reports without standardized terminology or anatomical validation.",
+    "privileged_context": {
+      "historical_hypothesis": "Collaborative team-based dissection with precision illustration, involving multi-specialist collaboration for detailed brain dissection and accurate visual documentation.  \n\nComparative neuroanatomy across species, analyzing brain structure-function differences between humans and animals to infer cognition mechanisms.",
+      "inspirations": [
+        "Collaborative team-based dissection with precision illustration, involving multi-specialist collaboration for detailed brain dissection and accurate visual documentation",
+        "Comparative neuroanatomy across species, analyzing brain structure-function differences between humans and animals to infer cognition mechanisms"
+      ]
+    },
+    "human_target": "Collaborative team-based dissection with precision illustration, involving multi-specialist collaboration for detailed brain dissection and accurate visual documentation.  \n\nComparative neuroanatomy across species, analyzing brain structure-function differences between humans and animals to infer cognition mechanisms.",
+    "source_ids": [
+      "2022_36254448"
+    ],
+    "split": "train",
+    "task": "open",
+    "prompt_hash": "49b04559473be3a02e42d9b30473b075c30efbd2b4bf9d4298710cda4cf91259",
+    "dataset_revision": "fcd201d92758a642465a7653b8055f3a04d5f439"
+  },
+  "composition": {
+    "id": "2022_36254448",
+    "student_prompt": "Given the research question and background below, propose one scientifically meaningful hypothesis. Explain its central mechanism, how it differs from existing approaches, and how it could be tested.\n\nResearch question:\n\"How to establish a foundational framework for systematically mapping neuroanatomy and explaining neurological diseases?\"\n\nResearch background:\nPrior to Willis (pre-17th century), neuroanatomy relied on rudimentary dissections (e.g., Vesalian methods) with fragmented descriptions of brain structures. Clinical neurology lacked systematic frameworks:  \n- Neurological symptoms (e.g., paralysis, seizures) were attributed to humoral imbalances or supernatural causes.  \n- No established correlation between symptoms and neuroanatomical lesions.  \n- Brain vasculature remained unmapped, hindering stroke understanding.  \nExisting approaches: Isolated case reports without standardized terminology or anatomical validation.\n\nUse the supplied inspiration to change or extend the proposed mechanism. Explain the connection explicitly.\n\nSupplied inspiration:\n1. Collaborative team-based dissection with precision illustration, involving multi-specialist collaboration for detailed brain dissection and accurate visual documentation\n2. Comparative neuroanatomy across species, analyzing brain structure-function differences between humans and animals to infer cognition mechanisms",
+    "privileged_context": {
+      "historical_hypothesis": "Collaborative team-based dissection with precision illustration, involving multi-specialist collaboration for detailed brain dissection and accurate visual documentation.  \n\nComparative neuroanatomy across species, analyzing brain structure-function differences between humans and animals to infer cognition mechanisms.",
+      "inspirations": [
+        "Collaborative team-based dissection with precision illustration, involving multi-specialist collaboration for detailed brain dissection and accurate visual documentation",
+        "Comparative neuroanatomy across species, analyzing brain structure-function differences between humans and animals to infer cognition mechanisms"
+      ]
+    },
+    "human_target": "Collaborative team-based dissection with precision illustration, involving multi-specialist collaboration for detailed brain dissection and accurate visual documentation.  \n\nComparative neuroanatomy across species, analyzing brain structure-function differences between humans and animals to infer cognition mechanisms.",
+    "source_ids": [
+      "2022_36254448"
+    ],
+    "split": "train",
+    "task": "composition",
+    "prompt_hash": "d4a6163b8324086beb29a59b529f4b78bff4b988ef6989c8e2e53c2931abde25",
+    "dataset_revision": "fcd201d92758a642465a7653b8055f3a04d5f439"
+  }
+}
