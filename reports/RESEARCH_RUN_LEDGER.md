@@ -567,6 +567,14 @@ completion evidence, not a performance comparison. The freed slots immediately s
 array. At the same snapshot, A1 temporal generation contained 1,490/1,658 validated prompt shards
 and A0 research-taste annotation contained 838/1,658.
 
+The measured first-step runtimes imply that D3 cannot finish inside its inherited six-hour Slurm
+limit and E2 is close to that boundary. Slurm would not extend the already-running array tasks, but
+it accepted a 12-hour limit for the not-yet-started E3/E4 tasks. Targeted recovery array 18568
+(`15-16%2`, dependency `afterany:18559:18561`) was therefore staged to resume D3/E2 as soon as
+their current allocations end, rather than waiting for the original whole-array recovery 18360.
+The original recovery remains an idempotent safety net. This scheduling change does not alter data,
+optimizer, seed, checkpoint, or evaluation contracts; it only closes otherwise idle GPU time.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
