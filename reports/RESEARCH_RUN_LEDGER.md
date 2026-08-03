@@ -320,13 +320,15 @@ silently conflict with the final graph.
 At 21:08 IST on 2026-08-02, A0 generation 18165 completed all 1,658 temporal prompts and released
 judge pass 18203. A1 generation 18162 and the D1/D2 online-distillation jobs remained healthy.
 Commits `93cd569`--`bc7db5c` add a four-GPU scale path with disjoint generation, judge, and
-embedding partitions plus global fail-closed gates and a strict cluster merge. The 5k chain is
-18235--18242 -> 18246 -> 18247, gated behind controller 18222. The 20k chain is 18248--18257 and
-cannot begin until the 5k target gate 18247 passes. Bootstrap jobs 18235 and 18248 verify prompt
+embedding partitions plus global fail-closed gates and a strict cluster merge. The original 5k
+chain 18235--18242 -> 18246 -> 18247 and 20k chain 18248--18257 were cancelled with zero runtime
+after the transient-DNS audit showed that their spooled scripts predated the bounded repository
+retry. Fresh 5k chain 18380--18389 is gated behind controller 18222; fresh 20k chain 18390--18399
+cannot begin until the new 5k target gate 18389 passes. Bootstrap jobs 18380 and 18390 verify prompt
 text hashes and frozen generation controls before copying the exact nested 1k -> 5k -> 20k shards;
 identical prompts are not regenerated. The cancelled zero-runtime 5k merge/target jobs 18243 and
 18244 were replaced after Turing automatically attached a GPU to the original four-CPU merge;
-replacement 18246 requests two CPUs and no GPU.
+the new merge jobs preserve the corrected two-CPU request.
 
 The final generation preflight also binds every local LoRA or full checkpoint to a streaming
 SHA-256 over inference-relevant configuration, tokenizer, index, and weight files. That identity is
