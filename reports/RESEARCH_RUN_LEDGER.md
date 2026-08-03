@@ -123,9 +123,11 @@ KL, and skew KL have different numerical scales.
 
 | Baseline | Objective/view | Available rows | Exposures | Train runtime (s) | Peak GPU MiB |
 |---|---|---:|---:|---:|---:|
+| B1 | CE / human | 1,000 | 1,000 | 305.3 | 15,286 |
 | B2a | CE / random-1 | 1,000 | 1,000 | 245.9 | 10,902 |
 | B2b | CE / best-1 | 1,000 | 1,000 | 245.1 | 10,982 |
 | B2c | CE / mode-1 | 1,000 | 1,000 | 251.0 | 10,924 |
+| B3 | CE / diverse-4 | 4,000 | 1,000 | 240.8 | 10,924 |
 | B4 | GEM / diverse-4 | 4,000 | 1,000 | 340.9 | 39,626 |
 | C1-human | forward KL / human | 1,000 | 1,000 | 617.7 | 45,662 |
 | C1-best1 | forward KL / best-1 | 1,000 | 1,000 | 487.2 | 40,298 |
@@ -135,7 +137,7 @@ KL, and skew KL have different numerical scales.
 | C2-diverse4 | reverse KL / diverse-4 | 4,000 | 1,000 | 487.7 | 40,078 |
 | C3 | skew KL / best-1 | 1,000 | 1,000 | 1,846.0 | 48,502 |
 
-All nine completed LoRA artifacts above B4/C3 open as 132,187,888-byte rank-16 adapters with
+All eleven completed LoRA artifacts above B4/C3 open as 132,187,888-byte rank-16 adapters with
 504 non-empty tensors. B4 is a structurally valid 8,044,981,992-byte, 398-tensor native-BF16 full
 model; C3's full-checkpoint and BF16-cast serving evidence is recorded below. The three long human
 targets in C1/C2 account for 1,446 completion-tail tokens and materially increase runtime and peak
@@ -148,9 +150,11 @@ quality metrics.
 
 | Baseline | First-window loss | Final-window loss | Change | Final-window gradient norm |
 |---|---:|---:|---:|---:|
+| B1 | 1.7796 | 1.3845 | -22.2% | 0.3506 |
 | B2a | 1.1235 | 0.6400 | -43.0% | 0.4247 |
 | B2b | 1.1172 | 0.6485 | -42.0% | 0.4165 |
 | B2c | 1.1046 | 0.6466 | -41.5% | 0.4169 |
+| B3 | 1.1429 | 0.6514 | -43.0% | 0.4166 |
 | C1-human | 3.4759 | 2.5733 | -26.0% | 1.9729 |
 | C1-best1 | 3.8937 | 2.5084 | -35.6% | 2.4118 |
 | C1-diverse4 | 3.9038 | 2.4845 | -36.4% | 2.3711 |
