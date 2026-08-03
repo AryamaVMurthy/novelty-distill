@@ -26,8 +26,8 @@ if [[ -z "${remote_user}" || "${remote_user}" == */* ]]; then
   echo "could not resolve a path-safe remote user" >&2
   exit 1
 fi
-remote_stage="/scratch/node01/${remote_user}/novelty-distill/submit/${script_name}"
-ssh turing 'mkdir -p "/scratch/node01/$USER/novelty-distill/submit"'
+remote_stage="/tmp/novelty-distill-submit-${remote_user}/${script_name}"
+ssh turing 'mkdir -p "/tmp/novelty-distill-submit-$USER"'
 scp -q "${job_script}" "turing:${remote_stage}"
 
 printf -v quoted_ref '%q' "${repo_ref}"
