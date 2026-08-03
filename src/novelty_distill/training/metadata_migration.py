@@ -83,21 +83,19 @@ def backfill_declared_divergence(
             if recorded != baseline.divergence:
                 raise ValueError(f"existing divergence disagrees for {baseline_id}: {path}")
             migrations = payload.get("metadata_migrations")
-            if not isinstance(migrations, list) or not any(
+            migrated = isinstance(migrations, list) and any(
                 isinstance(item, dict)
                 and item.get("kind") == "backfill_declared_divergence"
                 for item in migrations
-            ):
-                raise ValueError(
-                    f"explicit divergence has no migration evidence for {baseline_id}: {path}"
-                )
-            if not backup.is_file():
+            )
+            if migrated and not backup.is_file():
                 raise ValueError(f"migrated metadata has no preserved original: {path}")
             records[baseline_id] = {
-                "status": "already_migrated",
+                "status": "already_migrated" if migrated else "not_required",
                 "metadata": str(path),
-                "backup": str(backup),
             }
+            if migrated:
+                records[baseline_id]["backup"] = str(backup)
             continue
 
         prior_sha256 = hashlib.sha256(original).hexdigest()

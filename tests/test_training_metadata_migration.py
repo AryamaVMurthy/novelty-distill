@@ -94,6 +94,25 @@ def test_divergence_backfill_rejects_ambiguous_or_conflicting_evidence(
             registry, {"C1-best1": metadata}, migration_commit="a" * 40
         )
 
+
+def test_divergence_backfill_accepts_current_schema_without_mutation(tmp_path: Path) -> None:
+    registry = tmp_path / "baselines.yaml"
+    _registry(registry)
+    metadata = tmp_path / "run_metadata.json"
+    _metadata(metadata)
+    payload = json.loads(metadata.read_text(encoding="utf-8"))
+    payload["divergence"] = "forward_kl"
+    metadata.write_text(json.dumps(payload), encoding="utf-8")
+    original = metadata.read_bytes()
+
+    result = backfill_declared_divergence(
+        registry, {"C1-best1": metadata}, migration_commit="a" * 40
+    )
+
+    assert result["records"]["C1-best1"]["status"] == "not_required"
+    assert metadata.read_bytes() == original
+    assert not (tmp_path / "run_metadata.pre-divergence-backfill.json").exists()
+
     payload = json.loads(metadata.read_text(encoding="utf-8"))
     payload["beta"] = 0.0
     payload["divergence"] = "reverse_kl"

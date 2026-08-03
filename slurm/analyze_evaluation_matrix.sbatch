@@ -90,6 +90,17 @@ for baseline_id in "${baseline_ids[@]}"; do
   test -s "${metadata_path}"
   training_audit_inputs+=(--input "${baseline_id}=${metadata_path}")
 done
+legacy_gkd_migration_inputs=()
+for baseline_id in \
+  C1-human C1-best1 C1-diverse4 C2-human C2-best1 C2-diverse4 D1 D2; do
+  metadata_path="${scratch_root}/checkpoints/${baseline_id}-tomato1k-seed17/run_metadata.json"
+  test -s "${metadata_path}"
+  legacy_gkd_migration_inputs+=(--input "${baseline_id}=${metadata_path}")
+done
+"${venv_dir}/bin/python" "${repo_dir}/scripts/backfill_training_metadata.py" \
+  --registry "${repo_dir}/configs/baselines.yaml" \
+  "${legacy_gkd_migration_inputs[@]}" \
+  --output "${output_dir}/training-metadata-migration.json"
 "${venv_dir}/bin/python" "${repo_dir}/scripts/audit_training_matrix.py" \
   --registry "${repo_dir}/configs/baselines.yaml" \
   "${training_audit_inputs[@]}" \
@@ -135,6 +146,7 @@ wandb_inputs=(
   --input "${evaluation_root}/A0-temporal-k16-seed17000.json"
   --input "${evaluation_root}/A1-temporal-k16-seed17000.json"
   --input "${evaluation_root}/A3-temporal-k1.json"
+  --input "${output_dir}/training-metadata-migration.json"
   --input "${output_dir}/training-matrix-audit.json"
   --input "${output_dir}/primary-contrasts.json"
   --input "${output_dir}/research-taste-secondary.json"
@@ -160,6 +172,7 @@ done
 
 test -s "${output_dir}/prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/threshold-prompt-metrics.jsonl.manifest.json"
+test -s "${output_dir}/training-metadata-migration.json"
 test -s "${output_dir}/training-matrix-audit.json"
 test -s "${output_dir}/primary-contrasts.json"
 test -s "${output_dir}/findings.md"

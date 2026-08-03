@@ -184,6 +184,8 @@ def test_final_analysis_requires_the_complete_training_matrix_audit() -> None:
     script = Path("slurm/analyze_evaluation_matrix.sbatch").read_text(encoding="utf-8")
 
     assert "scripts/audit_training_matrix.py" in script
+    assert "scripts/backfill_training_metadata.py" in script
+    assert "training-metadata-migration.json" in script
     assert "training-matrix-audit.json" in script
     assert '--registry "${repo_dir}/configs/baselines.yaml"' in script
     assert '--input "${baseline_id}=${metadata_path}"' in script
