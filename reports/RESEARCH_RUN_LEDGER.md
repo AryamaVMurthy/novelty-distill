@@ -589,6 +589,20 @@ not evidence that D1 generates better ideas; only the frozen temporal evaluation
 that. The minimum observed step losses occur late in both runs (D1 step 96, D2 step 109), while
 both maxima occur in the first four steps, providing a basic convergence sanity check.
 
+At 23:00 IST, the first secondary A0 research-taste pass was stopped after a fail-closed interface
+audit. Although all 933 completed shards were structurally valid with unique request IDs, more than
+85% of their opportunity labels collapsed onto scope mismatch and a known mechanism-specific
+example received bottleneck specificity 1/3. Re-querying the same pinned Qwen3-32B-FP8 server on a
+label-stratified 20-record diagnostic sample without the compact label regex produced only 45%
+opportunity-label agreement and raised mean specificity from 1.05 to 2.75. This isolates a strong
+annotation-interface effect; it does not establish that the alternative labels are correct.
+
+Only jobs 18415 and its pending resume 18416 were cancelled. Their outputs were preserved under
+`research-taste-invalid-compact-v1/A0-temporal-k16-seed17000` and are excluded from analysis. The
+replacement protocol removes forced label decoding, adds the source paper's decision guidance,
+strictly accepts raw or singly fenced JSON, and receives a new protocol hash. Primary training,
+A1 temporal generation, and all frozen quality/semantic-mode outcomes were unaffected.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are

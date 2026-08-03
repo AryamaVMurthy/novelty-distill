@@ -1,6 +1,5 @@
 import hashlib
 import json
-import re
 
 import pytest
 
@@ -68,9 +67,7 @@ def test_research_taste_payload_is_deterministic_and_strict() -> None:
     assert payload["temperature"] == 0
     assert payload["chat_template_kwargs"] == {"enable_thinking": False}
     assert "response_format" not in payload
-    assert re.fullmatch(
-        payload["regex"], _response()["choices"][0]["message"]["content"]
-    )
+    assert "regex" not in payload
     schema = ResearchTasteAnnotation.model_json_schema()
     assert set(schema["required"]) == {
         "opportunity_pattern",
@@ -83,6 +80,9 @@ def test_research_taste_payload_is_deterministic_and_strict() -> None:
     system_prompt = payload["messages"][0]["content"]
     assert "problem-finding" in system_prompt
     assert "Do not classify by scientific topic" in system_prompt
+    assert "Compare all categories before deciding" in system_prompt
+    assert "Return exactly one JSON object" in system_prompt
+    assert "Proposal motivation and method:" in payload["messages"][1]["content"]
     assert set(schema["properties"]["opportunity_pattern"]["enum"]) == set(
         OPPORTUNITY_PATTERNS
     )
@@ -98,6 +98,17 @@ def test_research_taste_response_validates_labels_and_diagnostics() -> None:
     assert result.method_paradigm == "formal_conceptual_derivation"
     assert result.bottleneck_specificity == 3
     assert result.request_id == "chatcmpl-taste-1"
+
+
+def test_research_taste_response_accepts_one_json_markdown_fence() -> None:
+    response = _response()
+    content = response["choices"][0]["message"]["content"]
+    response["choices"][0]["message"]["content"] = f"```json\n{content}\n```"
+
+    result = parse_research_taste_response(response, _spec())
+
+    assert result.opportunity_pattern == "explanation_gap"
+    assert result.bottleneck_specificity == 3
 
 
 def test_research_taste_response_rejects_unknown_category() -> None:

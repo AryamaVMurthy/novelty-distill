@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 import math
-import re
 import statistics
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
@@ -95,23 +94,6 @@ class ResearchTasteRecord(ResearchTasteAnnotation):
     sample_index: int = Field(ge=0)
 
 
-def research_taste_output_regex() -> str:
-    """Return a compact, whitespace-free grammar for the SGLang judge output."""
-
-    opportunity = "(" + "|".join(map(re.escape, OPPORTUNITY_PATTERNS)) + ")"
-    method = "(" + "|".join(map(re.escape, METHOD_PARADIGMS)) + ")"
-    return (
-        r'\{"opportunity_pattern":"'
-        + opportunity
-        + r'","method_paradigm":"'
-        + method
-        + r'","surface_stitching":(true|false),'
-        + r'"surface_stitching_score":[0-3],'
-        + r'"bottleneck_specificity":[0-3],'
-        + r'"boilerplate_score":[0-3]\}'
-    )
-
-
 _SYSTEM_PROMPT = """\
 You annotate the research taste expressed by a proposed scientific idea. Classify two separate
 properties: its problem-finding pattern and its high-level contribution strategy.
@@ -144,6 +126,20 @@ Method paradigm (how the contribution addresses it):
 Surface stitching means a superficial A-plus-B combination without a precise reason the pieces
 must interact. Bottleneck specificity is high only when a concrete mechanism or limiting factor is
 identified. Boilerplate is high when wording could apply to many unrelated research problems.
+
+Decision guidance: the opportunity axis asks how the gap is found; the method axis asks what
+research move constructs the proposal. The axes are disjoint. Scope mismatch applies only when
+narrow, unrealistic, or poorly transferable assumptions are the motivating gap. Existing
+approaches failing to address a concrete mechanism is instead an explanation or failure gap. Use
+empirical mapping for estimating, auditing, diagnosing, quantifying, or characterizing a
+phenomenon. Use artifact/system only when a concrete artifact is the central deliverable. Use
+optimization/search when the central move is search, tuning, selection, allocation, scaling, or
+efficiency.
+
+Diagnostic scores use 0 for absent and 3 for strong. For bottleneck specificity, 1 is vague, 2 is
+specific, and 3 identifies a precise causal mechanism or limiting factor. Surface stitching is true
+only when its score is 2 or 3. Compare all categories before deciding.
+Return exactly one JSON object with the six requested keys and no Markdown or additional text.
 """
 
 
@@ -153,7 +149,6 @@ def research_taste_protocol_hash() -> str:
     payload = {
         "system_prompt": _SYSTEM_PROMPT,
         "schema": ResearchTasteAnnotation.model_json_schema(),
-        "output_regex": research_taste_output_regex(),
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
@@ -172,13 +167,15 @@ def build_research_taste_payload(
             {"role": "system", "content": _SYSTEM_PROMPT},
             {
                 "role": "user",
-                "content": f"Scientific task:\n{prompt}\n\nCandidate idea:\n{response}",
+                "content": (
+                    f"Scientific context:\n{prompt}\n\n"
+                    f"Proposal motivation and method:\n{response}"
+                ),
             },
         ],
         "temperature": 0,
         "max_tokens": spec.max_tokens,
         "chat_template_kwargs": {"enable_thinking": False},
-        "regex": research_taste_output_regex(),
     }
 
 
@@ -199,8 +196,16 @@ def parse_research_taste_response(
     message = choice.get("message")
     if not isinstance(message, Mapping) or not isinstance(message.get("content"), str):
         raise ValueError("research-taste choice has no text content")
+    content = message["content"].strip()
+    lines = content.splitlines()
+    if (
+        len(lines) >= 3
+        and lines[0].casefold() in {"```", "```json"}
+        and lines[-1] == "```"
+    ):
+        content = "\n".join(lines[1:-1]).strip()
     try:
-        annotation = ResearchTasteAnnotation.model_validate(json.loads(message["content"]))
+        annotation = ResearchTasteAnnotation.model_validate(json.loads(content))
     except (json.JSONDecodeError, ValueError, TypeError) as error:
         raise ValueError(
             "annotator returned invalid structured research-taste annotation"

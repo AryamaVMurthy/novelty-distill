@@ -27,6 +27,29 @@ synthesis/unification methods relative to realized human-paper ideas. Their task
 annotator, and literature inputs differ from TOMATO, so those percentages are motivation for this
 analysis rather than expected values or evidence about our outputs.
 
+## Annotation-interface amendment
+
+The first A0 annotation pass was stopped and invalidated before any research-taste comparison was
+run. Its compact regular-expression decoder assigned 85%+ of outputs to scope mismatch and gave an
+obviously mechanism-specific stroke example a specificity score of 1/3. On a deterministic,
+label-stratified 20-record diagnostic sample, the compact decoder agreed with the same pinned model
+using an exact-JSON but unconstrained decoder on only 45% of opportunity labels; mean bottleneck
+specificity was 1.05 versus 2.75. The unconstrained labels are not treated as ground truth, but the
+large same-model interface sensitivity disproves the compact decoder as a stable measurement.
+
+Jobs 18415/18416 were therefore cancelled, and all 933 completed prompt shards were preserved at
+`research-taste-invalid-compact-v1/A0-temporal-k16-seed17000` on scratch. They are excluded from
+every analysis input. The replacement protocol removes forced label-token decoding, incorporates
+the paper's axis-separation and decision guidance, asks for the exact six-key JSON object, and
+strictly validates either raw JSON or one enclosing JSON Markdown fence. The changed protocol hash
+prevents old shards from passing the replacement preflight. This repair occurred before any
+trained-model temporal output or research-taste outcome was analyzed.
+
+The replacement still uses Qwen3-32B-FP8 rather than the paper's GPT-5.4-mini annotator and TOMATO
+does not provide the paper's separated prior-work/motivation/method input contract. Those transfer
+differences remain subject to the human reliability gate below; the repair establishes interface
+stability, not annotation validity.
+
 In their matched 11,683-paper corpus, the human reference has normalized entropy 0.926 on the
 opportunity axis and 0.920 on the method axis; the nine main LLM settings span 0.550--0.758 and
 0.723--0.879, respectively. Their reasoning ablation is also relevant to experimental control:
