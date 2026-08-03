@@ -755,3 +755,11 @@ all 1,658 prompt shards and 26,528 Qwen3-14B samples. Idempotent resume job 1835
 complete tree and exited successfully in 12 seconds without regenerating a prompt. Qwen3-32B-FP8
 score pass 18201 started immediately, with pass 18202 retained as an `afterany` resumable second
 pass. This is a complete generation-population gate, not yet an A1 quality or mode finding.
+
+Before any trained-student temporal output was available, a focused literature update added one
+interpretation rule without changing the metric family: raw diversity loss is read beside the
+already frozen `viable_semantic_yield`. Stable viable yield is compatible with removal of weak
+outputs, whereas decreases in both raw coverage and viable yield are evidence of residual
+narrowing among operationally viable responses. Karouzos et al. (2026) motivate this distinction;
+NovBench independently reinforces the existing rule that the quality judge is not a novelty
+oracle. No new training, scorer, endpoint, contrast, or promotion criterion was introduced.

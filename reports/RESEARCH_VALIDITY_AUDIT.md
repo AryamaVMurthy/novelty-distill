@@ -25,6 +25,8 @@ not a results report and does not promote any baseline.
 5. Fluent judge rationales do not establish correct novelty decisions. RINoBench contains 1,381
    expert-judged research ideas and reports that leading LLMs can produce human-like rationales
    while their final novelty judgments still diverge substantially from the expert labels. The
+   peer-reviewed NovBench study likewise reports limited novelty understanding across general and
+   specialized LLM evaluators on 1,684 paper--review pairs. The
    fixed judge here intentionally scores relevance, feasibility, soundness, clarity, and instruction
    compliance only; its mean must never be renamed or interpreted as a novelty score.
 6. Standalone and comparative LLM judging can both create a scientific “novelty mirage.” RQ-Bench
@@ -106,6 +108,16 @@ not a results report and does not promote any baseline.
     judge does not assess non-obviousness and the gates are operational rather than human
     calibrated. It remains outside the primary metric family. The author repository had no
     explicit license at commit `121376126a4864ee5436ea5a23ffc8dc0f7842c5`, so no code is reused.
+17. An observed loss of raw diversity can reflect either removal of incorrect outputs or genuine
+    narrowing among correct outputs. Karouzos et al. separate those mechanisms across post-training
+    lineages and find their relative contribution is task-dependent. This study cannot reproduce
+    their correctness decomposition on open-ended hypotheses, but its already frozen
+    `viable_semantic_yield` provides the closest task-appropriate check: it applies the same
+    relevance/soundness/clarity viability gate to every method before counting mutually distinct
+    outputs. We therefore infer harmful residual narrowing only when a raw coverage decrease is
+    accompanied by a viable-yield decrease; raw diversity loss with stable or improved viable
+    yield is reported as quality-compatible filtering, not automatically called mode collapse.
+    This is an interpretation rule for an existing secondary diagnostic, not a new endpoint.
 
 ## Consequences for this study
 
@@ -201,3 +213,7 @@ not a results report and does not promote any baseline.
   Idea Generation*, arXiv preprint, 2026: <https://arxiv.org/abs/2607.08758>.
 - Amin et al., *IDEAgent: Agentic Quality-Diversity Search for Research Idea Generation*, arXiv
   preprint, 2026: <https://arxiv.org/abs/2607.22375>.
+- Wu et al., *NovBench: Evaluating Large Language Models on Academic Paper Novelty Assessment*,
+  Findings of ACL 2026: <https://aclanthology.org/2026.findings-acl.1607/>.
+- Karouzos et al., *Where Does Output Diversity Collapse in Post-Training?*, arXiv preprint, 2026:
+  <https://arxiv.org/abs/2604.16027>.

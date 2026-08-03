@@ -61,6 +61,11 @@ skew-loss/adaptive-replay comparison, and OPSD motivates the privileged-context 
   then exactly counts the largest subset whose every pair has cosine similarity below the current
   clustering threshold. Report its complete threshold curve. It cannot establish non-obviousness or
   literature novelty because those properties are deliberately absent from the automatic judge.
+- Interpret raw diversity loss beside `viable_semantic_yield`. If raw coverage falls while viable
+  yield is stable or higher, report the change as compatible with filtering weak outputs rather
+  than automatically calling it harmful collapse. A decrease in both is evidence of residual
+  narrowing among operationally viable outputs, still subject to expert confirmation. This
+  quality-control distinction is motivated by Karouzos et al. (2026) and changes no endpoint.
 - Teacher-mode precision and low JSD are teacher-distribution fidelity outcomes, not monotonic
   scientific-value measures. A valid mode absent from eight teacher samples lowers precision just
   as an irrelevant mode does; interpret it beside judged quality, student-only mode count, and
@@ -136,3 +141,7 @@ complete frozen contract, attribution, and limitations are in
   <https://arxiv.org/abs/2601.18734>
 - Chen et al., *Measuring the Gap Between Human and LLM Research Ideas*, arXiv preprint, 2026:
   <https://arxiv.org/abs/2607.01233>
+- Karouzos et al., *Where Does Output Diversity Collapse in Post-Training?*, arXiv preprint, 2026:
+  <https://arxiv.org/abs/2604.16027>
+- Wu et al., *NovBench: Evaluating Large Language Models on Academic Paper Novelty Assessment*,
+  Findings of ACL 2026: <https://aclanthology.org/2026.findings-acl.1607/>
