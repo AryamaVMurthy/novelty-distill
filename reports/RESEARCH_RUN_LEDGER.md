@@ -644,6 +644,24 @@ Initial job 18595 was cancelled while pending at zero elapsed time because Turin
 added GPU billing to its four-CPU request; the two-CPU replacement completed in three seconds with
 an empty `SLURM_JOB_GPUS` field and did not displace research compute.
 
+The first 18 E2 optimizer steps then exposed an upstream optional-loss defect: every finite logged
+loss was negative under `jsd_token_clip: 0.05`. Source tracing showed that the pinned OPSD trainer
+upper-clips signed per-vocabulary KL/JSD contributions before summing them. Only their vocabulary
+sum is guaranteed nonnegative, so capping positive contributions while leaving negative ones
+uncapped invalidates the divergence. Job 18561 was cancelled before checkpoint 25; its three
+trajectory logs were preserved at
+`checkpoints-invalid-vocab-clip-v1/E2-tomato1k-seed17-job18561`, and no invalid optimizer state is
+reused. Pending E3/E4 and E2 recovery tasks were held before the cancellation.
+
+Commit `c0f9615` sets the optional clip to `null` in all OPSD configurations while retaining the
+pinned official unclipped loss. The configuration-contract test failed before the change and the
+full repaired suite passed with 266 tests plus two expected local skips. Qwen3-4B gate 18597 then
+completed a real corrected E2 update with loss 1.215773, gradient norm 2.714494, 23.542-second
+runtime, saved `jsd_token_clip: null` metadata, and a loadable adapter. Corrected E3 task 18592 was
+released next; fresh E2 task 18568_16 and E4 remained scheduled behind available resources and the
+array throttle. The algebraic counterexample, evidence, and interpretation limits are frozen in
+`reports/OPSD_LOSS_VALIDITY_AUDIT.md`.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
