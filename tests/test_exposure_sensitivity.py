@@ -89,3 +89,20 @@ def test_exposure_analysis_is_separate_audited_and_uses_declared_contrasts() -> 
         "B4-4x-vs-B3-4x",
         "B3-4x-vs-B3",
     } <= contrast_ids
+
+
+def test_exposure_analysis_controller_fails_closed_and_persists_graph() -> None:
+    controller = Path("slurm/submit_exposure_sensitivity_analysis.sbatch").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'primary_controller_job_id="${PRIMARY_CONTROLLER_JOB_ID:?' in controller
+    assert 'exposure_evaluation_job_ids="${EXPOSURE_EVALUATION_JOB_IDS:?' in controller
+    assert 'exposure_taste_job_ids="${EXPOSURE_TASTE_JOB_IDS:?' in controller
+    assert '"analysis"' in controller
+    assert "reversed(lines)" in controller
+    assert 'expected_exposure_jobs="${EXPECTED_EXPOSURE_JOBS:-5}"' in controller
+    assert 'dependency="afterok:${all_dependencies}"' in controller
+    assert "slurm/analyze_exposure_sensitivity.sbatch" in controller
+    assert "exposure-sensitivity-analysis.json" in controller
+    assert "os.replace" in controller
