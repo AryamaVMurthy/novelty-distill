@@ -7,6 +7,7 @@ from pathlib import Path
 
 import yaml
 
+from novelty_distill.evaluation.compact_reporting import write_compact_artifact_bundle
 from novelty_distill.evaluation.contrasts import (
     analyze_contrasts,
     analyze_threshold_directions,
@@ -95,6 +96,13 @@ def main() -> None:
     )
     args.markdown.parent.mkdir(parents=True, exist_ok=True)
     args.markdown.write_text(render_contrast_markdown(payload), encoding="utf-8")
+    artifact_manifest = None
+    if artifact_config := config.get("artifact_bundle"):
+        artifact_manifest = write_compact_artifact_bundle(
+            payload=payload,
+            config=artifact_config,
+            output_dir=args.output.parent,
+        )
     print(
         json.dumps(
             {
@@ -102,6 +110,7 @@ def main() -> None:
                 "threshold_metrics": len(threshold_directions),
                 "output": str(args.output),
                 "markdown": str(args.markdown),
+                "artifact_bundle": artifact_manifest,
             },
             sort_keys=True,
         )

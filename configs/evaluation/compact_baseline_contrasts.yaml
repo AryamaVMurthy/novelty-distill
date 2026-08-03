@@ -43,3 +43,23 @@ contrasts:
   - {id: C1-best1-vs-B2b, reference: B2b, treatment: C1-best1}
   - {id: C2-best1-vs-C1-best1, reference: C1-best1, treatment: C2-best1}
   - {id: D1-vs-C1-best1, reference: C1-best1, treatment: D1}
+artifact_bundle:
+  method_order: [A0, B1, B2b, C1-best1, C2-best1, D1]
+  table_metrics:
+    - student_feasibility_mean
+    - student_soundness_mean
+    - teacher_mode_recall
+    - viable_semantic_yield
+    - nearest_training_target_similarity_mean
+    - length_stop_rate
+  plots:
+    - filename: quality.svg
+      title: Quality at matched K=4
+      panels:
+        - {metric: student_feasibility_mean, label: Feasibility (1-5), maximum: 5}
+        - {metric: student_soundness_mean, label: Soundness (1-5), maximum: 5}
+    - filename: breadth.svg
+      title: Semantic breadth at matched K=4
+      panels:
+        - {metric: teacher_mode_recall, label: Teacher mode recall, maximum: 1}
+        - {metric: viable_semantic_yield, label: Viable semantic yield, maximum: 4}
