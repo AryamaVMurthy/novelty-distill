@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import yaml
+
 from novelty_distill.official import build_checkout_commands, load_official_repositories
 
 
@@ -42,9 +44,21 @@ def test_large_official_repository_uses_manifest_sparse_paths() -> None:
         "src",
         "pyproject.toml",
         "README.md",
+        "LICENSE",
+        "NOTICE",
     )
     assert commands[-1][-3:] == (
         "checkout",
         "--detach",
         "6a35510e530f236fd1dbcd9df888f01937c8494a",
     )
+
+
+def test_installed_official_benchmarks_have_verified_license_provenance() -> None:
+    manifest = yaml.safe_load(Path("third_party/manifest.yaml").read_text(encoding="utf-8"))
+    repositories = manifest["repositories"]
+
+    assert repositories["inspect_evals"]["license"] == "MIT"
+    assert repositories["inspect_evals"]["license_evidence"] == "LICENSE and pyproject.toml"
+    assert repositories["hypospace"]["license"] == "MIT"
+    assert repositories["hypospace"]["license_evidence"] == "README.md license section"

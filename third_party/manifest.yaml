@@ -45,12 +45,16 @@ repositories:
       - src
       - pyproject.toml
       - README.md
-    license: verify-before-install
+      - LICENSE
+      - NOTICE
+    license: MIT
+    license_evidence: LICENSE and pyproject.toml
     use: NoveltyBench evaluation
   hypospace:
     url: https://github.com/CTT-Pavilion/_HypoSpace.git
     commit: c69e9318577b34b5b896996571aefd4ba6053f58
-    license: verify-before-install
+    license: MIT
+    license_evidence: README.md license section
     use: exact hypothesis-space evaluation
   wandb:
     url: https://github.com/wandb/wandb.git
