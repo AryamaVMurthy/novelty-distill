@@ -43,7 +43,7 @@ class OPSDRunSpec(BaseModel):
     use_peft: bool
     lora_r: int = Field(gt=0)
     lora_alpha: int = Field(gt=0)
-    jsd_token_clip: float = Field(gt=0)
+    jsd_token_clip: float | None = Field(default=None, gt=0)
     student_thinking: bool
     teacher_thinking: bool
     seed: int = Field(ge=0)

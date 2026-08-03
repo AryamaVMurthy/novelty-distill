@@ -18,7 +18,7 @@ gradient_checkpointing: true
 use_peft: true
 lora_r: 16
 lora_alpha: 32
-jsd_token_clip: 0.05
+jsd_token_clip: null
 student_thinking: false
 teacher_thinking: false
 seed: 17

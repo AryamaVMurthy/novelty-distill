@@ -126,3 +126,9 @@ def test_opsd_research_run_checkpoints_before_the_six_hour_boundary() -> None:
     spec = load_opsd_run_spec(Path("configs/training/opsd_tomato1k.yaml"))
 
     assert spec.save_steps == 25
+
+
+def test_opsd_runs_do_not_clip_signed_vocabulary_contributions() -> None:
+    for path in sorted(Path("configs/training").glob("opsd_*.yaml")):
+        spec = load_opsd_run_spec(path)
+        assert spec.jsd_token_clip is None, path
