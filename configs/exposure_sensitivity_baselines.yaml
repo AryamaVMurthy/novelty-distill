@@ -1,0 +1,37 @@
+schema_version: 1
+baselines:
+  - id: B2a-4x
+    name: exposure-sensitivity-random-1
+    family: sft
+    backend: trl_sft
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: random1
+  - id: B2b-4x
+    name: exposure-sensitivity-best-1
+    family: sft
+    backend: trl_sft
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: best1
+  - id: B2c-4x
+    name: exposure-sensitivity-mode-1
+    family: sft
+    backend: trl_sft
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: mode1
+  - id: B3-4x
+    name: exposure-sensitivity-diverse-4-sft
+    family: sft
+    backend: trl_sft
+    official_source: huggingface/trl
+    trajectory_source: teacher
+    target_view: diverse4
+  - id: B4-4x
+    name: exposure-sensitivity-diverse-4-gem
+    family: sft
+    backend: gem
+    official_source: liziniu/GEM
+    trajectory_source: teacher
+    target_view: diverse4

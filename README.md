@@ -143,6 +143,17 @@ START_AFTER_JOB_ID=<primary-gate> scripts/submit_exploratory_drkl.sh
 Their attribution, matched controls, and secondary-only interpretation are frozen in
 `reports/EXPLORATORY_TREATMENTS.md`.
 
+The separate four-target exposure sensitivity required by the primary interpretation protocol is
+staged at low priority with:
+
+```bash
+START_AFTER_JOB_ID=<primary-controller> scripts/submit_exposure_sensitivity.sh
+```
+
+It gives the three single-target SFT controls and the diverse-target SFT/GEM methods exactly 4,000
+optimizer-example exposures without altering the 1× primary runs. The frozen comparisons and
+claim boundary are recorded in `reports/EXPOSURE_SENSITIVITY_PROTOCOL.md`.
+
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
 submission helper stages the small batch script under `~/.cache/novelty-distill-submit` and calls

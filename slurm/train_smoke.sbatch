@@ -29,6 +29,8 @@ training_backend="${TRAINING_BACKEND:-trl}"
 matrix_mode="${BASELINE_MATRIX:-0}"
 if [[ "${matrix_mode}" == "tomato1k" ]]; then
   run_suffix="${RUN_SUFFIX:-tomato1k-seed17}"
+elif [[ "${matrix_mode}" == "exposure1k" ]]; then
+  run_suffix="${RUN_SUFFIX:-tomato1k-exposure4x-seed17}"
 elif [[ "${matrix_mode}" == "tomato_scale" ]]; then
   scale_train_size="${TRAIN_SIZE:?tomato_scale requires TRAIN_SIZE}"
   scale_seed="${TRAIN_SEED:?tomato_scale requires TRAIN_SEED}"
@@ -64,7 +66,27 @@ if [[ -z "${run_suffix}" || "${run_suffix}" == */* || "${run_suffix}" == *..* ]]
   echo "RUN_SUFFIX must be a path-safe non-empty name" >&2
   exit 2
 fi
-if [[ "${matrix_mode}" == 1 ]]; then
+if [[ "${matrix_mode}" == "exposure1k" ]]; then
+  matrix_ids=(B2a-4x B2b-4x B2c-4x B3-4x B4-4x)
+  matrix_backends=(trl trl trl trl gem)
+  matrix_configs=(
+    configs/training/sft_tomato1k_4x.yaml
+    configs/training/sft_tomato1k_4x.yaml
+    configs/training/sft_tomato1k_4x.yaml
+    configs/training/sft_tomato1k_4x.yaml
+    configs/training/gem_tomato1k_4x.yaml
+  )
+  baseline_registry="configs/exposure_sensitivity_baselines.yaml"
+  matrix_index="${SLURM_ARRAY_TASK_ID:?exposure1k matrix requires a Slurm array task}"
+  if ((matrix_index < 0 || matrix_index >= ${#matrix_ids[@]})); then
+    echo "SLURM_ARRAY_TASK_ID must be between 0 and $((${#matrix_ids[@]} - 1))" >&2
+    exit 1
+  fi
+  BASELINE_ID="${matrix_ids[$matrix_index]}"
+  training_backend="${matrix_backends[$matrix_index]}"
+  RUN_CONFIG="${matrix_configs[$matrix_index]}"
+  echo "matrix=exposure1k index=${matrix_index} baseline_id=${BASELINE_ID} backend=${training_backend}"
+elif [[ "${matrix_mode}" == 1 ]]; then
   matrix_ids=(
     B2a B2b B2c B3
     C1-human C1-best1 C1-diverse4 C2-human C2-best1 C2-diverse4 D2 D3
@@ -329,7 +351,7 @@ elif [[ "${training_backend}" == "gem" ]]; then
   "${venv_dir}/bin/python" "${repo_dir}/scripts/run_gem_baseline.py" \
     --config "${config_path}" \
     --scratch-root "${scratch_root}" \
-    --registry "${repo_dir}/configs/baselines.yaml" \
+    --registry "${repo_dir}/${baseline_registry}" \
     --manifest "${repo_dir}/third_party/manifest.yaml" \
     --official-root "${scratch_root}/official"
 else
