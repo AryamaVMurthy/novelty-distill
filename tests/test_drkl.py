@@ -2,6 +2,7 @@ import math
 from pathlib import Path
 
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from novelty_distill.config import BaselineConfig, load_baseline_registry
@@ -32,6 +33,50 @@ def test_drkl_gamma_is_rejected_for_unrelated_losses() -> None:
                 "drkl_gamma": 0.5,
             }
         )
+
+
+def test_drkl_contrasts_are_explicitly_secondary_and_matched() -> None:
+    config = yaml.safe_load(
+        Path("configs/evaluation/exploratory_drkl_contrasts.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert config["status"] == "secondary_exploratory"
+    assert config["source"] == "arXiv:2604.00223"
+    assert config["contrasts"] == [
+        {
+            "id": "F1-best1-vs-C2-best1",
+            "reference": "C2-best1",
+            "treatment": "F1-best1",
+        },
+        {
+            "id": "F1-diverse4-vs-C2-diverse4",
+            "reference": "C2-diverse4",
+            "treatment": "F1-diverse4",
+        },
+    ]
+
+
+def test_drkl_evaluation_controller_waits_for_primary_analysis() -> None:
+    controller = Path("slurm/submit_exploratory_drkl_evaluations.sbatch").read_text(
+        encoding="utf-8"
+    )
+    analysis = Path("slurm/analyze_exploratory_drkl.sbatch").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'grep -oE \'"analysis":"[0-9]+"\'' in controller
+    assert (
+        'afterok:${primary_analysis_job_id}:${evaluation_dependency}:${taste_dependency}'
+        in controller
+    )
+    assert controller.count("slurm/sglang_smoke.sbatch") == 1
+    assert controller.count("slurm/score_teacher.sbatch") == 1
+    assert controller.count("slurm/evaluate_student.sbatch") == 1
+    assert controller.count("slurm/annotate_research_taste.sbatch") == 1
+    assert "configs/evaluation/exploratory_drkl_contrasts.yaml" in analysis
+    assert "secondary_exploratory" in controller
 
 
 def test_drkl_matches_direct_target_non_target_definition_and_backpropagates() -> None:
