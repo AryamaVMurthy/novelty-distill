@@ -39,3 +39,22 @@ set covering those cells. It is not trained in the current gate because the taxo
 first pass the two-human reliability threshold and the present study must measure whether a taste
 gap exists on TOMATO. The frozen evaluation-only use is specified in
 `reports/RESEARCH_TASTE_PROTOCOL.md`.
+
+## Related objectives screened but not staged
+
+Zhong et al., *Revisiting Knowledge Distillation for Autoregressive Language Models* (ACL 2024),
+decompose forward KL into target- and diversity-oriented non-target terms and propose ATKD, which
+uses teacher uncertainty to change the teaching mode for easy and hard tokens. It is complementary
+to F1 because it modifies forward rather than reverse KL. However, the reported outcomes are task
+scores and generalization rather than semantic output breadth, the experiments use much smaller
+OPT/Pythia/LLaMA students, and the public author repository showed no explicit software license
+when checked on 2026-08-03. ATKD is therefore a conditional follow-up to C1, not an additional
+pre-result treatment. Primary source: <https://aclanthology.org/2024.acl-long.587/>.
+
+Ko et al., *DistiLLM-2: A Contrastive Approach Boosts the Distillation of LLMs* (ICML 2025),
+separately increases teacher-response likelihood and decreases student-response likelihood. It is
+a natural successor to C3 but primarily targets downstream performance, not preservation of a
+multi-modal idea distribution. Its official public repository likewise showed no explicit license
+when checked, and substituting it now would change the frozen C3 method rather than isolate one
+mechanism. It remains a post-C3 candidate only. Primary source:
+<https://proceedings.mlr.press/v267/ko25a.html>.
