@@ -6,6 +6,8 @@ import pytest
 import yaml
 
 from novelty_distill.training.distillm import DistiLLMRunSpec
+from novelty_distill.training.gem import GEMRunSpec
+from novelty_distill.training.opsd import OPSDRunSpec
 from novelty_distill.training.scale_config import (
     build_promoted_training_manifest,
     render_scale_training_config,
@@ -142,3 +144,61 @@ def test_promoted_manifest_cli_persists_exact_submission_graph(tmp_path) -> None
     result = json.loads(output.read_text())
     assert result["repository_commit"]
     assert [run["training_dependency"] for run in result["runs"]] == ["700_0", "701"]
+
+
+def test_every_scale_backend_profile_size_and_seed_has_valid_unique_contract() -> None:
+    cases = (
+        ("B1", "trl", "sft", TRLRunSpec),
+        ("B2a", "trl", "sft", TRLRunSpec),
+        ("B2b", "trl", "sft", TRLRunSpec),
+        ("B2c", "trl", "sft", TRLRunSpec),
+        ("B3", "trl", "sft", TRLRunSpec),
+        ("B4", "gem", "gem", GEMRunSpec),
+        ("C1-human", "trl", "gkd", TRLRunSpec),
+        ("C1-best1", "trl", "gkd", TRLRunSpec),
+        ("C1-diverse4", "trl", "gkd", TRLRunSpec),
+        ("C2-human", "trl", "gkd", TRLRunSpec),
+        ("C2-best1", "trl", "gkd", TRLRunSpec),
+        ("C2-diverse4", "trl", "gkd", TRLRunSpec),
+        ("C3", "distillm", "distillm", DistiLLMRunSpec),
+        ("D1", "trl", "gkd", TRLRunSpec),
+        ("D2", "trl", "gkd", TRLRunSpec),
+        ("D3", "trl", "gkd", TRLRunSpec),
+        ("E2", "opsd", "opsd", OPSDRunSpec),
+        ("E3", "opsd", "opsd", OPSDRunSpec),
+        ("E4", "opsd", "opsd", OPSDRunSpec),
+    )
+    output_dirs: set[str] = set()
+    validated = 0
+    for profile, sizes in (("main", (5000, 20000)), ("replication", (1000, 5000, 20000))):
+        expected_model = "Qwen/Qwen3-4B" if profile == "main" else "Qwen/Qwen3-1.7B"
+        for train_size in sizes:
+            for seed in (17, 29, 43):
+                for baseline_id, backend, stem, validator in cases:
+                    base = yaml.safe_load(
+                        open(f"configs/training/{stem}_tomato1k.yaml", encoding="utf-8")
+                    )
+                    rendered = render_scale_training_config(
+                        base,
+                        backend=backend,
+                        baseline_id=baseline_id,
+                        train_size=train_size,
+                        seed=seed,
+                        model_profile=profile,
+                    )
+                    spec = validator.model_validate(rendered)
+                    output_dir = str(spec.output_dir)
+                    assert output_dir not in output_dirs
+                    output_dirs.add(output_dir)
+                    model = rendered.get("student_model", rendered.get("model"))
+                    assert model == expected_model
+                    assert rendered["max_examples"] == train_size
+                    exposures = (
+                        rendered["max_steps"]
+                        * rendered.get("batch_size", rendered.get("per_device_train_batch_size", 1))
+                        * rendered.get("num_gpus", 1)
+                        * rendered.get("gradient_accumulation_steps", 1)
+                    )
+                    assert train_size <= exposures < train_size + 8
+                    validated += 1
+    assert validated == 285
