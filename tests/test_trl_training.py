@@ -1,6 +1,10 @@
 from pathlib import Path
 
 from novelty_distill.config import load_baseline_registry
+from novelty_distill.data.teacher_views import (
+    TeacherGeneration,
+    build_teacher_target_artifact,
+)
 from novelty_distill.data.tomato import prepare_tomato_record
 from novelty_distill.training.trl import (
     build_trl_rows,
@@ -140,9 +144,23 @@ def test_random4_rows_derive_from_canonical_all8_without_mutating_artifact() -> 
     )
 
     selected = {row["completion"][0]["content"] for row in rows}
+    random1 = build_teacher_target_artifact(
+        tuple(
+            TeacherGeneration(
+                prompt_id=example.id,
+                sample_index=index,
+                text=text,
+                quality_score=0.5,
+                cluster_id=str(index),
+            )
+            for index, text in enumerate(all8)
+        ),
+        seed=17,
+    )["targets"][example.id]["random1"][0]
     assert len(rows) == 4
     assert len(selected) == 4
     assert selected < set(all8)
+    assert random1 in selected
 
 
 def test_smoke_run_is_pinned_and_bounded() -> None:

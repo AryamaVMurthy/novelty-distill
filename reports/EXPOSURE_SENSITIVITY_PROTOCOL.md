@@ -28,7 +28,9 @@ after Amin et al.'s *Escaping the Mode Lottery: Multi-Response Training Improves
 Generalization* (arXiv:2606.00544v1) identified Random-K-of-N as the unbiased reference selector
 for distributional fine-tuning. The four indices are selected uniformly without replacement by a
 deterministic prompt-ID/seed hash; neither response text, judge quality, nor semantic clusters enter
-the selector. The author's public implementation had no explicit software license at commit
+the selector. The random permutation is nested: its first retained sample is exactly B2a's frozen
+random-1 target, and the other three are drawn from the remaining seven. This retains a uniform
+Random-4 subset while reducing selector noise in the multiplicity contrast. The author's public implementation had no explicit software license at commit
 `8f389da41ad3c8441c9569f746a9a040cf388ddc` when checked on 2026-08-03, so this repository uses
 an independent, dependency-free implementation rather than copying its code.
 

@@ -56,10 +56,18 @@ def test_teacher_target_artifact_derives_every_training_view_once() -> None:
 def test_random_k_texts_is_value_independent_deterministic_subset() -> None:
     texts = tuple(f"response-{index}" for index in range(8))
     selected = derive_random_k_texts(texts, prompt_id="paper-1", seed=17, k=4)
+    random1_index = derive_teacher_view(_generations(), view="random1", seed=17)[
+        0
+    ].sample_index
+    random1 = texts[random1_index]
 
     assert len(selected) == 4
     assert len(set(selected)) == 4
     assert set(selected) < set(texts)
+    assert random1 in selected
+    assert derive_random_k_texts(texts, prompt_id="paper-1", seed=17, k=1) == (
+        random1,
+    )
     assert selected == derive_random_k_texts(texts, prompt_id="paper-1", seed=17, k=4)
     assert selected != derive_random_k_texts(texts, prompt_id="paper-1", seed=29, k=4)
     assert selected != derive_random_k_texts(texts, prompt_id="paper-2", seed=17, k=4)

@@ -35,13 +35,16 @@ def derive_random_k_texts(
         raise ValueError(f"random-K must be between one and {len(ordered)}")
     if any(not isinstance(text, str) or not text.strip() for text in ordered):
         raise ValueError("random-K candidates must be non-empty texts")
+    random1_digest = hashlib.sha256(f"{seed}\0{prompt_id}".encode()).digest()
+    random1_index = int.from_bytes(random1_digest[:8], "big") % len(ordered)
+    remaining_indices = (index for index in range(len(ordered)) if index != random1_index)
     ranked_indices = sorted(
-        range(len(ordered)),
+        remaining_indices,
         key=lambda index: hashlib.sha256(
-            f"{seed}\0{prompt_id}\0{index}".encode()
+            f"{seed}\0{prompt_id}\0random-k\0{index}".encode()
         ).digest(),
     )
-    selected_indices = sorted(ranked_indices[:k])
+    selected_indices = sorted((random1_index, *ranked_indices[: k - 1]))
     return tuple(ordered[index] for index in selected_indices)
 
 
