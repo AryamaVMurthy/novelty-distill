@@ -20,7 +20,9 @@ class BaselineConfig(BaseModel):
     execution_status: Literal["runnable", "fail_closed"] = "runnable"
     non_executable_reason: str = ""
     trajectory_source: Literal["none", "human", "teacher", "student", "static"] = "none"
-    target_view: Literal["none", "human", "random1", "best1", "mode1", "diverse4"] = "none"
+    target_view: Literal[
+        "none", "human", "random1", "random4", "best1", "mode1", "diverse4"
+    ] = "none"
     divergence: Literal[
         "none",
         "forward_kl",

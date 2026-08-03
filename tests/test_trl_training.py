@@ -116,6 +116,35 @@ def test_diverse_teacher_sft_expands_one_prompt_to_four_saved_targets() -> None:
     assert [row["completion"][0]["content"] for row in rows] == list(targets)
 
 
+def test_random4_rows_derive_from_canonical_all8_without_mutating_artifact() -> None:
+    registry = load_baseline_registry(Path("configs/exposure_sensitivity_baselines.yaml"))
+    baseline = next(item for item in registry.baselines if item.id == "F2-random4")
+    example = prepare_tomato_record(
+        {
+            "source_id": "paper-1",
+            "research_question": "Can a coating improve stability?",
+            "background_survey": "Humidity damages the catalyst.",
+            "fine_grained_hypothesis": "A hydrophobic coating will help.",
+            "inspiration": [],
+        },
+        split="train",
+        task="open",
+    )
+    all8 = tuple(f"teacher-{index}" for index in range(8))
+
+    rows = build_trl_rows(
+        baseline,
+        (example,),
+        teacher_targets={example.id: {"all8": all8}},
+        selection_seed=17,
+    )
+
+    selected = {row["completion"][0]["content"] for row in rows}
+    assert len(rows) == 4
+    assert len(selected) == 4
+    assert selected < set(all8)
+
+
 def test_smoke_run_is_pinned_and_bounded() -> None:
     spec = load_trl_run_spec(Path("configs/training/sft_smoke.yaml"))
 

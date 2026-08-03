@@ -10,6 +10,7 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from novelty_distill.config import BaselineConfig
+from novelty_distill.data.teacher_views import derive_random_k_texts
 from novelty_distill.data.tomato import CanonicalExample
 from novelty_distill.data.training_rows import (
     ChatTrainingRow,
@@ -192,6 +193,7 @@ def build_trl_rows(
     examples: Sequence[CanonicalExample],
     *,
     teacher_targets: TeacherTargets,
+    selection_seed: int = 17,
 ) -> tuple[TRLTrainingRow, ...]:
     """Build rows for an official TRL backend without changing target semantics."""
 
@@ -218,13 +220,29 @@ def build_trl_rows(
         if baseline.trajectory_source == "human":
             targets = (example.human_target,)
         else:
-            try:
-                targets = tuple(teacher_targets[example.id][baseline.target_view])
-            except KeyError as error:
-                raise ValueError(
-                    f"missing {baseline.target_view} teacher targets for {example.id}"
-                ) from error
-            expected = 4 if baseline.target_view == "diverse4" else 1
+            views = teacher_targets.get(example.id)
+            if views is None:
+                raise ValueError(f"missing teacher targets for {example.id}")
+            if baseline.target_view == "random4":
+                try:
+                    targets = derive_random_k_texts(
+                        views["all8"],
+                        prompt_id=example.id,
+                        seed=selection_seed,
+                        k=4,
+                    )
+                except KeyError as error:
+                    raise ValueError(
+                        f"missing all8 teacher targets for random4/{example.id}"
+                    ) from error
+            else:
+                try:
+                    targets = tuple(views[baseline.target_view])
+                except KeyError as error:
+                    raise ValueError(
+                        f"missing {baseline.target_view} teacher targets for {example.id}"
+                    ) from error
+            expected = 4 if baseline.target_view in {"random4", "diverse4"} else 1
             if len(targets) != expected:
                 raise ValueError(
                     f"{baseline.target_view} requires {expected} targets for {example.id}"
@@ -420,6 +438,7 @@ def execute_trl_training(
     rows = build_trl_rows(
         baseline,
         examples,
+        selection_seed=spec.seed,
         teacher_targets=(
             teacher_targets
             if teacher_targets is not None

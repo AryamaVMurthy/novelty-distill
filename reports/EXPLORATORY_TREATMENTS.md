@@ -40,6 +40,31 @@ first pass the two-human reliability threshold and the present study must measur
 gap exists on TOMATO. The frozen evaluation-only use is specified in
 `reports/RESEARCH_TASTE_PROTOCOL.md`.
 
+## F2: unbiased random-4 multi-response control
+
+Amin et al., *Escaping the Mode Lottery: Multi-Response Training Improves Language Model
+Generalization* (arXiv:2606.00544v1, 2026), distinguish the benefit of observing multiple
+responses for a prompt from the effect of selecting those responses. For distributional
+fine-tuning, their Random-K-of-N selector is value-independent; reward- or diversity-based
+selection instead changes the effective training target.
+
+That distinction exposes a confound in comparing our repeated random-1 SFT directly with
+coverage-selected diverse-4 SFT. `F2-random4` therefore selects four of the canonical eight teacher
+samples uniformly without replacement using only prompt ID, seed, and sample index, then trains at
+the same 4,000 optimizer-example exposure budget as the existing sensitivity runs. Its two declared
+comparisons are:
+
+- `F2-random4` versus `B2a-4x`, isolating response multiplicity from repeated exposure to one
+  response;
+- `B3-4x` versus `F2-random4`, isolating coverage-aware selection from unbiased multiplicity.
+
+The study remains secondary and seed-17 only. The public author repository had no explicit
+software license when checked at commit `8f389da41ad3c8441c9569f746a9a040cf388ddc`, so the local
+selector is independently implemented and adds no external dependency. Full provenance and claim
+boundaries are frozen in `reports/EXPOSURE_SENSITIVITY_PROTOCOL.md`.
+
+Primary source: <https://arxiv.org/abs/2606.00544>
+
 ## Related objectives screened but not staged
 
 Zhong et al., *Revisiting Knowledge Distillation for Autoregressive Language Models* (ACL 2024),

@@ -35,3 +35,10 @@ baselines:
     official_source: liziniu/GEM
     trajectory_source: teacher
     target_view: diverse4
+  - id: F2-random4
+    name: exposure-sensitivity-random-4-sft
+    family: sft
+    backend: trl_sft
+    official_source: project-secondary-control
+    trajectory_source: teacher
+    target_view: random4

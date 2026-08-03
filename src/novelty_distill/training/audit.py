@@ -167,7 +167,9 @@ def _audit_run(
     ):
         raise ValueError(f"training metadata has invalid example IDs: {resolved_metadata}")
     training_rows = _required_positive_int(payload, "training_rows", source=resolved_metadata)
-    expected_rows = len(example_ids) * (4 if baseline.target_view == "diverse4" else 1)
+    expected_rows = len(example_ids) * (
+        4 if baseline.target_view in {"random4", "diverse4"} else 1
+    )
     if training_rows != expected_rows:
         raise ValueError(
             f"training row count disagrees with target view for {baseline.id}: "

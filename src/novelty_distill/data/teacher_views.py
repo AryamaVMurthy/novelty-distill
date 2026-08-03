@@ -23,6 +23,28 @@ class TeacherGeneration(BaseModel):
 TeacherView = Literal["random1", "best1", "mode1", "diverse4", "all8"]
 
 
+def derive_random_k_texts(
+    texts: Iterable[str], *, prompt_id: str, seed: int, k: int
+) -> tuple[str, ...]:
+    """Select a value-independent deterministic random-K subset in canonical order."""
+
+    ordered = tuple(texts)
+    if not prompt_id.strip():
+        raise ValueError("random-K selection requires a prompt ID")
+    if not 1 <= k <= len(ordered):
+        raise ValueError(f"random-K must be between one and {len(ordered)}")
+    if any(not isinstance(text, str) or not text.strip() for text in ordered):
+        raise ValueError("random-K candidates must be non-empty texts")
+    ranked_indices = sorted(
+        range(len(ordered)),
+        key=lambda index: hashlib.sha256(
+            f"{seed}\0{prompt_id}\0{index}".encode()
+        ).digest(),
+    )
+    selected_indices = sorted(ranked_indices[:k])
+    return tuple(ordered[index] for index in selected_indices)
+
+
 def build_teacher_target_artifact(
     generations: Iterable[TeacherGeneration], *, seed: int
 ) -> dict[str, object]:

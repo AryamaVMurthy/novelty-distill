@@ -25,7 +25,7 @@ taste_root="${scratch_root}/research-taste"
 score_root="${scratch_root}/evaluation-scores"
 output_dir="${evaluation_root}/analysis-exposure4x-seed17"
 primary_methods=(B2a B2b B2c B3 B4)
-sensitivity_methods=(B2a-4x B2b-4x B2c-4x B3-4x B4-4x)
+sensitivity_methods=(B2a-4x B2b-4x B2c-4x B3-4x B4-4x F2-random4)
 
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9

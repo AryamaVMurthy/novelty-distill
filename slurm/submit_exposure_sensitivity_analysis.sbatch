@@ -17,9 +17,9 @@
 set -euo pipefail
 
 primary_controller_job_id="${PRIMARY_CONTROLLER_JOB_ID:?set primary evaluation controller job ID}"
-exposure_evaluation_job_ids="${EXPOSURE_EVALUATION_JOB_IDS:?set five exposure evaluation job IDs}"
-exposure_taste_job_ids="${EXPOSURE_TASTE_JOB_IDS:?set five exposure taste job IDs}"
-expected_exposure_jobs="${EXPECTED_EXPOSURE_JOBS:-5}"
+exposure_evaluation_job_ids="${EXPOSURE_EVALUATION_JOB_IDS:?set six exposure evaluation job IDs}"
+exposure_taste_job_ids="${EXPOSURE_TASTE_JOB_IDS:?set six exposure taste job IDs}"
+expected_exposure_jobs="${EXPECTED_EXPOSURE_JOBS:-6}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 controller_log="${scratch_root}/logs/slurm-nd-submit-evals-${primary_controller_job_id}.out"

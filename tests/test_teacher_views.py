@@ -3,6 +3,7 @@ import pytest
 from novelty_distill.data.teacher_views import (
     TeacherGeneration,
     build_teacher_target_artifact,
+    derive_random_k_texts,
     derive_teacher_view,
     validate_teacher_target_artifact,
 )
@@ -50,6 +51,20 @@ def test_teacher_target_artifact_derives_every_training_view_once() -> None:
     assert len(views["random1"]) == len(views["best1"]) == len(views["mode1"]) == 1
     assert len(views["diverse4"]) == 4
     assert len(views["all8"]) == 8
+
+
+def test_random_k_texts_is_value_independent_deterministic_subset() -> None:
+    texts = tuple(f"response-{index}" for index in range(8))
+    selected = derive_random_k_texts(texts, prompt_id="paper-1", seed=17, k=4)
+
+    assert len(selected) == 4
+    assert len(set(selected)) == 4
+    assert set(selected) < set(texts)
+    assert selected == derive_random_k_texts(texts, prompt_id="paper-1", seed=17, k=4)
+    assert selected != derive_random_k_texts(texts, prompt_id="paper-1", seed=29, k=4)
+    assert selected != derive_random_k_texts(texts, prompt_id="paper-2", seed=17, k=4)
+    with pytest.raises(ValueError, match="between one and"):
+        derive_random_k_texts(texts, prompt_id="paper-1", seed=17, k=9)
 
 
 def test_validate_teacher_target_artifact_reconstructs_frozen_views() -> None:

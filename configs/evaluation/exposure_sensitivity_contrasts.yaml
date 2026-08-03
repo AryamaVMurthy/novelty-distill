@@ -41,3 +41,5 @@ contrasts:
   - {id: B3-4x-vs-B2b-4x, reference: B2b-4x, treatment: B3-4x}
   - {id: B3-4x-vs-B2c-4x, reference: B2c-4x, treatment: B3-4x}
   - {id: B4-4x-vs-B3-4x, reference: B3-4x, treatment: B4-4x}
+  - {id: F2-random4-vs-B2a-4x, reference: B2a-4x, treatment: F2-random4}
+  - {id: B3-4x-vs-F2-random4, reference: F2-random4, treatment: B3-4x}
