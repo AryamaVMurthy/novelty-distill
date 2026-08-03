@@ -23,6 +23,15 @@ def test_training_environment_mutations_are_serialized() -> None:
     assert script.index("uv pip install") < script.index("flock -u 8")
 
 
+def test_training_retries_reject_concurrent_checkpoint_writers() -> None:
+    script = (ROOT / "slurm" / "train_smoke.sbatch").read_text(encoding="utf-8")
+
+    assert 'run_lock_key="$(printf \'%s\' "${metadata_path}" | sha256sum' in script
+    assert 'exec 7>"${scratch_root}/locks/training-run-${run_lock_key}.lock"' in script
+    assert script.index("if ! flock -n 7") < script.index("scripts/check_training_status.py")
+    assert "flock -u 7" not in script
+
+
 def test_scale_training_matrix_renders_frozen_exposure_configs() -> None:
     script = (ROOT / "slurm" / "train_smoke.sbatch").read_text(encoding="utf-8")
 

@@ -737,3 +737,13 @@ repair is persisted as `axis_swap_repaired: true`, summarized as an axis-swap re
 surfaced in the Markdown report. Existing valid shards remain schema-compatible with a default
 false diagnostic. Focused parser, shard, summary, and report tests cover the change; the 135 valid
 shards are retained for deterministic resume rather than recomputed.
+
+The live dependency audit then found that the original second-pass training array could eventually
+launch D3/E2 tasks against the same deterministic checkpoint directories as targeted recovery
+array 18568. The two still-pending second-pass tasks were split by Slurm and changed to wait for
+the corresponding targeted recovery (`18360_15` after `18568_15`, `18360_16` after `18568_16`),
+after which their existing completion preflight will make them no-ops. This changes scheduling
+only. As defense in depth, `train_smoke.sbatch` now takes a nonblocking lock keyed by the resolved
+`run_metadata.json` path before its completion check and retains it through process exit. A
+misconfigured retry therefore fails explicitly instead of concurrently writing an adapter or full
+checkpoint. The behavior was added test-first and the batch script passes Bash syntax validation.

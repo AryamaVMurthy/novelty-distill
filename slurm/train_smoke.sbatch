@@ -287,8 +287,18 @@ if [[ "${matrix_mode}" == "tomato_scale" ]]; then
   config_path="${rendered_config}"
 fi
 
+metadata_path="$("${venv_dir}/bin/python" -c 'import sys, yaml; from pathlib import Path; payload=yaml.safe_load(Path(sys.argv[1]).read_text()); print(Path(sys.argv[2]) / payload["output_dir"] / "run_metadata.json")' "${config_path}" "${scratch_root}")"
 if [[ -n "${BASELINE_ID:-}" ]] && [[ "${training_backend}" == "trl" || "${training_backend}" == "opsd" ]]; then
   metadata_path="${scratch_root}/checkpoints/${BASELINE_ID}-${run_suffix}/run_metadata.json"
+fi
+run_lock_key="$(printf '%s' "${metadata_path}" | sha256sum | awk '{print $1}')"
+exec 7>"${scratch_root}/locks/training-run-${run_lock_key}.lock"
+if ! flock -n 7; then
+  echo "another training job already owns checkpoint run ${metadata_path}" >&2
+  exit 75
+fi
+
+if [[ -n "${BASELINE_ID:-}" ]] && [[ "${training_backend}" == "trl" || "${training_backend}" == "opsd" ]]; then
   max_steps="$(${venv_dir}/bin/python -c 'import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))["max_steps"])' "${config_path}")"
   set +e
   "${venv_dir}/bin/python" "${repo_dir}/scripts/check_training_status.py" \
@@ -363,9 +373,5 @@ else
     --official-root "${scratch_root}/official"
 fi
 
-metadata_path="$("${venv_dir}/bin/python" -c 'import sys, yaml; from pathlib import Path; payload=yaml.safe_load(Path(sys.argv[1]).read_text()); print(Path(sys.argv[2]) / payload["output_dir"] / "run_metadata.json")' "${config_path}" "${scratch_root}")"
-if [[ -n "${BASELINE_ID:-}" ]] && [[ "${training_backend}" == "trl" || "${training_backend}" == "opsd" ]]; then
-  metadata_path="${scratch_root}/checkpoints/${BASELINE_ID}-${run_suffix}/run_metadata.json"
-fi
 cat "${metadata_path}"
 echo "end_time=$(date --iso-8601=seconds)"
