@@ -313,11 +313,10 @@ Commit `c5cb924` adds the deterministic source-blinded 150-record calibration pa
 key, and fail-closed two-human agreement analysis. The final CPU job prepares those artifacts but
 does not promote automatic labels without Cohen's kappa >= 0.80 on both axes for every automatic--
 human and human--human comparison.
-Early resumable A0 annotation passes 18227 -> 18228 were submitted `afterok:18165` to consume the
-GPU released when the nearly complete A0 generation pass exits. Short array 18229 runs the missing
-B1 and B3 SFT artifacts sequentially on that GPU first; 18227 now waits `afterany:18229`. The locked
-resume arrays later preflight these stable output paths instead of retraining completed artifacts.
-The taste passes write the same content-bound
+Early resumable A0 annotation passes 18227 -> 18228 failed at repository setup during the transient
+DNS incident and wrote no labels. Retry-capable passes 18403 -> 18404 replace them and started on
+the fourth GPU after both DRKL integration smokes completed. The final controller preflights their
+stable output path rather than duplicating completed labels. The taste passes write the same content-bound
 namespace that controller 18222 later preflights, so early work is reused and cannot duplicate or
 silently conflict with the final graph.
 
