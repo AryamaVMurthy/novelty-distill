@@ -69,6 +69,21 @@ test -d "${taste_root}/A0-temporal-k16-seed17000"
 test -d "${taste_root}/A1-temporal-k16-seed17000"
 test -d "${taste_root}/A3-temporal-k1"
 
+training_audit_inputs=()
+for baseline_id in "${baseline_ids[@]}"; do
+  if [[ "${baseline_id}" == C3 ]]; then
+    metadata_path="${scratch_root}/checkpoints/C3-tomato1k-seed17-l896-4gpu/run_metadata.json"
+  else
+    metadata_path="${scratch_root}/checkpoints/${baseline_id}-tomato1k-seed17/run_metadata.json"
+  fi
+  test -s "${metadata_path}"
+  training_audit_inputs+=(--input "${baseline_id}=${metadata_path}")
+done
+"${venv_dir}/bin/python" "${repo_dir}/scripts/audit_training_matrix.py" \
+  --registry "${repo_dir}/configs/baselines.yaml" \
+  "${training_audit_inputs[@]}" \
+  --output "${output_dir}/training-matrix-audit.json"
+
 matrix_path="${output_dir}/prompt-metrics.jsonl"
 threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
 "${venv_dir}/bin/python" "${repo_dir}/scripts/collect_evaluation_metrics.py" \
@@ -102,6 +117,7 @@ wandb_inputs=(
   --input "${evaluation_root}/A0-temporal-k16-seed17000.json"
   --input "${evaluation_root}/A1-temporal-k16-seed17000.json"
   --input "${evaluation_root}/A3-temporal-k1.json"
+  --input "${output_dir}/training-matrix-audit.json"
   --input "${output_dir}/primary-contrasts.json"
   --input "${output_dir}/research-taste-secondary.json"
 )
@@ -125,6 +141,7 @@ done
 
 test -s "${output_dir}/prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/threshold-prompt-metrics.jsonl.manifest.json"
+test -s "${output_dir}/training-matrix-audit.json"
 test -s "${output_dir}/primary-contrasts.json"
 test -s "${output_dir}/findings.md"
 test -s "${output_dir}/research-taste-secondary.json"

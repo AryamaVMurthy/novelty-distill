@@ -414,6 +414,9 @@ def execute_opsd_training(
         "revision": spec.revision,
         "lmbda": baseline.lmbda,
         "beta": baseline.beta,
+        "divergence": baseline.divergence,
+        "trajectory_source": baseline.trajectory_source,
+        "target_view": baseline.target_view,
         "teacher_context": baseline.teacher_context,
         "data_collator": (
             "tomato_matched_context"
@@ -430,9 +433,7 @@ def execute_opsd_training(
         },
         "training_rows": len(rows),
         "optimizer_example_exposures": (
-            spec.max_steps
-            * spec.per_device_train_batch_size
-            * spec.gradient_accumulation_steps
+            spec.max_steps * spec.per_device_train_batch_size * spec.gradient_accumulation_steps
         ),
         "max_steps": spec.max_steps,
         "save_steps": spec.save_steps or spec.max_steps,

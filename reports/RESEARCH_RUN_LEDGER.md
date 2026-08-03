@@ -407,6 +407,16 @@ After the incompatible diagnostic shards were moved to the recoverable
 the compact grammar without a retry and continued writing validated shards; job 18416 is its
 bounded resumable second pass.
 
+The final primary-analysis job now begins with a fail-closed training-matrix audit over all 19
+runnable methods and records E1 separately with its frozen non-executable reason. The audit
+recomputes the live training-input and registry hashes, requires the identical dataset revision,
+ordered example-ID set, student revision, seed, and optimizer-example exposure count across
+methods, verifies expected one-versus-four-target row counts, checks backend completion evidence,
+and hashes every deployable model artifact. The final W&B snapshot includes this audit artifact;
+no result matrix can be published from missing, stale, underexposed, or byte-incompatible training
+runs. OPSD metadata now records its divergence, trajectory source, and target view before the
+pending E2/E3/E4 production tasks start.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
