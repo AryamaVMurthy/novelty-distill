@@ -497,6 +497,26 @@ generation contained 1,407/1,658 validated shards, and A0 research-taste annotat
 582/1,658 shards. These four active jobs still occupied the available GPUs; none of the newly
 staged low-priority work had begun.
 
+At 21:49 IST, a backend-aware partial training audit found a historical metadata-schema gap before
+it could reach final analysis: the six completed C1/C2 TRL-GKD runs predated commit `b20bbf0`, which
+began writing the declared `divergence` field. Their immutable training records already contained
+the exact identifying controls (`lambda=0, beta=0` for forward KL and `lambda=0, beta=1` for
+reverse KL), but the new fail-closed audit correctly refused to infer a missing declaration.
+Commit `6a8b2f3` adds a narrow idempotent migration. It preserves each original metadata file
+byte-for-byte as `run_metadata.pre-divergence-backfill.json`, records its prior SHA-256, the live
+registry SHA-256, the proving lambda/beta values, and the migration commit, then atomically adds the
+declared field. Ambiguous or conflicting evidence fails rather than mutating metadata.
+
+The migration manifest is
+`audits/tomato1k-divergence-backfill.json`. After migration, the formal subset audit at
+`audits/tomato1k-training-partial-13.json` passed all 13 completed methods. It proved a common
+contract of dataset revision `fcd201d92758a642465a7653b8055f3a04d5f439`, 1,000 ordered examples
+(ID hash `6ce87308...`), identical 6,767,710-byte input (SHA-256 `995c9648...`), pinned Qwen3-4B
+revision `1cfa9a7...`, seed 17, and 1,000 optimizer-example exposures, and it content-hashed every
+deployable artifact including the full GEM and DistiLLM checkpoints. At this snapshot D1 and D2
+were both at step 115/125, A1 temporal generation had 1,422/1,658 shards, and A0 research-taste
+annotation had 623/1,658 shards.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
