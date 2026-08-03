@@ -436,6 +436,15 @@ not evaluation outcomes. The same snapshot contained 1,307/1,658 A1 temporal gen
 and 310/1,658 validated A0 research-taste shards. Jobs 18358 and 18416 remain bounded resume passes
 for the unfinished stable namespaces.
 
+The interpretation protocol requires a matched exposure check before promoting a four-reference
+finding. Commit `54f242a` therefore freezes a separate five-run sensitivity: B2a/B2b/B2c repeat
+their single target to exactly 4,000 optimizer-example exposures, while B3/B4 consume the full
+four-target pool at the same 4,000-exposure budget. It is excluded from the primary registry and
+Holm family. Low-priority arrays 18452 -> 18453 are staged behind primary controller 18222 with a
+two-GPU throttle and bounded resume behavior; they cannot consume a GPU before the frozen primary
+fan-out is released. The claim boundary and comparisons are in
+`reports/EXPOSURE_SENSITIVITY_PROTOCOL.md`.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
