@@ -370,7 +370,10 @@ implements Equation 9 independently, verifies the value and gradient against the
 in the cluster Torch environment, and keeps `F1-best1`/`F1-diverse4` in a separate registry. Low-
 priority jobs 18377 and 18378 are staged `afterok:18222`; they cannot delay or enter the frozen
 primary matrix. Their matched controls and interpretation boundary are recorded in
-`reports/EXPLORATORY_TREATMENTS.md`.
+`reports/EXPLORATORY_TREATMENTS.md`. Low-priority controller 18379 waits for both F1 checkpoints,
+then submits their resumable temporal generation, scoring, evaluation, and research-taste chains.
+Its final analysis additionally waits for the primary analysis job recovered from controller
+18222, guaranteeing that the matched C2 and A1/A3 artifacts are complete before any F1 contrast.
 
 ## UltraFeedback systems pilot
 
