@@ -364,6 +364,14 @@ Qwen3-8B teacher replication profile. Its teacher samples, targets, checkpoints,
 and analysis namespace are disjoint from the main Qwen3-4B / Qwen3-14B study and will run only
 after the main-stage analysis gate.
 
+After the primary matrix had been frozen, Luong, Tran, and Chen's DRKL objective was identified as
+a directly relevant secondary treatment for the reverse-KL diversity mechanism. Commit `b20bbf0`
+implements Equation 9 independently, verifies the value and gradient against the direct definition
+in the cluster Torch environment, and keeps `F1-best1`/`F1-diverse4` in a separate registry. Low-
+priority jobs 18377 and 18378 are staged `afterok:18222`; they cannot delay or enter the frozen
+primary matrix. Their matched controls and interpretation boundary are recorded in
+`reports/EXPLORATORY_TREATMENTS.md`.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
