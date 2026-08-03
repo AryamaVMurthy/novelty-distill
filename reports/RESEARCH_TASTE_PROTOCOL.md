@@ -45,6 +45,13 @@ strictly validates either raw JSON or one enclosing JSON Markdown fence. The cha
 prevents old shards from passing the replacement preflight. This repair occurred before any
 trained-model temporal output or research-taste outcome was analyzed.
 
+The first replacement live smoke (job 18583) then exposed one narrower contract defect: without a
+literal key example, the model renamed `boilerplate_score` and omitted two required diagnostic
+fields. Strict validation terminated the job before its first shard, and its resume job 18584 was
+cancelled after 12 seconds. The protocol now includes all six literal key names; a regression test
+requires every schema key to appear in the request. These zero-shard smoke failures are deployment
+evidence only and never enter the result matrix.
+
 The replacement still uses Qwen3-32B-FP8 rather than the paper's GPT-5.4-mini annotator and TOMATO
 does not provide the paper's separated prior-work/motivation/method input contract. Those transfer
 differences remain subject to the human reliability gate below; the repair establishes interface

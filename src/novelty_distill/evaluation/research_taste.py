@@ -140,6 +140,10 @@ Diagnostic scores use 0 for absent and 3 for strong. For bottleneck specificity,
 specific, and 3 identifies a precise causal mechanism or limiting factor. Surface stitching is true
 only when its score is 2 or 3. Compare all categories before deciding.
 Return exactly one JSON object with the six requested keys and no Markdown or additional text.
+Use this exact key contract:
+{"opportunity_pattern":"<one allowed opportunity label>",
+"method_paradigm":"<one allowed method label>","surface_stitching":false,
+"surface_stitching_score":0,"bottleneck_specificity":0,"boilerplate_score":0}
 """
 
 

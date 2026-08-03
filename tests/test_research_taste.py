@@ -91,6 +91,18 @@ def test_research_taste_payload_is_deterministic_and_strict() -> None:
     )
 
 
+def test_research_taste_payload_names_every_exact_output_key() -> None:
+    payload = build_research_taste_payload(
+        prompt="Develop a hypothesis about robust catalysts.",
+        response="A missing mechanistic account can be tested with a formal kinetic model.",
+        spec=_spec(),
+    )
+    system_prompt = payload["messages"][0]["content"]
+
+    for key in ResearchTasteAnnotation.model_fields:
+        assert f'"{key}"' in system_prompt
+
+
 def test_research_taste_response_validates_labels_and_diagnostics() -> None:
     result = parse_research_taste_response(_response(), _spec())
 

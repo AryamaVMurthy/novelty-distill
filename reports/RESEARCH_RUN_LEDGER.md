@@ -603,6 +603,12 @@ replacement protocol removes forced label decoding, adds the source paper's deci
 strictly accepts raw or singly fenced JSON, and receives a new protocol hash. Primary training,
 A1 temporal generation, and all frozen quality/semantic-mode outcomes were unaffected.
 
+Replacement live smoke 18583 subsequently failed closed in 00:01:26 before writing any shard. The
+unconstrained model used `boilerplate`/`diagnostic_score` aliases instead of the exact six-field
+schema; strict validation rejected all attempts. Its automatically released resume 18584 was
+cancelled after 12 seconds. A new red--green regression requires the literal six-key contract in
+the annotator prompt before the next submission. No partial replacement output exists.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
