@@ -465,13 +465,17 @@ because it also requires human--human kappa >= 0.80. Neither the author reposito
 declares a reuse license, so only the independently implemented taxonomy analysis is active; the
 released dataset is not silently added to the official benchmark suite.
 
-Before any trained-model temporal metric existed, the source audit froze a second paper-derived
-diagnostic from TasteGap's same-paper geometry analysis. It reuses only the exact
+Before any trained-model temporal metric existed, commits `a8512cc` and `c957b23` froze a second
+paper-derived diagnostic from TasteGap's same-paper geometry analysis. It reuses only the exact
 normalized Qwen3 embedding cache already produced by evaluation and measures, per prompt, each
 method's cosine affinity to A1, affinity to A3, teacher-minus-human affinity, and within-method
 concentration. Ten-thousand-resample prompt bootstraps and A0 deltas are descriptive; missing cache
 vectors fail rather than triggering new inference. The path is wired into primary, exposure, DRKL,
 and promoted analysis jobs and specified in `reports/SAME_PROMPT_GEOMETRY_PROTOCOL.md`.
+The analyzer keeps only A1/A3 plus one candidate's float32 arrays resident and batches bootstrap
+indices; a full 1,658-prompt, 23-method, 10,000-resample synthetic summary completed locally in
+10.86 seconds with 120,924 KiB maximum RSS. Real runtime will therefore be dominated by validated
+cache-file reads rather than bootstrap memory.
 
 ## UltraFeedback systems pilot
 
