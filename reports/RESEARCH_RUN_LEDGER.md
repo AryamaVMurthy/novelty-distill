@@ -663,6 +663,17 @@ released next; fresh E2 task 18568_16 and E4 remained scheduled behind available
 array throttle. The algebraic counterexample, evidence, and interpretation limits are frozen in
 `reports/OPSD_LOSS_VALIDITY_AUDIT.md`.
 
+CPU-only score-diagnostic job 18600 then validated all 1,658 A0 temporal score shards from judge
+jobs 18203--18204 and summarized 26,528 generations. The composite quality proxy is 0.933896
+(population SD 0.065451), with a 0.253920 ceiling rate and mean within-prompt range 0.130157. Only
+six generations reached the length limit (0.000226), and the prompt-centered quality--length
+correlation is 0.0701. Rubric discrimination is uneven: rating-5 rates are 0.9992 for compliance,
+0.9588 for clarity, 0.9263 for relevance, 0.6412 for soundness, and 0.2541 for feasibility. Final
+comparisons must therefore retain dimension-level effects rather than relying on the near-ceiling
+composite alone. This is control-only descriptive evidence; semantic modes and paired model
+contrasts remain gated. Full provenance and interpretation are in
+`reports/A0_TEMPORAL_SCORE_FINDINGS.md`.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
