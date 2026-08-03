@@ -41,6 +41,7 @@ _CONFIG_KEYS = (
     "student_samples_per_prompt",
     "primary_cosine_threshold",
     "semantic_clustering",
+    "viable_semantic_yield",
     "embedding",
     "inputs",
     "source",
