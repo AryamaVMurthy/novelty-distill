@@ -117,6 +117,8 @@ def test_exposure_analysis_is_separate_audited_and_uses_declared_contrasts() -> 
         "B3-4x-vs-B3",
         "F2-random4-vs-B2a-4x",
         "B3-4x-vs-F2-random4",
+        "B2b-4x-vs-B2a-4x",
+        "B2c-4x-vs-B2a-4x",
     } <= contrast_ids
 
 

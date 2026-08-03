@@ -43,6 +43,8 @@ threshold-sensitivity contracts as the primary matrix. Declared secondary contra
 - `F2-random4` against repeated `B2a-4x` to isolate response multiplicity under value-independent
   selection;
 - `B3-4x` against `F2-random4` to isolate coverage-aware versus unbiased random-4 selection;
+- `B2b-4x` and `B2c-4x` against `B2a-4x` to isolate best/reward and modal selection among
+  single-response targets at the same repeated-exposure budget;
 - `B4-4x` against `B3-4x`;
 - each 4x run against its exact 1x counterpart.
 

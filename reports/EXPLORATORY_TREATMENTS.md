@@ -58,6 +58,10 @@ comparisons are:
   response;
 - `B3-4x` versus `F2-random4`, isolating coverage-aware selection from unbiased multiplicity.
 
+The same secondary matrix directly compares `B2b-4x` and `B2c-4x` with `B2a-4x`, isolating
+best/reward and modal selection at K=1. These four selector edges form a matched mechanistic
+analysis; they do not enter the primary Holm family.
+
 The uniform subset is nested around B2a's exact random-1 response, so the first retained sample is
 shared and the remaining three come uniformly from the other seven. The paper's cost-aware optimal
 K formula is not used to justify K=4 here: prompt/response acquisition costs are not meaningfully
