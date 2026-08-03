@@ -95,3 +95,15 @@ multi-modal idea distribution. Its official public repository likewise showed no
 when checked, and substituting it now would change the frozen C3 method rather than isolate one
 mechanism. It remains a post-C3 candidate only. Primary source:
 <https://proceedings.mlr.press/v267/ko25a.html>.
+
+Shanahan et al., *"I've Seen How This Goes": Characterizing Diversity via Progressive Conditional
+Surprise* (arXiv:2606.01811v1, 2026), propose Decan as an embedding-free measure of coherent
+residual diversity. It is relevant as a robustness diagnostic because the paper observes a
+monotone decrease across OLMo base, SFT, DPO, and RLVR checkpoints. It is not added to the frozen
+primary matrix: Decan depends on a chosen base scoring model, response formatting, length matching,
+and many response-order permutations, and it measures within-set predictability rather than
+teacher-mode coverage or scientific novelty. If a method is promoted after the primary analysis,
+an independently implemented 50-permutation Decan score on the already generated K=16 response
+sets is eligible as a secondary cross-metric check. The public author repository had no explicit
+license at commit `75855641dc138ba6e7e44c227a7e4c880beefada`, so it is not vendored or installed.
+Primary source: <https://arxiv.org/abs/2606.01811>.

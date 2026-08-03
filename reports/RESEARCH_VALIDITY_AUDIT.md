@@ -72,6 +72,18 @@ not a results report and does not promote any baseline.
     AGC-Judge can replace the frozen task-specific outcomes or human gates. The audited release
     snapshots declare Apache-2.0 for code and CC-BY-4.0 for aggregate data, while individual source
     datasets retain their own licenses.
+14. Progressive conditional surprise offers an embedding-free check for post-training diversity
+    loss, but it is not a drop-in semantic-mode metric. Shanahan et al.'s Decan score conditions a
+    base model on preceding responses and measures the residual per-byte surprise of the final
+    response, multiplied by a coherence term. Their OLMo case study reports a monotone diversity
+    decrease through SFT, DPO, and RLVR, making the diagnostic relevant to this study's collapse
+    question. However, the score is explicitly a property of the responses, prompt, scoring model,
+    response formatting, and random permutations; it also requires length matching and at least 50
+    permutations for the authors' reliable setting. It therefore cannot replace teacher-anchored
+    ModeRecall/ModePrecision or establish scientific novelty. If a method is promoted, Decan is
+    eligible as a post-promotion, fixed-base-model robustness check on the existing K=16 samples.
+    The public implementation had no explicit license at commit
+    `75855641dc138ba6e7e44c227a7e4c880beefada`, so no code is imported.
 
 ## Consequences for this study
 
@@ -160,3 +172,5 @@ not a results report and does not promote any baseline.
   <https://arxiv.org/abs/2607.01152>. Release snapshots checked on 2026-08-03:
   AGC-Bench dataset `30918045d5c1cf318e698c73469400de2251b9e6` and AGC-Judge
   `e97b7895d8c16e8438ab869f752a37f19908da4c`.
+- Shanahan et al., *"I've Seen How This Goes": Characterizing Diversity via Progressive
+  Conditional Surprise*, arXiv preprint, 2026: <https://arxiv.org/abs/2606.01811>.
