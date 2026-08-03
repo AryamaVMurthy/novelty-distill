@@ -30,7 +30,8 @@ analysis rather than expected values or evidence about our outputs.
 ## Annotation-interface amendment
 
 The first A0 annotation pass was stopped and invalidated before any research-taste comparison was
-run. Its compact regular-expression decoder assigned 85%+ of outputs to scope mismatch and gave an
+run. Its compact regular-expression decoder assigned 12,805/14,928 outputs (85.78%) to scope
+mismatch and gave an
 obviously mechanism-specific stroke example a specificity score of 1/3. On a deterministic,
 label-stratified 20-record diagnostic sample, the compact decoder agreed with the same pinned model
 using an exact-JSON but unconstrained decoder on only 45% of opportunity labels; mean bottleneck
@@ -51,6 +52,12 @@ fields. Strict validation terminated the job before its first shard, and its res
 cancelled after 12 seconds. The protocol now includes all six literal key names; a regression test
 requires every schema key to appear in the request. These zero-shard smoke failures are deployment
 evidence only and never enter the result matrix.
+
+Replacement job 18585 (commit `d8c89f3`, 12-hour limit) then wrote the first validated shard under
+protocol hash `55d9ba2b...`: 16 records, 16 unique request IDs, the exact schema, and no retry.
+Idempotent resume 18586 is staged after any first-pass exit. Early per-prompt labels are monitored
+only for deployment anomalies; annotation validity and any cross-method claim still require the
+blinded human gate.
 
 The replacement still uses Qwen3-32B-FP8 rather than the paper's GPT-5.4-mini annotator and TOMATO
 does not provide the paper's separated prior-work/motivation/method input contract. Those transfer

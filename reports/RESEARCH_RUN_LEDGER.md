@@ -609,6 +609,12 @@ schema; strict validation rejected all attempts. Its automatically released resu
 cancelled after 12 seconds. A new red--green regression requires the literal six-key contract in
 the annotator prompt before the next submission. No partial replacement output exists.
 
+Corrected replacement job 18585 started from commit `d8c89f3` with a 12-hour limit, followed by
+idempotent resume 18586. Its first permanent shard passed the full current-protocol validator at
+hash `55d9ba2b...`, with all 16 records, 16 unique request IDs, exact diagnostic keys, and no retry.
+This proves the repaired deployment path, not taxonomy accuracy; human calibration remains the
+claim gate.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
