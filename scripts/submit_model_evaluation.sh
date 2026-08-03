@@ -25,8 +25,14 @@ lora_path="${LORA_PATH:-}"
 generation_passes="${GENERATION_PASSES:-3}"
 score_passes="${SCORE_PASSES:-2}"
 evaluation_passes="${EVALUATION_PASSES:-2}"
+run_taste="${RUN_TASTE:-0}"
+taste_passes="${TASTE_PASSES:-2}"
+taste_namespace="${TASTE_NAMESPACE:-research-taste}"
 
-for value in "${eval_id}" "${generation_name}" "${teacher_score_id}" "${target_name}"; do
+for value in \
+  "${eval_id}" "${generation_name}" "${teacher_score_id}" "${target_name}" \
+  "${taste_namespace}"
+do
   if [[ -z "${value}" || "${value}" == */* || "${value}" == *..* || "${value}" == *,* ]]; then
     echo "evaluation IDs and names must be path-safe and comma-free" >&2
     exit 2
@@ -48,15 +54,21 @@ for job_id in "${teacher_score_job_id}" "${target_job_id}"; do
     exit 2
   fi
 done
-if [[ -n "${training_dependency}" ]] && ! [[ "${training_dependency}" =~ ^[0-9]+$ ]]; then
-  echo "TRAINING_DEPENDENCY must be a numeric Slurm job ID" >&2
+if [[ -n "${training_dependency}" ]] && ! [[ "${training_dependency}" =~ ^[0-9]+(_[0-9]+)?$ ]]; then
+  echo "TRAINING_DEPENDENCY must be a numeric Slurm job or array-task ID" >&2
   exit 2
 fi
 if ! [[ "${input_limit}" =~ ^[1-9][0-9]*$ ]]; then
   echo "INPUT_LIMIT must be a positive integer" >&2
   exit 2
 fi
-for value in "${generation_passes}" "${score_passes}" "${evaluation_passes}"; do
+if [[ "${run_taste}" != 0 && "${run_taste}" != 1 ]]; then
+  echo "RUN_TASTE must be 0 or 1" >&2
+  exit 2
+fi
+for value in \
+  "${generation_passes}" "${score_passes}" "${evaluation_passes}" "${taste_passes}"
+do
   if ! [[ "${value}" =~ ^[1-9][0-9]*$ ]]; then
     echo "generation, score, and evaluation passes must be positive integers" >&2
     exit 2
@@ -132,6 +144,26 @@ for ((pass = 1; pass <= evaluation_passes; pass++)); do
   )"
 done
 
-printf '{"evaluation_id":"%s","generation_final":"%s","generation_passes":%s,"score_final":"%s","score_passes":%s,"evaluation_final":"%s","evaluation_passes":%s}\n' \
+taste_job=""
+reported_taste_passes=0
+if [[ "${run_taste}" == 1 ]]; then
+  for ((pass = 1; pass <= taste_passes; pass++)); do
+    if [[ -z "${taste_job}" ]]; then
+      taste_dependency="afterok:${generation_job}"
+    else
+      taste_dependency="afterany:${taste_job}"
+    fi
+    taste_job="$(
+      submit_job slurm/annotate_research_taste.sbatch \
+        --time=06:00:00 \
+        --dependency="${taste_dependency}" \
+        --export="ALL,GENERATION_JOB_ID=${eval_id},GENERATION_NAME=${generation_name},GENERATION_CONFIG=${generation_config},PROMPTS_PATH=${input_path},TASTE_NAMESPACE=${taste_namespace},TASTE_CONCURRENCY=8"
+    )"
+  done
+  reported_taste_passes="${taste_passes}"
+fi
+
+printf '{"evaluation_id":"%s","generation_final":"%s","generation_passes":%s,"score_final":"%s","score_passes":%s,"evaluation_final":"%s","evaluation_passes":%s,"taste_final":"%s","taste_passes":%s}\n' \
   "${eval_id}" "${generation_job}" "${generation_passes}" "${score_job}" \
-  "${score_passes}" "${evaluation_job}" "${evaluation_passes}"
+  "${score_passes}" "${evaluation_job}" "${evaluation_passes}" "${taste_job}" \
+  "${reported_taste_passes}"

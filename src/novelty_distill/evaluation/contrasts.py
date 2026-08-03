@@ -9,6 +9,40 @@ from typing import Any
 from novelty_distill.evaluation.statistics import holm_adjust, paired_bootstrap
 
 
+def partition_available_contrasts(
+    *,
+    contrasts: Sequence[Mapping[str, str]],
+    methods: Sequence[str],
+) -> tuple[tuple[Mapping[str, str], ...], tuple[str, ...]]:
+    """Keep the preregistered contrasts supported by a promoted method subset."""
+
+    available_methods = set(methods)
+    if not contrasts or not available_methods or "" in available_methods:
+        raise ValueError("contrasts and non-empty method names are required")
+    available: list[Mapping[str, str]] = []
+    omitted: list[str] = []
+    seen_ids: set[str] = set()
+    for contrast in contrasts:
+        contrast_id = str(contrast.get("id", ""))
+        reference = str(contrast.get("reference", ""))
+        treatment = str(contrast.get("treatment", ""))
+        if (
+            not contrast_id
+            or not reference
+            or not treatment
+            or contrast_id in seen_ids
+        ):
+            raise ValueError("contrast IDs and endpoints must be non-empty and unique")
+        seen_ids.add(contrast_id)
+        if reference in available_methods and treatment in available_methods:
+            available.append(contrast)
+        else:
+            omitted.append(contrast_id)
+    if not available:
+        raise ValueError("no declared contrast is supported by the promoted method subset")
+    return tuple(available), tuple(omitted)
+
+
 def summarize_method_metrics(
     *, rows: Sequence[Mapping[str, Any]], metrics: Sequence[str]
 ) -> dict[str, dict[str, float | int]]:

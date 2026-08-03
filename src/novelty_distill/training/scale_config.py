@@ -76,6 +76,8 @@ def build_promoted_training_manifest(
         run_infix = f"qwen1p7b-tomato{train_size}"
         target_name = f"teacher-targets-qwen3-8b-tomato{train_size}-v1.json"
 
+    generation_stem = "eval_qwen3_4b" if model_profile == "main" else "eval_qwen3_1p7b"
+
     runs: list[dict[str, Any]] = []
     for seed in seeds:
         for index in promoted_indices:
@@ -85,18 +87,18 @@ def build_promoted_training_manifest(
             model_path = model
             lora_path: str | None = f"{checkpoint_root}/final"
             model_dtype = "auto"
-            generation_config = "configs/generation/eval_qwen3_4b_lora.yaml"
+            generation_config = f"configs/generation/{generation_stem}_lora.yaml"
             if backend == "gem":
                 model_path = checkpoint_root
                 lora_path = None
-                generation_config = "configs/generation/eval_qwen3_4b.yaml"
+                generation_config = f"configs/generation/{generation_stem}.yaml"
             elif backend == "distillm":
                 steps = math.ceil(train_size / 4)
                 checkpoint_root = f"{checkpoint_root}-l896-4gpu"
                 model_path = f"{checkpoint_root}/{steps}"
                 lora_path = None
                 model_dtype = "bfloat16"
-                generation_config = "configs/generation/eval_qwen3_4b.yaml"
+                generation_config = f"configs/generation/{generation_stem}.yaml"
             runs.append(
                 {
                     "baseline_id": baseline_id,
@@ -107,6 +109,7 @@ def build_promoted_training_manifest(
                     "checkpoint_root": checkpoint_root,
                     "metadata_path": f"{checkpoint_root}/run_metadata.json",
                     "model_path": model_path,
+                    "served_model_name": model,
                     "model_revision": revision,
                     "lora_path": lora_path,
                     "model_dtype": model_dtype,

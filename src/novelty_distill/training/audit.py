@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -226,16 +226,34 @@ def _audit_run(
 
 
 def audit_training_matrix(
-    registry_path: Path, metadata_paths: Mapping[str, Path]
+    registry_path: Path,
+    metadata_paths: Mapping[str, Path],
+    *,
+    required_baseline_ids: Sequence[str] | None = None,
 ) -> dict[str, Any]:
     """Validate every runnable training baseline and return a byte-bound audit."""
 
     registry = load_baseline_registry(registry_path)
-    runnable = {
+    all_runnable = {
         baseline.id: baseline
         for baseline in registry.baselines
         if baseline.backend != "evaluation" and baseline.execution_status == "runnable"
     }
+    if required_baseline_ids is None:
+        runnable = all_runnable
+        scope = "complete_registry"
+    else:
+        requested = tuple(required_baseline_ids)
+        if (
+            not requested
+            or len(requested) != len(set(requested))
+            or any(not value for value in requested)
+        ):
+            raise ValueError("required baseline IDs must be non-empty and unique")
+        if unavailable := sorted(set(requested) - set(all_runnable)):
+            raise ValueError(f"required baselines are not runnable registry entries: {unavailable}")
+        runnable = {baseline_id: all_runnable[baseline_id] for baseline_id in requested}
+        scope = "explicit_runnable_subset"
     provided = set(metadata_paths)
     expected = set(runnable)
     if missing := sorted(expected - provided):
@@ -271,6 +289,7 @@ def audit_training_matrix(
     return {
         "schema_version": 1,
         "status": "complete",
+        "scope": scope,
         "registry": registry_provenance,
         "executable_baseline_count": len(runnable),
         "executable_baseline_ids": sorted(runnable),

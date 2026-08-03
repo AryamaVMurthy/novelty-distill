@@ -3,6 +3,7 @@ import pytest
 from novelty_distill.evaluation.contrasts import (
     analyze_contrasts,
     analyze_threshold_directions,
+    partition_available_contrasts,
     summarize_method_metrics,
 )
 
@@ -84,3 +85,26 @@ def test_threshold_direction_analysis_respects_metric_direction() -> None:
     assert jsd["thresholds"]["0.700"]["favorable_count"] == 1
     assert jsd["thresholds"]["0.700"]["unfavorable_count"] == 1
     assert jsd["stable_mean_direction"] == "favorable"
+
+
+def test_promoted_analysis_filters_only_absent_preregistered_contrasts() -> None:
+    available, omitted = partition_available_contrasts(
+        contrasts=(
+            {"id": "B-vs-A", "reference": "A", "treatment": "B"},
+            {"id": "C-vs-A", "reference": "A", "treatment": "C"},
+        ),
+        methods=("A", "B"),
+    )
+
+    assert available == (
+        {"id": "B-vs-A", "reference": "A", "treatment": "B"},
+    )
+    assert omitted == ("C-vs-A",)
+
+    with pytest.raises(ValueError, match="no declared contrast"):
+        partition_available_contrasts(
+            contrasts=(
+                {"id": "C-vs-A", "reference": "A", "treatment": "C"},
+            ),
+            methods=("A", "B"),
+        )

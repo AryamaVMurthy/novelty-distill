@@ -9,9 +9,22 @@ import pytest
 from novelty_distill.training.audit import audit_training_matrix
 
 
-def _write_registry(path: Path) -> None:
+def _write_registry(path: Path, *, include_second_runnable: bool = False) -> None:
+    second = (
+        """
+  - id: B2a
+    name: teacher-sft
+    family: sft
+    backend: trl_sft
+    official_source: example/sft
+    trajectory_source: teacher
+    target_view: random1
+"""
+        if include_second_runnable
+        else ""
+    )
     path.write_text(
-        """\
+        f"""\
 schema_version: 1
 baselines:
   - id: A0
@@ -39,7 +52,7 @@ baselines:
     teacher_context: privileged
     lmbda: 0.0
     beta: 0.0
-""",
+{second}""",
         encoding="utf-8",
     )
 
@@ -175,3 +188,19 @@ def test_final_analysis_requires_the_complete_training_matrix_audit() -> None:
     assert '--registry "${repo_dir}/configs/baselines.yaml"' in script
     assert '--input "${baseline_id}=${metadata_path}"' in script
     assert 'test -s "${output_dir}/training-matrix-audit.json"' in script
+
+
+def test_promoted_audit_can_require_an_explicit_runnable_subset(tmp_path: Path) -> None:
+    registry = tmp_path / "baselines.yaml"
+    _write_registry(registry, include_second_runnable=True)
+    training_input = tmp_path / "train.jsonl"
+    training_input.write_text('{"id":"one"}\n{"id":"two"}\n', encoding="utf-8")
+    metadata = _write_complete_run(tmp_path / "B1", registry, training_input)
+
+    result = audit_training_matrix(
+        registry,
+        {"B1": metadata},
+        required_baseline_ids=("B1",),
+    )
+
+    assert result["executable_baseline_ids"] == ["B1"]

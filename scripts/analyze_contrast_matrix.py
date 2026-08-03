@@ -10,6 +10,7 @@ import yaml
 from novelty_distill.evaluation.contrasts import (
     analyze_contrasts,
     analyze_threshold_directions,
+    partition_available_contrasts,
     summarize_method_metrics,
 )
 from novelty_distill.evaluation.reporting import render_contrast_markdown
@@ -23,6 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--markdown", type=Path, required=True)
+    parser.add_argument("--filter-absent-contrasts", action="store_true")
     return parser.parse_args()
 
 
@@ -42,16 +44,23 @@ def main() -> None:
     config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
     if config.get("schema_version") != 1:
         raise ValueError("unsupported contrast configuration schema")
+    contrasts = tuple(config["contrasts"])
+    omitted_contrasts: tuple[str, ...] = ()
+    if args.filter_absent_contrasts:
+        contrasts, omitted_contrasts = partition_available_contrasts(
+            contrasts=contrasts,
+            methods=tuple(sorted({str(row.get("method", "")) for row in rows})),
+        )
     results = analyze_contrasts(
         rows=rows,
-        contrasts=tuple(config["contrasts"]),
+        contrasts=contrasts,
         metrics=tuple(config["metrics"]),
         bootstrap_samples=int(config["bootstrap_samples"]),
         seed=int(config["seed"]),
     )
     threshold_directions = analyze_threshold_directions(
         rows=threshold_rows,
-        contrasts=tuple(config["contrasts"]),
+        contrasts=contrasts,
         metric_directions=dict(config["threshold_metric_directions"]),
     )
     payload = {
@@ -59,7 +68,16 @@ def main() -> None:
         "git_commit": git_commit,
         "bootstrap_samples": config["bootstrap_samples"],
         "seed": config["seed"],
-        "holm_family": "all declared contrasts within each metric",
+        "holm_family": (
+            "all supported preregistered contrasts within each metric"
+            if args.filter_absent_contrasts
+            else "all declared contrasts within each metric"
+        ),
+        "contrast_subset": {
+            "filtered_for_promoted_methods": args.filter_absent_contrasts,
+            "analyzed_ids": [str(contrast["id"]) for contrast in contrasts],
+            "omitted_ids": list(omitted_contrasts),
+        },
         "method_summaries": summarize_method_metrics(
             rows=rows,
             metrics=tuple(config.get("descriptive_metrics", config["metrics"])),

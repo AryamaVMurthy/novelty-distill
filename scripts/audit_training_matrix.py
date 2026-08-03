@@ -14,6 +14,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--registry", type=Path, required=True)
     parser.add_argument("--input", action="append", required=True, metavar="BASELINE=PATH")
+    parser.add_argument("--baseline-id", action="append")
     parser.add_argument("--output", type=Path, required=True)
     return parser.parse_args()
 
@@ -32,7 +33,11 @@ def _parse_inputs(values: list[str]) -> dict[str, Path]:
 
 def main() -> None:
     args = parse_args()
-    result = audit_training_matrix(args.registry, _parse_inputs(args.input))
+    result = audit_training_matrix(
+        args.registry,
+        _parse_inputs(args.input),
+        required_baseline_ids=args.baseline_id,
+    )
     result["repository_commit"] = repository_commit(Path(__file__).resolve().parents[1])
     atomic_json(args.output, result)
     print(json.dumps(result, sort_keys=True))

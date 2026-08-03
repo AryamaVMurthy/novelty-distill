@@ -78,6 +78,39 @@ def test_replication_teacher_changes_only_the_pinned_model_identity() -> None:
     }
 
 
+def test_replication_student_configs_change_only_model_identity() -> None:
+    main = _load("eval_qwen3_4b.yaml")
+    main_adapter = _load("eval_qwen3_4b_lora.yaml")
+    replication = _load("eval_qwen3_1p7b.yaml")
+    replication_adapter = _load("eval_qwen3_1p7b_lora.yaml")
+
+    assert replication.model == "Qwen/Qwen3-1.7B"
+    assert replication.revision == "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e"
+    assert replication_adapter.model == replication.model
+    assert replication_adapter.revision == replication.revision
+    assert replication.lora_path is None
+    assert replication_adapter.lora_path == "student-adapter"
+    ignored = {"model", "revision", "lora_path"}
+    assert {
+        key: value
+        for key, value in replication.model_dump(mode="json").items()
+        if key not in ignored
+    } == {
+        key: value
+        for key, value in main.model_dump(mode="json").items()
+        if key not in ignored
+    }
+    assert {
+        key: value
+        for key, value in replication_adapter.model_dump(mode="json").items()
+        if key not in ignored
+    } == {
+        key: value
+        for key, value in main_adapter.model_dump(mode="json").items()
+        if key not in ignored
+    }
+
+
 def test_contrast_config_keeps_rubric_axes_descriptive() -> None:
     config = yaml.safe_load(
         (ROOT / "configs/evaluation/primary_contrasts.yaml").read_text(encoding="utf-8")

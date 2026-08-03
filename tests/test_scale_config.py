@@ -98,6 +98,22 @@ def test_promoted_manifest_binds_every_method_seed_to_job_and_deployable_artifac
         )
 
 
+def test_replication_manifest_uses_matching_served_model_and_generation_configs() -> None:
+    result = build_promoted_training_manifest(
+        model_profile="replication",
+        train_size=1000,
+        promoted_indices=(0, 5),
+        seeds=(17,),
+        training_dependencies={(0, 17): "800_0", (5, 17): "801"},
+    )
+
+    by_id = {run["baseline_id"]: run for run in result["runs"]}
+    assert by_id["B1"]["served_model_name"] == "Qwen/Qwen3-1.7B"
+    assert by_id["B1"]["generation_config"].endswith("eval_qwen3_1p7b_lora.yaml")
+    assert by_id["B4"]["served_model_name"] == "Qwen/Qwen3-1.7B"
+    assert by_id["B4"]["generation_config"].endswith("eval_qwen3_1p7b.yaml")
+
+
 def test_promoted_manifest_cli_persists_exact_submission_graph(tmp_path) -> None:
     output = tmp_path / "submission.json"
 

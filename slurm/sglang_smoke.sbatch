@@ -38,6 +38,12 @@ lora_name="${LORA_NAME:-}"
 lora_path="${LORA_PATH:-}"
 calibration_config="${CALIBRATION_CONFIG:-}"
 calibration_run_id="${CALIBRATION_RUN_ID:-}"
+if [[ "${model_path}" == checkpoints/* ]]; then
+  model_path="${scratch_root}/${model_path}"
+fi
+if [[ "${lora_path}" == checkpoints/* ]]; then
+  lora_path="${scratch_root}/${lora_path}"
+fi
 server_log="${scratch_root}/logs/sglang-${SLURM_JOB_ID}.log"
 input_slice="${scratch_root}/tmp/generation-input-${SLURM_JOB_ID}.jsonl"
 server_pid=""

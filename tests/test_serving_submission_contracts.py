@@ -1,3 +1,6 @@
+import json
+import subprocess
+import sys
 from pathlib import Path
 
 
@@ -18,6 +21,8 @@ def test_sglang_job_binds_local_checkpoint_or_adapter_bytes() -> None:
         in script
     )
     assert script.count('"${artifact_identity_args[@]}"') == 3
+    assert 'model_path="${scratch_root}/${model_path}"' in script
+    assert 'lora_path="${scratch_root}/${lora_path}"' in script
 
 
 def test_sglang_job_forwards_deterministic_prompt_shard_coordinates() -> None:
@@ -144,6 +149,96 @@ def test_official_model_launcher_runs_full_suite_on_four_gpu_jobs() -> None:
     assert "limits=(61 9 35)" in script
     assert "NUM_GENERATIONS=10" in script
     assert "slurm/combine_official_results.sbatch" in script
+
+
+def test_single_model_temporal_launcher_can_chain_resumable_taste_annotation() -> None:
+    script = Path("scripts/submit_model_evaluation.sh").read_text(encoding="utf-8")
+
+    assert 'run_taste="${RUN_TASTE:-0}"' in script
+    assert 'taste_passes="${TASTE_PASSES:-2}"' in script
+    assert "slurm/annotate_research_taste.sbatch" in script
+    assert '"taste_final":"%s"' in script
+    assert '^[0-9]+(_[0-9]+)?$' in script
+
+
+def test_promoted_evaluation_dry_run_binds_models_controls_taste_and_analysis(
+    tmp_path: Path,
+) -> None:
+    manifest = tmp_path / "training.json"
+    output = tmp_path / "evaluation.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "model_profile": "main",
+                "train_size": 5000,
+                "seeds": [17],
+                "promoted_indices": [0],
+                "baseline_ids": ["B1"],
+                "target_name": "teacher-targets-tomato5000-v1.json",
+                "target_gate_job_id": 900,
+                "runs": [
+                    {
+                        "baseline_id": "B1",
+                        "matrix_index": 0,
+                        "seed": 17,
+                        "backend": "trl",
+                        "training_dependency": "901_0",
+                        "metadata_path": "checkpoints/B1-tomato5000-seed17/run_metadata.json",
+                        "model_path": "Qwen/Qwen3-4B",
+                        "served_model_name": "Qwen/Qwen3-4B",
+                        "model_revision": "revision",
+                        "lora_path": "checkpoints/B1-tomato5000-seed17/final",
+                        "model_dtype": "auto",
+                        "generation_config": "configs/generation/eval_qwen3_4b_lora.yaml",
+                        "evaluation_id": "B1-tomato5000-seed17-temporal-k16",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "scripts/submit_promoted_evaluations.py",
+            "--manifest",
+            str(manifest),
+            "--teacher-score-job-id",
+            "902",
+            "--output",
+            str(output),
+            "--dry-run",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    result = json.loads(completed.stdout)
+
+    assert result["dry_run"] is True
+    assert result["controls"]["A0"]["evaluation_id"] == "A0-tomato5000-temporal-k16"
+    run = result["runs"][0]
+    assert run["environment"]["RUN_TASTE"] == "1"
+    assert run["environment"]["SERVED_MODEL_NAME"] == "Qwen/Qwen3-4B"
+    assert run["environment"]["TRAINING_DEPENDENCY"] == "901_0"
+    assert run["environment"]["LORA_PATH"].endswith("/final")
+    assert result["analysis"]["environment"]["PROMOTED_METHODS"] == "B1"
+    assert result["analysis"]["environment"]["TRAIN_SEEDS"] == "17"
+    assert json.loads(output.read_text(encoding="utf-8")) == result
+
+
+def test_promoted_analysis_is_seed_balanced_artifact_audited_and_secondary_taste_aware() -> None:
+    script = Path("slurm/analyze_promoted_matrix.sbatch").read_text(encoding="utf-8")
+
+    assert "scripts/collect_seeded_evaluation_metrics.py" in script
+    assert "--filter-absent-contrasts" in script
+    assert "scripts/audit_training_matrix.py" in script
+    assert '--baseline-id "${baseline_id}"' in script
+    assert "training-matrix-audit-seed${seed}.json" in script
+    assert "scripts/analyze_research_taste.py" in script
+    assert "scripts/export_wandb_snapshot.py" in script
 
 
 def test_final_controller_submits_research_taste_for_every_generation_family() -> None:

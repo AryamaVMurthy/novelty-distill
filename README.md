@@ -91,6 +91,21 @@ TRAIN_SIZE=20000 TARGET_GATE_JOB_ID=<20k-gate> PROMOTED_INDICES=<indexes> \
 The 5k default is seed 17. The 20k default is the frozen central seed set 17, 29, and 43; neither
 launcher chooses winners before the preceding analysis.
 
+Persist the JSON emitted by the training launcher with `SUBMISSION_MANIFEST`, then bind every
+checkpoint to its scale-relative controls, seeded evaluation, secondary research-taste annotation,
+and final balanced analysis:
+
+```bash
+uv run python scripts/submit_promoted_evaluations.py \
+  --manifest <promoted-training-manifest.json> \
+  --teacher-score-job-id <completed-teacher-score-job> \
+  --output <promoted-evaluation-manifest.json>
+```
+
+Add `--dry-run` to validate and inspect the exact graph without submitting it. Replication runs
+must additionally name their independently generated 1.7B/8B control score and taste artifacts;
+the launcher fails closed instead of reusing main-study model controls.
+
 The 1.7B/8B replication is a separate model profile with its own Qwen3-8B teacher samples and
 targets. Start it only after the main study works, beginning with its independent 1k gate:
 
