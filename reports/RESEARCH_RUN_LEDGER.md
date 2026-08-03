@@ -397,8 +397,11 @@ Research-taste jobs 18403 and 18404 exposed a deterministic structured-output ed
 32B annotator returned one whitespace-heavy JSON object truncated at the original 192-token cap,
 so the concurrent batch stopped after preserving two complete prompt shards. The annotation
 contract now allows 512 output tokens and performs three bounded request-level retries while
-retaining the same pinned model, zero-temperature decoding, strict schema, and resumable shard
-validation. This is a serving-reliability change, not a taxonomy or outcome change.
+retaining the same pinned model, zero-temperature decoding, and resumable shard validation. The
+generic JSON-schema grammar still allowed unbounded inter-field whitespace, so the final serving
+contract uses an equivalent compact regex grammar that fixes field order, enum values, booleans,
+and score ranges without permitting whitespace loops. This is a serving-reliability change, not a
+taxonomy or outcome change.
 
 ## UltraFeedback systems pilot
 

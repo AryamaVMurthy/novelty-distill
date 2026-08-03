@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 import statistics
 from collections import Counter, defaultdict
 from collections.abc import Mapping, Sequence
@@ -94,6 +95,23 @@ class ResearchTasteRecord(ResearchTasteAnnotation):
     sample_index: int = Field(ge=0)
 
 
+def research_taste_output_regex() -> str:
+    """Return a compact, whitespace-free grammar for the SGLang judge output."""
+
+    opportunity = "(" + "|".join(map(re.escape, OPPORTUNITY_PATTERNS)) + ")"
+    method = "(" + "|".join(map(re.escape, METHOD_PARADIGMS)) + ")"
+    return (
+        r'\{"opportunity_pattern":"'
+        + opportunity
+        + r'","method_paradigm":"'
+        + method
+        + r'","surface_stitching":(true|false),'
+        + r'"surface_stitching_score":[0-3],'
+        + r'"bottleneck_specificity":[0-3],'
+        + r'"boilerplate_score":[0-3]\}'
+    )
+
+
 _SYSTEM_PROMPT = """\
 You annotate the research taste expressed by a proposed scientific idea. Classify two separate
 properties: its problem-finding pattern and its high-level contribution strategy.
@@ -135,6 +153,7 @@ def research_taste_protocol_hash() -> str:
     payload = {
         "system_prompt": _SYSTEM_PROMPT,
         "schema": ResearchTasteAnnotation.model_json_schema(),
+        "output_regex": research_taste_output_regex(),
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
@@ -159,14 +178,7 @@ def build_research_taste_payload(
         "temperature": 0,
         "max_tokens": spec.max_tokens,
         "chat_template_kwargs": {"enable_thinking": False},
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "research_taste_annotation",
-                "strict": True,
-                "schema": ResearchTasteAnnotation.model_json_schema(),
-            },
-        },
+        "regex": research_taste_output_regex(),
     }
 
 

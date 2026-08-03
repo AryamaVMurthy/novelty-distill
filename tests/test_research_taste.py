@@ -1,11 +1,13 @@
 import hashlib
 import json
+import re
 
 import pytest
 
 from novelty_distill.evaluation.research_taste import (
     METHOD_PARADIGMS,
     OPPORTUNITY_PATTERNS,
+    ResearchTasteAnnotation,
     ResearchTasteSpec,
     analyze_research_taste_matrix,
     bootstrap_research_taste_gap,
@@ -65,8 +67,11 @@ def test_research_taste_payload_is_deterministic_and_strict() -> None:
 
     assert payload["temperature"] == 0
     assert payload["chat_template_kwargs"] == {"enable_thinking": False}
-    assert payload["response_format"]["json_schema"]["strict"] is True
-    schema = payload["response_format"]["json_schema"]["schema"]
+    assert "response_format" not in payload
+    assert re.fullmatch(
+        payload["regex"], _response()["choices"][0]["message"]["content"]
+    )
+    schema = ResearchTasteAnnotation.model_json_schema()
     assert set(schema["required"]) == {
         "opportunity_pattern",
         "method_paradigm",
