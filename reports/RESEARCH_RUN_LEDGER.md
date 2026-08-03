@@ -489,6 +489,9 @@ commit `8f389da41ad3c8441c9569f746a9a040cf388ddc`, so no external code was copie
 Commit `43c7d39` subsequently made the uniform random-4 subset nested around B2a's exact random-1
 target, reducing selector noise without changing the Random-4 distribution. F2 was still pending
 behind controller 18222 and had produced no training artifact when this refinement was frozen.
+Commit `bad86f6` completes the secondary selector graph with direct `B2b-4x` and `B2c-4x`
+comparisons against `B2a-4x`. The matched edges now isolate best/reward selection and modal
+selection at K=1, multiplicity under unbiased selection, and coverage-aware selection at K=4.
 
 The low-priority F2 chain is now staged behind primary controller 18222: training jobs 18519 ->
 18520, generation terminal 18523, scoring terminal 18525, evaluation terminal 18527, and

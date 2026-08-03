@@ -27,6 +27,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--targets", type=Path, required=True)
     parser.add_argument("--expected-prompts", type=int, required=True)
     parser.add_argument("--seed", type=int, default=17)
+    parser.add_argument("--secondary-random-k", type=int)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--markdown", type=Path, required=True)
     return parser.parse_args()
@@ -93,6 +94,7 @@ def main() -> None:
         target_artifact=targets,
         cluster_metadata=metadata,
         seed=args.seed,
+        secondary_random_k=args.secondary_random_k,
     )
     summary["schema_version"] = 1
     summary["git_commit"] = git_commit

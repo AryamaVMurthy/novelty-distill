@@ -8,6 +8,7 @@ from typing import Any
 
 from novelty_distill.data.teacher_views import (
     TeacherGeneration,
+    derive_random_k_texts,
     validate_teacher_target_artifact,
 )
 
@@ -19,6 +20,7 @@ def summarize_teacher_targets(
     target_artifact: Mapping[str, object],
     cluster_metadata: Mapping[str, Any],
     seed: int,
+    secondary_random_k: int | None = None,
 ) -> dict[str, Any]:
     """Summarize selection trade-offs without treating clusters as expert novelty labels."""
 
@@ -61,8 +63,14 @@ def summarize_teacher_targets(
     generation_by_text = {
         (generation.prompt_id, generation.text): generation for generation in generation_tuple
     }
+    if secondary_random_k is not None and not 2 <= secondary_random_k <= 8:
+        raise ValueError("secondary random-K must be between two and eight")
+    view_names = ["random1", "best1", "mode1", "diverse4", "all8"]
+    if secondary_random_k is not None:
+        view_names.append(f"random{secondary_random_k}")
+
     views: dict[str, dict[str, float | int]] = {}
-    for view in ("random1", "best1", "mode1", "diverse4", "all8"):
+    for view in view_names:
         selected_generations: list[TeacherGeneration] = []
         selected_scores: list[Mapping[str, Any]] = []
         cluster_counts: list[int] = []
@@ -70,7 +78,20 @@ def summarize_teacher_targets(
             prompt_views = raw_targets[prompt_id]
             if not isinstance(prompt_views, Mapping):
                 raise ValueError(f"invalid target views for {prompt_id!r}")
-            texts = prompt_views.get(view)
+            if secondary_random_k is not None and view == f"random{secondary_random_k}":
+                all8 = prompt_views.get("all8")
+                if not isinstance(all8, list):
+                    raise ValueError(f"missing target view 'all8' for {prompt_id!r}")
+                texts = list(
+                    derive_random_k_texts(
+                        (str(text) for text in all8),
+                        prompt_id=prompt_id,
+                        seed=seed,
+                        k=secondary_random_k,
+                    )
+                )
+            else:
+                texts = prompt_views.get(view)
             if not isinstance(texts, list) or not texts:
                 raise ValueError(f"missing target view {view!r} for {prompt_id!r}")
             current = [generation_by_text[(prompt_id, str(text))] for text in texts]

@@ -3,6 +3,7 @@ import pytest
 from novelty_distill.data.teacher_views import (
     TeacherGeneration,
     build_teacher_target_artifact,
+    derive_random_k_texts,
 )
 from novelty_distill.evaluation.teacher_target_analysis import (
     render_teacher_target_markdown,
@@ -75,3 +76,70 @@ def test_teacher_target_summary_exposes_view_selection_and_thresholds() -> None:
     assert "| `diverse4` |" in markdown
     assert "At-least-four-cluster prompts" in markdown
     assert "complete linkage at cosine 0.94" in markdown
+
+
+def test_teacher_target_summary_can_add_nested_secondary_random4() -> None:
+    generations = tuple(
+        TeacherGeneration(
+            prompt_id="p1",
+            sample_index=index,
+            text=f"sample-{index}",
+            quality_score=float(index) / 10,
+            cluster_id=str(index),
+        )
+        for index in range(8)
+    )
+    targets = build_teacher_target_artifact(generations, seed=17)
+    scores = (
+        {
+            "prompt_id": "p1",
+            "records": [
+                {
+                    "prompt_id": "p1",
+                    "text": f"sample-{index}",
+                    "finish_reason": "stop",
+                    "completion_tokens": 100,
+                }
+                for index in range(8)
+            ],
+        },
+    )
+    metadata = {
+        "clustering_linkage": "complete",
+        "cosine_threshold": 0.94,
+        "prompt_diagnostics": {
+            "p1": {
+                "raw": {"clusters_by_threshold": {"0.940": 8}},
+                "instructed": {"clusters_by_threshold": {"0.940": 8}},
+            }
+        },
+    }
+
+    summary = summarize_teacher_targets(
+        generations=generations,
+        score_payloads=scores,
+        target_artifact=targets,
+        cluster_metadata=metadata,
+        seed=17,
+        secondary_random_k=4,
+    )
+
+    assert summary["views"]["random4"]["num_responses"] == 4
+    assert summary["views"]["random4"]["primary_clusters_per_prompt_mean"] == 4
+    selected = derive_random_k_texts(
+        targets["targets"]["p1"]["all8"], prompt_id="p1", seed=17, k=4
+    )
+    assert targets["targets"]["p1"]["random1"][0] in selected
+    assert summary["views"]["random4"]["quality_mean"] == pytest.approx(
+        sum(int(text.removeprefix("sample-")) / 10 for text in selected) / 4
+    )
+
+    with pytest.raises(ValueError, match="between two and eight"):
+        summarize_teacher_targets(
+            generations=generations,
+            score_payloads=scores,
+            target_artifact=targets,
+            cluster_metadata=metadata,
+            seed=17,
+            secondary_random_k=1,
+        )
