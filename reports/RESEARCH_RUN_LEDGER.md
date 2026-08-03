@@ -445,6 +445,26 @@ two-GPU throttle and bounded resume behavior; they cannot consume a GPU before t
 fan-out is released. The claim boundary and comparisons are in
 `reports/EXPOSURE_SENSITIVITY_PROTOCOL.md`.
 
+The five sensitivity checkpoints now have complete, separately named temporal evaluation and
+research-taste chains. Their terminal evaluation jobs are 18462, 18471, 18480, 18489, and 18498;
+their terminal taste jobs are 18464, 18473, 18482, 18491, and 18500. Because primary controller
+18222 can reveal its final analysis job only after it executes, commit `c7d6bee` adds a fail-closed
+deferred handoff. Job 18502 waits for controller 18222, parses the controller's last valid JSON
+analysis record, and submits the exposure analyzer behind that primary analysis plus all ten
+sensitivity endpoints. It atomically records the resolved dependency graph in
+`submissions/exposure-sensitivity-analysis.json`; malformed, missing, or incomplete IDs terminate
+the controller without producing a finding.
+
+At 21:05 IST on 2026-08-03, D1 and D2 had both reached step 105/125 with finite telemetry. A1's
+current temporal-generation pass had completed 230 of the 548 shards missing at pass start
+(1,340/1,658 total), and A0 research-taste annotation had completed 423/1,658. These four jobs
+occupied all four GPUs. The TasteGap source audit was repeated against arXiv v1, the author code,
+and the IdeaSeed card: our two seven-label axes and TVD/base-2-JSD/normalized-entropy definitions
+match the paper's primary distributional analysis, while our human gate is deliberately stricter
+because it also requires human--human kappa >= 0.80. Neither the author repository nor IdeaSeed
+declares a reuse license, so only the independently implemented taxonomy analysis is active; the
+released dataset is not silently added to the official benchmark suite.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are

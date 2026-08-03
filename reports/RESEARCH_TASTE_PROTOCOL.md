@@ -14,9 +14,13 @@ analysis** and cannot replace, alter, or promote findings from the frozen primar
 - Author repository: <https://github.com/ziyuuc/TasteGap>
 - Relevance: introduces a two-axis taxonomy that distinguishes semantic variety from variety in
   how research opportunities are framed and contributions are constructed.
-- Limitation for reuse: the public author repository had no explicit software license when checked
-  on 2026-08-02. This repository independently implements the evaluation contract and does not
-  copy the author implementation.
+- Limitation for reuse: the public author repository at commit
+  `c5da2aac43006b723b2fb0d0c8e92e2d42a4501e` had no explicit software license when rechecked on
+  2026-08-03. The public IdeaSeed dataset snapshot
+  `2d44e6eded453f50cc98a2790e0e891fd9a0f7cf` also declared no license in its Hugging Face card.
+  This repository therefore independently implements the evaluation contract, does not copy the
+  author implementation, and does not download or redistribute IdeaSeed in the automatic run
+  graph. An external IdeaSeed transfer benchmark remains conditional on explicit reuse terms.
 
 Chen et al. report that their evaluated LLMs concentrate on bridge-like opportunities and
 synthesis/unification methods relative to realized human-paper ideas. Their task, model set,
