@@ -59,8 +59,10 @@ Method paradigms describe how the contribution is constructed:
 7. optimization, search, or resource strategy.
 
 The annotator additionally records surface stitching, bottleneck specificity, and boilerplate on
-the same ordinal scale defined in `configs/evaluation/research_taste.yaml` and the strict schema in
-`src/novelty_distill/evaluation/research_taste.py`.
+the same ordinal scale defined in `configs/evaluation/research_taste.yaml`. The compact SGLang
+output grammar and the strict Pydantic validator in
+`src/novelty_distill/evaluation/research_taste.py` fix field order, allowed labels, booleans, and
+score ranges while preventing unconstrained whitespace loops.
 
 ## Comparisons and outputs
 
