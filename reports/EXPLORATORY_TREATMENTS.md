@@ -58,6 +58,14 @@ comparisons are:
   response;
 - `B3-4x` versus `F2-random4`, isolating coverage-aware selection from unbiased multiplicity.
 
+The uniform subset is nested around B2a's exact random-1 response, so the first retained sample is
+shared and the remaining three come uniformly from the other seven. The paper's cost-aware optimal
+K formula is not used to justify K=4 here: prompt/response acquisition costs are not meaningfully
+identified for this already-collected corpus, and its empirical variance estimator requires
+per-response base-model NLL rather than our judge-quality proxy. K=4 is fixed solely to match the
+existing diverse-4 treatment; estimating the variance ratio would be a separate descriptive
+diagnostic.
+
 The study remains secondary and seed-17 only. The public author repository had no explicit
 software license when checked at commit `8f389da41ad3c8441c9569f746a9a040cf388ddc`, so the local
 selector is independently implemented and adds no external dependency. Full provenance and claim

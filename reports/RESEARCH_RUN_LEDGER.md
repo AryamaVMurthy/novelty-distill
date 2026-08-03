@@ -486,6 +486,9 @@ value-blind Random-4-of-8 implementation derived from the immutable teacher bank
 coverage-aware selection. This amendment was frozen before any trained-model temporal metric was
 available and remains secondary. The cited author's public repository had no explicit license at
 commit `8f389da41ad3c8441c9569f746a9a040cf388ddc`, so no external code was copied.
+Commit `43c7d39` subsequently made the uniform random-4 subset nested around B2a's exact random-1
+target, reducing selector noise without changing the Random-4 distribution. F2 was still pending
+behind controller 18222 and had produced no training artifact when this refinement was frozen.
 
 The low-priority F2 chain is now staged behind primary controller 18222: training jobs 18519 ->
 18520, generation terminal 18523, scoring terminal 18525, evaluation terminal 18527, and
