@@ -10,13 +10,17 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import yaml
 
 from novelty_distill.evaluation.embeddings import (
     EmbeddingCache,
     embedding_cache_fingerprint,
 )
-from novelty_distill.evaluation.same_prompt_geometry import analyze_same_prompt_geometry
+from novelty_distill.evaluation.same_prompt_geometry import (
+    same_prompt_geometry_metrics,
+    summarize_same_prompt_geometry_metrics,
+)
 from novelty_distill.evaluation.score_shards import load_score_shard
 from novelty_distill.provenance import repository_commit
 from novelty_distill.training.provenance import atomic_json, file_provenance
@@ -88,6 +92,27 @@ def _tree_provenance(directory: Path) -> dict[str, Any]:
     }
 
 
+def _cached_matrix(
+    cache: EmbeddingCache,
+    responses: tuple[str, ...],
+    *,
+    instruction: str,
+    method: str,
+    prompt_id: str,
+) -> np.ndarray:
+    rows: list[np.ndarray] = []
+    for response in responses:
+        embedded_text = f"Instruct: {instruction}\nQuery: {response}"
+        vector = cache.get_array(embedded_text)
+        if vector is None:
+            raise ValueError(
+                f"cached embedding is missing for {method}/{prompt_id}; "
+                "the CPU analysis will not launch new inference"
+            )
+        rows.append(vector)
+    return np.stack(rows)
+
+
 def _interval(metric: Mapping[str, float]) -> str:
     return (
         f"{metric['estimate']:.4f} "
@@ -156,30 +181,87 @@ def main() -> None:
         batch_size=batch_size,
     )
     instruction = str(annotation["embedding_instruction"])
-    texts = {method: _load_texts(path) for method, path in inputs.items()}
-    vectors: dict[str, dict[str, tuple[tuple[float, ...], ...]]] = {}
-    for method, prompt_texts in texts.items():
-        vectors[method] = {}
-        for prompt_id, responses in prompt_texts.items():
-            prompt_vectors: list[tuple[float, ...]] = []
-            for response in responses:
-                embedded_text = f"Instruct: {instruction}\nQuery: {response}"
-                vector = cache.get(embedded_text)
-                if vector is None:
-                    raise ValueError(
-                        f"cached embedding is missing for {method}/{prompt_id}; "
-                        "the CPU analysis will not launch new inference"
-                    )
-                prompt_vectors.append(tuple(vector))
-            vectors[method][prompt_id] = tuple(prompt_vectors)
-
     bootstrap = config["bootstrap"]
     analysis_config = config["analysis"]
-    result = analyze_same_prompt_geometry(
-        vectors,
-        human_method=str(analysis_config["human_method"]),
-        teacher_method=str(analysis_config["teacher_method"]),
-        base_method=str(analysis_config["base_method"]),
+    human_method = str(analysis_config["human_method"])
+    teacher_method = str(analysis_config["teacher_method"])
+    base_method = str(analysis_config["base_method"])
+    for method in (human_method, teacher_method, base_method):
+        if method not in inputs:
+            raise ValueError(f"same-prompt geometry is missing required method {method}")
+
+    teacher_texts = _load_texts(inputs[teacher_method])
+    human_texts = _load_texts(inputs[human_method])
+    prompt_ids = tuple(sorted(teacher_texts))
+    if not prompt_ids or set(human_texts) != set(prompt_ids):
+        raise ValueError("teacher and human must use the same prompt population")
+    teacher_vectors = {
+        prompt_id: _cached_matrix(
+            cache,
+            teacher_texts[prompt_id],
+            instruction=instruction,
+            method=teacher_method,
+            prompt_id=prompt_id,
+        )
+        for prompt_id in prompt_ids
+    }
+    human_vectors = {
+        prompt_id: _cached_matrix(
+            cache,
+            human_texts[prompt_id],
+            instruction=instruction,
+            method=human_method,
+            prompt_id=prompt_id,
+        )
+        for prompt_id in prompt_ids
+    }
+    embedding_dimension = int(next(iter(teacher_vectors.values())).shape[1])
+
+    prompt_metrics_by_method: dict[str, dict[str, dict[str, float]]] = {}
+    samples_per_prompt: dict[str, list[int]] = {}
+    reference_by_prompt: dict[str, float] = {}
+    for method, path in inputs.items():
+        if method in {human_method, teacher_method}:
+            continue
+        prompt_texts = _load_texts(path)
+        if set(prompt_texts) != set(prompt_ids):
+            raise ValueError("all geometry methods must use the same prompt population")
+        prompt_metrics_by_method[method] = {}
+        samples_per_prompt[method] = []
+        for prompt_id in prompt_ids:
+            candidate = _cached_matrix(
+                cache,
+                prompt_texts[prompt_id],
+                instruction=instruction,
+                method=method,
+                prompt_id=prompt_id,
+            )
+            metrics = same_prompt_geometry_metrics(
+                candidate=candidate,
+                teacher=teacher_vectors[prompt_id],
+                human=human_vectors[prompt_id],
+            )
+            prompt_metrics_by_method[method][prompt_id] = {
+                name: metrics[name]
+                for name in (
+                    "teacher_cosine_mean",
+                    "human_cosine_mean",
+                    "teacher_minus_human_affinity",
+                    "within_method_pair_cosine",
+                )
+            }
+            samples_per_prompt[method].append(len(candidate))
+            if method == base_method:
+                reference_by_prompt[prompt_id] = metrics["teacher_human_cosine"]
+
+    result = summarize_same_prompt_geometry_metrics(
+        prompt_metrics_by_method,
+        samples_per_prompt=samples_per_prompt,
+        reference_by_prompt=reference_by_prompt,
+        human_method=human_method,
+        teacher_method=teacher_method,
+        base_method=base_method,
+        embedding_dimension=embedding_dimension,
         resamples=int(bootstrap["resamples"]),
         seed=int(bootstrap["seed"]),
         confidence_level=float(bootstrap["confidence_level"]),

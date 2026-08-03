@@ -23,6 +23,10 @@ def test_embedding_cache_round_trips_normalized_float32_vectors(tmp_path) -> Non
     cache.put("alpha", (0.6, 0.8))
 
     assert cache.get("alpha") == pytest.approx([0.6, 0.8])
+    array = cache.get_array("alpha")
+    assert array is not None
+    assert array.dtype == np.float32
+    assert array.tolist() == pytest.approx([0.6, 0.8])
     manifest = json.loads((cache.directory / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["fingerprint"] == cache.fingerprint
     assert manifest["controls"]["batch_size"] == 8

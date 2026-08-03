@@ -135,6 +135,9 @@ def test_same_prompt_geometry_is_secondary_cache_only_and_wired_into_final_analy
     }
     assert "EmbeddingCache" in script
     assert "embed_texts" not in script
+    assert "cache.get_array" in script
+    assert "vectors: dict" not in script
+    assert "summarize_same_prompt_geometry_metrics" in script
     assert "cached embedding is missing" in script
     assert "scripts/analyze_same_prompt_geometry.py" in slurm
     assert "same-prompt-geometry-secondary.json" in slurm

@@ -63,6 +63,12 @@ class EmbeddingCache:
         self._ensure_manifest()
 
     def get(self, text: str) -> list[float] | None:
+        vector = self.get_array(text)
+        return vector.tolist() if vector is not None else None
+
+    def get_array(self, text: str) -> np.ndarray | None:
+        """Return one validated float32 vector without expanding it into Python floats."""
+
         path = self._path(text)
         if not path.exists():
             return None
@@ -71,7 +77,7 @@ class EmbeddingCache:
         except (OSError, ValueError) as error:
             raise ValueError(f"invalid cached embedding {path}") from error
         self._validate_vector(vector, path=path)
-        return vector.tolist()
+        return vector
 
     def put(self, text: str, embedding: Sequence[float]) -> None:
         vector = np.asarray(embedding, dtype=np.float32)
