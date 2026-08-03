@@ -174,9 +174,21 @@ def test_compact_launcher_uses_four_shards_and_budget_matched_evaluation() -> No
     assert "baseline_ids=(B1 B2b C1-best1 C2-best1 D1)" in launcher
     assert "TEACHER_SOURCE_SAMPLES_PER_PROMPT=16" in launcher
     assert "STUDENT_SOURCE_SAMPLES_PER_PROMPT=4" in launcher
+    assert "SERVED_ARTIFACT_IDENTITY=${artifact_identity}" in launcher
     assert "A0-temporal-k4-from-k16" in launcher
     assert 'teacher_source_samples_per_prompt="${TEACHER_SOURCE_SAMPLES_PER_PROMPT:-' in evaluation
     assert '--teacher-source-samples-per-prompt' in evaluation
+
+
+def test_compact_downstream_resume_preserves_generation_artifact_identity() -> None:
+    script = Path("scripts/submit_compact_downstream.sh").read_text(encoding="utf-8")
+
+    assert 'generation_job_ids_csv="${GENERATION_JOB_IDS:?' in script
+    assert 'a0_evaluation_job_id="${A0_EVALUATION_JOB_ID:?' in script
+    assert "baseline_ids=(B1 B2b C1-best1 C2-best1 D1)" in script
+    assert "SERVED_ARTIFACT_IDENTITY=${artifact_identity}" in script
+    assert "slurm/validate_generation_run.sbatch" in script
+    assert "slurm/analyze_compact_baselines.sbatch" in script
 
 
 def test_promoted_evaluation_dry_run_binds_models_controls_taste_and_analysis(

@@ -50,10 +50,19 @@ a0_evaluation="$(
 )"
 
 baseline_ids=(B1 B2b C1-best1 C2-best1 D1)
+artifact_identities=(
+  sha256:cfb6e32ef2a0648b6d8e372f0d2325098faa352c8d3a6f4af1cfc55fa75cf280
+  sha256:ee15f4037d9b0e92b79cb5b6291616f9d618a925d597e91938d7387e0ac6f2a8
+  sha256:7fc74fcd56d0150faf987eb5234536cac649cd24882a4e35716ff2aedc1b50f8
+  sha256:7080e929e3f72d2c58c4ef01b6afc86f8c190b351d79c8039fecff01eb6d9cf4
+  sha256:47a46794c06fdfdbe9b9109171de22c7588c00b5eb67d2e2ee2ed2f4d9ddd216
+)
 evaluation_jobs=()
 generation_arrays=()
 score_arrays=()
-for baseline_id in "${baseline_ids[@]}"; do
+for index in "${!baseline_ids[@]}"; do
+  baseline_id="${baseline_ids[index]}"
+  artifact_identity="${artifact_identities[index]}"
   eval_id="${baseline_id}-tomato1k-seed17-temporal-k4"
   adapter_path="checkpoints/${baseline_id}-tomato1k-seed17/final"
   generation_array="$(
@@ -66,7 +75,7 @@ for baseline_id in "${baseline_ids[@]}"; do
   generation_gate="$(
     submit_job slurm/validate_generation_run.sbatch \
       --dependency="afterok:${generation_array}" \
-      --export="ALL,GENERATION_NAME=evaluation-student,GENERATION_ID=${eval_id},GENERATION_CONFIG=${student_config},INPUT_NAME=${input_name},EXPECTED_PROMPTS=${expected_prompts}"
+      --export="ALL,GENERATION_NAME=evaluation-student,GENERATION_ID=${eval_id},GENERATION_CONFIG=${student_config},INPUT_NAME=${input_name},EXPECTED_PROMPTS=${expected_prompts},SERVED_ARTIFACT_IDENTITY=${artifact_identity}"
   )"
   score_array="$(
     submit_job slurm/score_teacher.sbatch \
