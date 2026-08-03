@@ -417,6 +417,25 @@ no result matrix can be published from missing, stale, underexposed, or byte-inc
 runs. OPSD metadata now records its divergence, trajectory source, and target view before the
 pending E2/E3/E4 production tasks start.
 
+Commits `31f7022` and `84d07dc` bind each promoted method/seed to its exact array task, model or
+adapter bytes, temporal evaluation, secondary research-taste annotation, scale-relative controls,
+and balanced final analysis. Replication manifests now serve Qwen3-1.7B under its true pinned
+identity rather than inheriting the 4B evaluation config. The optional final-stage branch runs all
+100 curated NoveltyBench prompts plus the complete 61/9/35-case causal/3D/Boolean HypoSpace suite
+at K=10, requires all four combined artifacts, and reports descriptive seed-balanced means and
+variation. It is intentionally omitted from the 5k selection stage. Commit `9413999` adds a
+separate one-time replication-control graph: untouched Qwen3-1.7B and Qwen3-8B teacher outputs are
+generated and scored independently at K=16 and receive their own research-taste annotations; no
+4B/14B behavioral control is reused.
+
+At 20:40 IST on 2026-08-03, recovery tasks 18359_13 and 18359_14 wrote and passed direct integrity
+checks on D1 and D2 checkpoint 100. Both trainer states record exactly 100/125 steps, epoch 0.8,
+finite loss/gradient histories, and readable 132,187,888-byte adapters. D1's step-100 loss and
+gradient norm are 2.4526 and 2.0063; D2's are 2.7276 and 3.1619. These are optimization telemetry,
+not evaluation outcomes. The same snapshot contained 1,307/1,658 A1 temporal generation shards
+and 310/1,658 validated A0 research-taste shards. Jobs 18358 and 18416 remain bounded resume passes
+for the unfinished stable namespaces.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
