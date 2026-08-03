@@ -624,6 +624,16 @@ rate on both axes. Near-zero conditional entropy must qualify any global taste-d
 K=1 values are explicitly marked mathematically degenerate. This diagnostic was added before any
 trained-model temporal generation existed.
 
+At 23:22 IST, the four live GPU allocations remained healthy: A1 temporal generation had 1,577 of
+1,658 prompt shards, repaired A0 research-taste annotation had 67 of 1,658 prompt shards, D3 had
+reached step 11/125, and E2 had reached step 16/125. Slurm RSS accounting for the two live trainers
+was approximately 1.6 and 1.8 GiB, respectively. Pending E3/E4 tasks 18359_17--18 and targeted
+D3/E2 recovery tasks 18568_15--16 originally reserved 116--128 GiB each, which would have prevented
+all four GPU tasks from coexisting despite the measured host-memory headroom. Their pending-only
+host-memory requests were reduced to 70 GiB each. Slurm reread the four requests as 70 GiB while
+preserving their GPU, time-limit, dependency, configuration, checkpoint, seed, data, and optimizer
+contracts. This is a scheduling correction, not an experimental change.
+
 ## UltraFeedback systems pilot
 
 Array 18043 provides an independent, pinned 1,000-row systems check before TOMATO targets are
