@@ -1,0 +1,43 @@
+schema_version: 1
+status: secondary_sensitivity
+bootstrap_samples: 10000
+seed: 17
+metrics:
+  - student_quality_mean
+  - student_feasibility_mean
+  - teacher_mode_recall
+  - teacher_mode_precision
+  - cluster_jsd
+  - quality_adjusted_coverage
+  - nearest_training_target_similarity_mean
+  - length_stop_rate
+descriptive_metrics:
+  - student_quality_mean
+  - student_relevance_mean
+  - student_feasibility_mean
+  - student_soundness_mean
+  - student_clarity_mean
+  - student_instruction_compliance_mean
+  - teacher_mode_recall
+  - teacher_mode_precision
+  - cluster_jsd
+  - quality_adjusted_coverage
+  - nearest_training_target_similarity_mean
+  - length_stop_rate
+  - completion_tokens_mean
+threshold_metric_directions:
+  student_semantic_clusters: higher
+  teacher_mode_recall: higher
+  teacher_mode_precision: higher
+  cluster_jsd: lower
+  quality_adjusted_coverage: higher
+contrasts:
+  - {id: B2a-4x-vs-B2a, reference: B2a, treatment: B2a-4x}
+  - {id: B2b-4x-vs-B2b, reference: B2b, treatment: B2b-4x}
+  - {id: B2c-4x-vs-B2c, reference: B2c, treatment: B2c-4x}
+  - {id: B3-4x-vs-B3, reference: B3, treatment: B3-4x}
+  - {id: B4-4x-vs-B4, reference: B4, treatment: B4-4x}
+  - {id: B3-4x-vs-B2a-4x, reference: B2a-4x, treatment: B3-4x}
+  - {id: B3-4x-vs-B2b-4x, reference: B2b-4x, treatment: B3-4x}
+  - {id: B3-4x-vs-B2c-4x, reference: B2c-4x, treatment: B3-4x}
+  - {id: B4-4x-vs-B3-4x, reference: B3-4x, treatment: B4-4x}
