@@ -32,10 +32,7 @@ mkdir -p "${scratch_root}" "${scratch_root}/data" "${scratch_root}/cache"
 if [[ ! -d "${repo_dir}/.git" ]]; then
   git clone --branch "${repo_ref}" --single-branch "${repo_url}" "${repo_dir}"
 else
-  git -C "${repo_dir}" diff --quiet
-  git -C "${repo_dir}" fetch origin "${repo_ref}"
-  git -C "${repo_dir}" switch "${repo_ref}"
-  git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
+"${repo_dir}/scripts/sync_repository.sh" "${repo_dir}" "${repo_ref}"
 fi
 
 if [[ ! -x "${venv_dir}/bin/python" ]]; then

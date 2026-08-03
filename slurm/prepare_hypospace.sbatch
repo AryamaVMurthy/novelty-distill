@@ -26,10 +26,7 @@ export UV_LINK_MODE=copy
 export TMPDIR="${scratch_root}/tmp"
 
 mkdir -p "${scratch_root}/tmp"
-git -C "${repo_dir}" diff --quiet
-git -C "${repo_dir}" fetch origin "${repo_ref}"
-git -C "${repo_dir}" switch "${repo_ref}"
-git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
+"${repo_dir}/scripts/sync_repository.sh" "${repo_dir}" "${repo_ref}"
 test "$(git -C "${official_dir}" rev-parse HEAD)" = \
   "c69e9318577b34b5b896996571aefd4ba6053f58"
 

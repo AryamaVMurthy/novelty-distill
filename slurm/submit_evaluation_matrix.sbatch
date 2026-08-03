@@ -42,10 +42,8 @@ done
 
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
-git -C "${repo_dir}" diff --quiet
-git -C "${repo_dir}" fetch origin "${REPO_REF:-codex/implementation}"
-git -C "${repo_dir}" switch "${REPO_REF:-codex/implementation}"
-git -C "${repo_dir}" merge --ff-only "origin/${REPO_REF:-codex/implementation}"
+"${repo_dir}/scripts/sync_repository.sh" \
+  "${repo_dir}" "${REPO_REF:-codex/implementation}"
 flock -u 9
 
 for job_id in "${teacher_score_job_id}" "${target_job_id}" "${control_eval_job_id}"; do

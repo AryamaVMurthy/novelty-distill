@@ -26,10 +26,7 @@ output_dir="${evaluation_root}/analysis-seed17"
 
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
-git -C "${repo_dir}" diff --quiet
-git -C "${repo_dir}" fetch origin "${repo_ref}"
-git -C "${repo_dir}" switch "${repo_ref}"
-git -C "${repo_dir}" merge --ff-only "origin/${repo_ref}"
+"${repo_dir}/scripts/sync_repository.sh" "${repo_dir}" "${repo_ref}"
 flock -u 9
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv-analysis"
