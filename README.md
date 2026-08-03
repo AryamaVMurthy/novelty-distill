@@ -169,7 +169,7 @@ claim boundary are recorded in `reports/EXPOSURE_SENSITIVITY_PROTOCOL.md`.
 
 All jobs keep environments, Hugging Face caches, data, generations, and checkpoints under
 `/scratch/$USER/novelty-distill`, including Slurm logs. Turing scratch is node-local, so the
-submission helper stages the small batch script under `~/.cache/novelty-distill-submit` and calls
+submission helper stages the small batch script under node-local scratch and calls
 `sbatch` directly; it does not create an interactive control allocation. Each compute job then
 synchronizes the pinned branch under a shared repository lock.
 

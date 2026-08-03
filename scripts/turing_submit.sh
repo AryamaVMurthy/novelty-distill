@@ -21,8 +21,13 @@ if [[ ! -f "${job_script}" ]]; then
 fi
 
 script_name="$(basename "${job_script}")"
-remote_stage=".cache/novelty-distill-submit/${script_name}"
-ssh turing 'mkdir -p "$HOME/.cache/novelty-distill-submit"'
+remote_user="$(ssh turing 'printf "%s" "$USER"')"
+if [[ -z "${remote_user}" || "${remote_user}" == */* ]]; then
+  echo "could not resolve a path-safe remote user" >&2
+  exit 1
+fi
+remote_stage="/scratch/node01/${remote_user}/novelty-distill/submit/${script_name}"
+ssh turing 'mkdir -p "/scratch/node01/$USER/novelty-distill/submit"'
 scp -q "${job_script}" "turing:${remote_stage}"
 
 printf -v quoted_ref '%q' "${repo_ref}"

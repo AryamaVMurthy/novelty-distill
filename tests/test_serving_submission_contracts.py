@@ -4,6 +4,14 @@ import sys
 from pathlib import Path
 
 
+def test_turing_submit_stages_on_scratch_instead_of_quota_limited_home() -> None:
+    script = Path("scripts/turing_submit.sh").read_text(encoding="utf-8")
+
+    assert 'remote_user="$(ssh turing' in script
+    assert 'remote_stage="/scratch/node01/${remote_user}/novelty-distill/submit/' in script
+    assert ".cache/novelty-distill-submit" not in script
+
+
 def test_sglang_job_forwards_validated_model_dtype() -> None:
     script = Path("slurm/sglang_smoke.sbatch").read_text(encoding="utf-8")
 
