@@ -84,9 +84,34 @@ done
   --output "${output_dir}/research-taste-secondary.json" \
   --markdown "${output_dir}/research-taste-findings.md"
 
+wandb_inputs=(
+  --input "${output_dir}/contrasts.json"
+  --input "${output_dir}/research-taste-secondary.json"
+)
+for method in "${methods[@]}"; do
+  if [[ "${method}" == F1-* ]]; then
+    run_name="${method}-exploratory-drkl-tomato1k-seed17"
+    eval_id="${run_name}-temporal-k16"
+  else
+    run_name="${method}-tomato1k-seed17"
+    eval_id="${run_name}-temporal-k16"
+  fi
+  metadata_path="${scratch_root}/checkpoints/${run_name}/run_metadata.json"
+  test -s "${metadata_path}"
+  wandb_inputs+=(
+    --input "${metadata_path}"
+    --input "${evaluation_root}/${eval_id}.json"
+  )
+done
+"${venv_dir}/bin/python" "${repo_dir}/scripts/export_wandb_snapshot.py" \
+  "${wandb_inputs[@]}" \
+  --manifest "${output_dir}/wandb-export-manifest.json" \
+  --run-dir "${scratch_root}/wandb"
+
 test -s "${output_dir}/prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/threshold-prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/contrasts.json"
 test -s "${output_dir}/findings.md"
 test -s "${output_dir}/research-taste-secondary.json"
 test -s "${output_dir}/research-taste-findings.md"
+test -s "${output_dir}/wandb-export-manifest.json"

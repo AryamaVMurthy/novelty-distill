@@ -96,6 +96,32 @@ threshold_matrix_path="${output_dir}/threshold-prompt-metrics.jsonl"
   --packet "${output_dir}/research-taste-human-calibration.jsonl" \
   --key "${output_dir}/research-taste-human-calibration-key.json" \
   --instructions "${output_dir}/research-taste-human-calibration-instructions.md"
+
+wandb_inputs=(
+  --input "${evaluation_root}/A0-temporal-k16-seed17000.json"
+  --input "${evaluation_root}/A1-temporal-k16-seed17000.json"
+  --input "${evaluation_root}/A3-temporal-k1.json"
+  --input "${output_dir}/primary-contrasts.json"
+  --input "${output_dir}/research-taste-secondary.json"
+)
+for baseline_id in "${baseline_ids[@]}"; do
+  eval_id="${baseline_id}-tomato1k-seed17-temporal-k16"
+  if [[ "${baseline_id}" == C3 ]]; then
+    metadata_path="${scratch_root}/checkpoints/C3-tomato1k-seed17-l896-4gpu/run_metadata.json"
+  else
+    metadata_path="${scratch_root}/checkpoints/${baseline_id}-tomato1k-seed17/run_metadata.json"
+  fi
+  test -s "${metadata_path}"
+  wandb_inputs+=(
+    --input "${metadata_path}"
+    --input "${evaluation_root}/${eval_id}.json"
+  )
+done
+"${venv_dir}/bin/python" "${repo_dir}/scripts/export_wandb_snapshot.py" \
+  "${wandb_inputs[@]}" \
+  --manifest "${output_dir}/wandb-export-manifest.json" \
+  --run-dir "${scratch_root}/wandb"
+
 test -s "${output_dir}/prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/threshold-prompt-metrics.jsonl.manifest.json"
 test -s "${output_dir}/primary-contrasts.json"
@@ -105,3 +131,4 @@ test -s "${output_dir}/research-taste-findings.md"
 test -s "${output_dir}/research-taste-human-calibration.jsonl"
 test -s "${output_dir}/research-taste-human-calibration-key.json"
 test -s "${output_dir}/research-taste-human-calibration-instructions.md"
+test -s "${output_dir}/wandb-export-manifest.json"

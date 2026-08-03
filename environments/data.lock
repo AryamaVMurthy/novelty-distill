@@ -17,10 +17,13 @@ certifi==2026.7.22
     #   httpcore
     #   httpx
     #   requests
+    #   sentry-sdk
 charset-normalizer==3.4.9
     # via requests
 click==8.4.2
-    # via huggingface-hub
+    # via
+    #   huggingface-hub
+    #   wandb
 datasets==3.6.0
     # via -r environments/data.in
 dill==0.3.8
@@ -39,6 +42,10 @@ fsspec==2025.3.0
     # via
     #   datasets
     #   huggingface-hub
+gitdb==4.0.12
+    # via gitpython
+gitpython==3.1.57
+    # via wandb
 h11==0.16.0
     # via httpcore
 hf-xet==1.5.2
@@ -69,16 +76,23 @@ packaging==26.2
     # via
     #   datasets
     #   huggingface-hub
+    #   wandb
 pandas==3.0.5
     # via datasets
+platformdirs==4.11.0
+    # via wandb
 propcache==0.5.2
     # via
     #   aiohttp
     #   yarl
+protobuf==6.33.6
+    # via wandb
 pyarrow==25.0.0
     # via datasets
 pydantic==2.11.7
-    # via -r environments/data.in
+    # via
+    #   -r environments/data.in
+    #   wandb
 pydantic-core==2.33.2
     # via pydantic
 python-dateutil==2.9.0.post0
@@ -88,10 +102,17 @@ pyyaml==6.0.2
     #   -r environments/data.in
     #   datasets
     #   huggingface-hub
+    #   wandb
 requests==2.34.2
-    # via datasets
+    # via
+    #   datasets
+    #   wandb
+sentry-sdk==2.66.1
+    # via wandb
 six==1.17.0
     # via python-dateutil
+smmap==5.0.3
+    # via gitdb
 tqdm==4.70.0
     # via
     #   datasets
@@ -105,10 +126,15 @@ typing-extensions==4.16.0
     #   pydantic
     #   pydantic-core
     #   typing-inspection
+    #   wandb
 typing-inspection==0.4.2
     # via pydantic
 urllib3==2.7.0
-    # via requests
+    # via
+    #   requests
+    #   sentry-sdk
+wandb==0.22.3
+    # via -r environments/data.in
 xxhash==3.8.1
     # via datasets
 yarl==1.24.5
