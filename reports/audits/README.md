@@ -12,13 +12,18 @@ The consolidated interpretation and ICLR research path are in
   NoveltyBench implementation smoke, retained as raw Inspect evidence and a canonical summary.
 - `deepinfra-calibration-packet-20260805.manifest.json`: immutable identity of the first
   independent-judge packet. It is retained only for provenance and was superseded before paid
-  use; see `deepinfra-calibration-packet-20260805.SUPERSEDED.md`. The replacement enforces one
-  slot per prompt and adds B2a.
+  use; see `deepinfra-calibration-packet-20260805.SUPERSEDED.md`.
+- `deepinfra-calibration-packet-20260805-v3.manifest.json`: current paid-judge packet identity.
+  It uses 60 unique paired slots across eight methods and exactly six hidden repeats per method.
+  Packet v2 was also retired before paid use because its repeats were method-imbalanced; see
+  `deepinfra-calibration-packet-20260805-v2.SUPERSEDED.md`.
 - `semantic-equivalence-calibration-20260805-v2.manifest.json`: redacted provenance for 256
   similarity-stratified clean teacher pairs plus 26 hidden repeats per human rater. The first
   packet was superseded before labeling after its within-bin unique-prompt bug was detected.
 - `compact-4b-1k-three-seed-training-submission-20260805.json`: exact Slurm dependency graph
   for the clean six-method 4B replication at seeds 17/29/43 and 1,000 exposures.
+- `compact-k4-three-seed-evaluation-submission-20260805.json`: exact matched-K=4 generation,
+  score-gate, corrected-evaluation, and checkpoint-seed-aware analysis graph for seeds 29/43.
 
 The corrected K=4 compact summary is generated from the full remote evaluation JSONs and will be
 stored here as `corrected-k4-seed17-v2-summary.json`. It contains aggregates, the complete

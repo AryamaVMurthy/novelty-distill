@@ -353,23 +353,26 @@ scientific-novelty claim.
 ## DeepInfra calibration plan
 
 DeepInfra is useful here for speed and model-family separation, not as an
-automatic truth oracle. The currently available
-`meta-llama/Llama-3.3-70B-Instruct-Turbo` is a suitable first sensitivity judge
-because it is Llama-family rather than Qwen-family and supports strict
-structured output. A cost-controlled first pass should score roughly 420
-blinded answers: 60 each from A0, A1, B2b, C1, C2, D1, and D2, stratified over
-pooled Qwen feasibility/soundness rank quartiles. The same 60 prompt/sample
-slots are used for every method, preserving paired comparisons. Re-score a 10%
-subset to measure API/model stability. Expand only if ceiling rate, agreement,
-and method ranking are informative.
+automatic truth oracle. `meta-llama/Llama-3.3-70B-Instruct-Turbo` is the frozen
+first sensitivity judge because it is Llama-family rather than Qwen-family and
+supports strict structured output. The cost-controlled pass uses 60 answers
+from each of eight methods, stratified over pooled Qwen feasibility/soundness
+rank quartiles. The same 60 prompt/sample slots are used for every method,
+preserving paired comparisons. Six answers per method are anonymously repeated
+to measure API/model stability. Expand only if ceiling rate, agreement, and
+method ranking are informative.
 
 The first packet was retired before any paid request. It had 420 original
 answers plus 42 hidden repeats, but its 60 paired sample slots represented only
 58 unique prompts, and it omitted the random-1 SeqKD control. The sampler now
-enforces one sample slot per prompt with a regression test. After the matched
-K=4 `B2a` scores finish, a replacement packet will contain A0, A1, B2a, B2b,
-C1, C2, D1, and D2: 480 originals plus 48 hidden repeats, 528 total calls, with
-60 unique paired prompts. The retired packet and reason are preserved in
+enforces one sample slot per prompt with a regression test. Packet v2 fixed
+those defects but was also retired before paid use when a final audit found its
+hidden repeats were method-imbalanced. Packet v3 is now frozen: A0, A1, B2a,
+B2b, C1, C2, D1, and D2; 480 originals plus 48 hidden repeats; 528 total calls;
+60 unique paired prompts; and exactly six repeats per method. The current
+content identity is recorded in
+[`audits/deepinfra-calibration-packet-20260805-v3.manifest.json`](audits/deepinfra-calibration-packet-20260805-v3.manifest.json).
+The original retired packet and reason are preserved in
 [`audits/deepinfra-calibration-packet-20260805.SUPERSEDED.md`](audits/deepinfra-calibration-packet-20260805.SUPERSEDED.md).
 The runner is resumable, stores raw responses and token usage, validates the
 strict schema, and never sends method labels, Qwen scores, or repeat flags to

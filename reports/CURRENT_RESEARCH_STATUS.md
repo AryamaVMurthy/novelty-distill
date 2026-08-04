@@ -21,13 +21,12 @@ and the complete current interpretation is
 The usable pilot reference is C1; B2b is the hard sequence-KD failure control,
 C2 is the static reverse-KL control, and D1/D2 are on-policy controls. B1 is
 descriptive only and quarantined. The missing B2a random-1 SeqKD matched-K=4
-extension is currently running. A first different-family DeepInfra packet was
-retired before any paid request because two of its 60 slots shared a prompt and
-it omitted B2a. The replacement will use 60 unique paired prompts across eight
-methods (480 originals plus 48 hidden repeats) after B2a scoring completes;
-paid judging then awaits a rotated key exported through the environment. The
-retirement audit is
-[`audits/deepinfra-calibration-packet-20260805.SUPERSEDED.md`](audits/deepinfra-calibration-packet-20260805.SUPERSEDED.md).
+extension is in corrected embedding evaluation after all four score shards and
+the global 1,658-prompt gate passed. The current different-family DeepInfra v3
+packet is ready: 60 unique paired prompts across eight methods, 480 originals,
+and 48 hidden repeats balanced at six per method. Paid judging awaits a rotated
+key exported through the environment. Its immutable identity is
+[`audits/deepinfra-calibration-packet-20260805-v3.manifest.json`](audits/deepinfra-calibration-packet-20260805-v3.manifest.json).
 The separate semantic-equivalence v2 packet is also prepared from 28,000 clean
 teacher-pair candidates: 256 unique-prompt originals, 32 in each of eight
 similarity strata, and 26 hidden repeats per rater. It awaits two blinded human
