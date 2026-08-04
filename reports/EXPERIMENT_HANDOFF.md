@@ -75,7 +75,7 @@ Pinned source revisions:
 
 - Inspect Evals: `6a35510e530f236fd1dbcd9df888f01937c8494a`.
 - HypoSpace: `c69e9318577b34b5b896996571aefd4ba6053f58`.
-- Repository code for the corrected matrix: commit `fc68c01a1e8fb9f0d1cd6bae332cf41152971467`.
+- Repository code for the corrected matrix: commit `176ef1aeb4a8fca8c84d8a7f173cb435e5892fe5`.
 
 ## 5. Live official-run status
 
@@ -91,9 +91,12 @@ Pinned source revisions:
 - The corrected launcher uses `novelty-base:novelty-model` for every LoRA request and leaves A0
   on `novelty-model`. A direct live request on the corrected B1 server produced different text
   for `novelty-base:novelty-model` versus `novelty-base`, confirming adapter activation.
-- Corrected matrix jobs: A0 18883–18887; B1 18888–18892; B2b 18893–18897; C1-best1
-  18898–18902; C2-best1 18903–18907; D1 18908–18912; D2 18913–18917. No result is accepted
-  until all four summaries per model validate and combine successfully.
+- Corrected A0 jobs: 18883–18887. The first LoRA restart (18888–18917) was stopped after
+  HypoSpace exposed the branch-scoped export bug; it is retained under the second invalid
+  archive. The current corrected LoRA jobs are B1 18919–18923; B2b 18924–18928; C1-best1
+  18929–18933; C2-best1 18934–18938; D1 18939–18943; D2 18944–18948. No result is accepted
+  until every LoRA HypoSpace artifact records `OpenRouter(novelty-base:novelty-model)` and all
+  four summaries per model validate and combine successfully.
 
 ## 6. Where raw logs and artifacts live
 
@@ -203,15 +206,16 @@ records, the canonical adapter records parser completion as 1.0 and documents th
 | Model | NoveltyBench | Causal | 3D | Boolean | Combine |
 |---|---:|---:|---:|---:|---:|
 | A0 | 18883 | 18884 | 18885 | 18886 | 18887 |
-| B1 | 18888 | 18889 | 18890 | 18891 | 18892 |
-| B2b | 18893 | 18894 | 18895 | 18896 | 18897 |
-| C1-best1 | 18898 | 18899 | 18900 | 18901 | 18902 |
-| C2-best1 | 18903 | 18904 | 18905 | 18906 | 18907 |
-| D1 | 18908 | 18909 | 18910 | 18911 | 18912 |
-| D2 | 18913 | 18914 | 18915 | 18916 | 18917 |
+| B1 | 18919 | 18920 | 18921 | 18922 | 18923 |
+| B2b | 18924 | 18925 | 18926 | 18927 | 18928 |
+| C1-best1 | 18929 | 18930 | 18931 | 18932 | 18933 |
+| C2-best1 | 18934 | 18935 | 18936 | 18937 | 18938 |
+| D1 | 18939 | 18940 | 18941 | 18942 | 18943 |
+| D2 | 18944 | 18945 | 18946 | 18947 | 18948 |
 
 Jobs 18827–18846 were duplicate pending submissions caused by an asynchronous launcher-output
 race and were cancelled before execution. Jobs 18792, 18848, 18850, and 18853 were stopped after
-the LoRA-routing audit; their artifacts are excluded. The earlier B1 causal/Boolean summaries
-are retained only in the invalid archive. The corrected matrix above is the only accepted run
-set once validation completes.
+the first LoRA-routing audit; their artifacts are excluded. The first corrected LoRA restart
+18888–18917 was also stopped after the HypoSpace export-scope audit; its B1 causal summary is
+retained only in `invalid-pre-lora-selection-20260804-r2/`. The current matrix above is the only
+accepted run set once validation completes.
