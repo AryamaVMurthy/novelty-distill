@@ -21,8 +21,13 @@ and the complete current interpretation is
 The usable pilot reference is C1; B2b is the hard sequence-KD failure control,
 C2 is the static reverse-KL control, and D1/D2 are on-policy controls. B1 is
 descriptive only and quarantined. The missing B2a random-1 SeqKD matched-K=4
-extension is in corrected embedding evaluation after all four score shards and
-the global 1,658-prompt gate passed. The current different-family DeepInfra v3
+extension is complete after all four score shards and the global 1,658-prompt
+gate passed. B2a random-1 and B2b best-1 SeqKD are effectively tied at the low
+quality level (feasibility 3.398; soundness 3.165--3.176), showing that hard
+single-target SeqKD—not best-of-eight selection—is the seed-17 failure mode.
+The complete handoff is
+[`compact-k4-seed17-b2a-extension/README.md`](compact-k4-seed17-b2a-extension/README.md).
+The current different-family DeepInfra v3
 packet is ready: 60 unique paired prompts across eight methods, 480 originals,
 and 48 hidden repeats balanced at six per method. Paid judging awaits a rotated
 key exported through the environment. Its immutable identity is

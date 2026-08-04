@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460">
+<rect width="100%" height="100%" fill="white"/>
+<text x="480" y="34" text-anchor="middle" font-family="sans-serif" font-size="22">Provisional semantic threshold diagnostics at matched K=4</text>
+<text x="275" y="68" text-anchor="middle" font-family="sans-serif" font-size="16">Teacher mode recall</text>
+<line x1="65" y1="90" x2="65" y2="360" stroke="#444"/>
+<line x1="65" y1="360" x2="485" y2="360" stroke="#444"/>
+<text x="57" y="95" text-anchor="end" font-family="sans-serif" font-size="11">1</text>
+<text x="57" y="364" text-anchor="end" font-family="sans-serif" font-size="11">0</text>
+<rect x="94.5" y="327.498" width="46" height="32.5015" fill="#4c78a8"/>
+<text x="117.5" y="321.498" text-anchor="middle" font-family="sans-serif" font-size="10">0.120</text>
+<text x="117.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">A0</text>
+<rect x="199.5" y="353.215" width="46" height="6.78528" fill="#f58518"/>
+<text x="222.5" y="347.215" text-anchor="middle" font-family="sans-serif" font-size="10">0.025</text>
+<text x="222.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2a</text>
+<rect x="304.5" y="351.736" width="46" height="8.26448" fill="#54a24b"/>
+<text x="327.5" y="345.736" text-anchor="middle" font-family="sans-serif" font-size="10">0.031</text>
+<text x="327.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2b</text>
+<rect x="409.5" y="323.916" width="46" height="36.0841" fill="#e45756"/>
+<text x="432.5" y="317.916" text-anchor="middle" font-family="sans-serif" font-size="10">0.134</text>
+<text x="432.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C1-best1</text>
+<text x="735" y="68" text-anchor="middle" font-family="sans-serif" font-size="16">Quality-qualified semantic yield</text>
+<line x1="525" y1="90" x2="525" y2="360" stroke="#444"/>
+<line x1="525" y1="360" x2="945" y2="360" stroke="#444"/>
+<text x="517" y="95" text-anchor="end" font-family="sans-serif" font-size="11">4</text>
+<text x="517" y="364" text-anchor="end" font-family="sans-serif" font-size="11">0</text>
+<rect x="554.5" y="233.264" width="46" height="126.736" fill="#4c78a8"/>
+<text x="577.5" y="227.264" text-anchor="middle" font-family="sans-serif" font-size="10">1.878</text>
+<text x="577.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">A0</text>
+<rect x="659.5" y="329.426" width="46" height="30.5745" fill="#f58518"/>
+<text x="682.5" y="323.426" text-anchor="middle" font-family="sans-serif" font-size="10">0.453</text>
+<text x="682.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2a</text>
+<rect x="764.5" y="328.937" width="46" height="31.063" fill="#54a24b"/>
+<text x="787.5" y="322.937" text-anchor="middle" font-family="sans-serif" font-size="10">0.460</text>
+<text x="787.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2b</text>
+<rect x="869.5" y="209.896" width="46" height="150.104" fill="#e45756"/>
+<text x="892.5" y="203.896" text-anchor="middle" font-family="sans-serif" font-size="10">2.224</text>
+<text x="892.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C1-best1</text>
+</svg>

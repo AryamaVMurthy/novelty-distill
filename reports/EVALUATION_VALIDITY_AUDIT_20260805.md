@@ -386,9 +386,14 @@ cluster analyses can proceed without spending DeepInfra credits.
 
 ## Immediate decision
 
-Use `C1-best1` as the current practical distillation reference, `B2b` as the
-hard sequence-KD failure baseline, `C2-best1` as the static reverse-KL control,
-and D1/D2 as trajectory-source/KL controls. Do not use B1, the old
+The completed random-1 extension shows that B2a and B2b are tied at the low
+hard-SeqKD quality level: B2b minus B2a is +0.00075 feasibility (95% CI
+[-0.01327, +0.01448]) and +0.01071 soundness (95% CI [-0.00242, +0.02397]).
+Only 11% of their training targets are identical, so best-of-eight selection
+does not explain the collapse. Use `C1-best1` as the current practical
+distillation reference, B2a/B2b as hard sequence-KD failure controls,
+`C2-best1` as the static reverse-KL control, and D1/D2 as
+trajectory-source/KL controls. Do not use B1, the old
 NoveltyBench table, a single 0.94 semantic number, or aggregate Qwen quality as
 paper evidence. The next compute should be three-seed replication and
 calibration, not a larger unstructured method matrix.

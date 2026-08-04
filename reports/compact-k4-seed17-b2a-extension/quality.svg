@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460">
+<rect width="100%" height="100%" fill="white"/>
+<text x="480" y="34" text-anchor="middle" font-family="sans-serif" font-size="22">Operational quality at matched K=4 with random-1 sequence KD</text>
+<text x="275" y="68" text-anchor="middle" font-family="sans-serif" font-size="16">Feasibility (1-5)</text>
+<line x1="65" y1="90" x2="65" y2="360" stroke="#444"/>
+<line x1="65" y1="360" x2="485" y2="360" stroke="#444"/>
+<text x="57" y="95" text-anchor="end" font-family="sans-serif" font-size="11">5</text>
+<text x="57" y="364" text-anchor="end" font-family="sans-serif" font-size="11">0</text>
+<rect x="94.5" y="132.251" width="46" height="227.749" fill="#4c78a8"/>
+<text x="117.5" y="126.251" text-anchor="middle" font-family="sans-serif" font-size="10">4.218</text>
+<text x="117.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">A0</text>
+<rect x="199.5" y="176.529" width="46" height="183.471" fill="#f58518"/>
+<text x="222.5" y="170.529" text-anchor="middle" font-family="sans-serif" font-size="10">3.398</text>
+<text x="222.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2a</text>
+<rect x="304.5" y="176.488" width="46" height="183.512" fill="#54a24b"/>
+<text x="327.5" y="170.488" text-anchor="middle" font-family="sans-serif" font-size="10">3.398</text>
+<text x="327.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2b</text>
+<rect x="409.5" y="131.119" width="46" height="228.881" fill="#e45756"/>
+<text x="432.5" y="125.119" text-anchor="middle" font-family="sans-serif" font-size="10">4.239</text>
+<text x="432.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C1-best1</text>
+<text x="735" y="68" text-anchor="middle" font-family="sans-serif" font-size="16">Soundness (1-5)</text>
+<line x1="525" y1="90" x2="525" y2="360" stroke="#444"/>
+<line x1="525" y1="360" x2="945" y2="360" stroke="#444"/>
+<text x="517" y="95" text-anchor="end" font-family="sans-serif" font-size="11">5</text>
+<text x="517" y="364" text-anchor="end" font-family="sans-serif" font-size="11">0</text>
+<rect x="554.5" y="111.463" width="46" height="248.537" fill="#4c78a8"/>
+<text x="577.5" y="105.463" text-anchor="middle" font-family="sans-serif" font-size="10">4.603</text>
+<text x="577.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">A0</text>
+<rect x="659.5" y="189.068" width="46" height="170.932" fill="#f58518"/>
+<text x="682.5" y="183.068" text-anchor="middle" font-family="sans-serif" font-size="10">3.165</text>
+<text x="682.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2a</text>
+<rect x="764.5" y="188.49" width="46" height="171.51" fill="#54a24b"/>
+<text x="787.5" y="182.49" text-anchor="middle" font-family="sans-serif" font-size="10">3.176</text>
+<text x="787.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2b</text>
+<rect x="869.5" y="108.499" width="46" height="251.501" fill="#e45756"/>
+<text x="892.5" y="102.499" text-anchor="middle" font-family="sans-serif" font-size="10">4.657</text>
+<text x="892.5" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C1-best1</text>
+</svg>

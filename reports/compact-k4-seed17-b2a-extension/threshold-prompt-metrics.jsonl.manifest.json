@@ -1,0 +1,31 @@
+{
+  "inputs": {
+    "A0": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/A0-temporal-k4-from-k16-corrected-v2.json",
+      "sha256": "1b97f21a3d88fa9e640f5f50051225ba23169778002fa2cb6ca17970019f4ec7"
+    },
+    "B2a": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/B2a-tomato1k-seed17-temporal-k4-corrected-v2.json",
+      "sha256": "89842fefc0c57547034c69b3c8c87fe9e5c4b7bd7a3ee665cb1ea462e4b137fd"
+    },
+    "B2b": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/B2b-tomato1k-seed17-temporal-k4-corrected-v2.json",
+      "sha256": "5799160b387fe4b298fbd0f651b6087ab5350c2cc2e81fd52c15e4bf707d8686"
+    },
+    "C1-best1": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/C1-best1-tomato1k-seed17-temporal-k4-corrected-v2.json",
+      "sha256": "8bb6b2e243cd19fe3352c595dc9beb0b2ad7b984d7ff0d45b4bdaa8a571f31da"
+    }
+  },
+  "methods": [
+    "A0",
+    "B2a",
+    "B2b",
+    "C1-best1"
+  ],
+  "num_prompts": 1658,
+  "num_rows": 53056,
+  "num_thresholds": 8,
+  "output_sha256": "f989b9536e3140f5e88aabdce2bc614bffd6b38b5abb9ed13bcb5ae84421006b",
+  "schema_version": 1
+}
