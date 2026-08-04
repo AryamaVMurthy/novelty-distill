@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -91,8 +92,12 @@ def _local_sglang_factory(module: ModuleType, base_url: str, max_tokens: int):
     def setup_llm(llm_type: str, **kwargs: Any):
         if llm_type != "openrouter":
             raise ValueError("local HypoSpace evaluation requires llm.type=openrouter")
+        # SGLang needs `base-model:adapter-name` to activate a LoRA. The batch
+        # wrapper supplies this for adapter jobs; base-model jobs leave it
+        # unset and retain the configured model name.
+        model = os.environ.get("SGLANG_MODEL_NAME", kwargs.get("model", "novelty-model"))
         return module.OpenRouterLLM(
-            model=kwargs.get("model", "novelty-model"),
+            model=model,
             api_key=kwargs.get("api_key", "local"),
             temperature=kwargs.get("temperature", 0.7),
             max_tokens=max_tokens,

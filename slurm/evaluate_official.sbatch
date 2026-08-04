@@ -82,6 +82,13 @@ if [[ -n "${lora_name}" || -n "${lora_path}" ]]; then
   fi
   base_served_model="novelty-base"
 fi
+# SGLang's OpenAI-compatible API selects a loaded LoRA with the
+# `base-model:adapter-name` model syntax. Supplying only the adapter name
+# silently falls back to the base model, invalidating the adapter eval.
+request_model="${base_served_model}"
+if [[ -n "${lora_name}" ]]; then
+  request_model="${base_served_model}:${lora_name}"
+fi
 result_root="${scratch_root}/evaluations/official/${eval_id}"
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
@@ -217,6 +224,7 @@ case "${eval_suite}" in
     export UV_PROJECT_ENVIRONMENT="${scratch_root}/venvs/noveltybench-${SLURM_JOB_ID}"
     export SGLANG_BASE_URL="http://127.0.0.1:${port}/v1"
     export SGLANG_API_KEY=local
+    export SGLANG_MODEL_NAME="${request_model}"
     (
       cd "${package_dir}"
       uv venv --python 3.12 "${UV_PROJECT_ENVIRONMENT}"
@@ -224,7 +232,7 @@ case "${eval_suite}" in
       uv pip install --python "${UV_PROJECT_ENVIRONMENT}/bin/python" \
         openai==2.26.0 distro==1.9.0 jiter==0.13.0 torch==2.9.1
       uv run --frozen --no-sync inspect eval inspect_evals/novelty_bench \
-        --model "sglang/${served_model}" \
+        --model "sglang/${request_model}" \
         --model-base-url "${SGLANG_BASE_URL}" \
         -M api_key=local \
         -T dataset_split="${NOVELTY_SPLIT:-curated}" \
