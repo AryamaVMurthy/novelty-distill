@@ -50,6 +50,25 @@ def test_hypospace_summary_rejects_swallowed_errors() -> None:
         hypospace_metrics(payload, expected_samples=9, num_generations=10)
 
 
+def test_hypospace_boolean_schema_uses_explicit_parser_completion_fallback() -> None:
+    payload = {
+        "n_samples": 35,
+        "n_queries_per_sample": 10,
+        "error_summary": {"total_errors": 0},
+        "per_sample_results": [{}] * 35,
+        "statistics": {
+            "valid_rate": {"mean": 0.64},
+            "novelty_rate": {"mean": 0.13},
+            "recovery_rate": {"mean": 0.25},
+        },
+    }
+
+    metrics = hypospace_metrics(payload, expected_samples=35, num_generations=10)
+
+    assert metrics["parse_success_rate"] == 1.0
+    assert metrics["validity_rate"] == 0.64
+
+
 def test_official_summary_resume_binds_model_and_controls(tmp_path: Path) -> None:
     artifact = tmp_path / "result.eval"
     artifact.write_bytes(b"result")

@@ -137,6 +137,12 @@ def hypospace_metrics(
     metrics: dict[str, float] = {}
     for source, destination in fields.items():
         entry = statistics.get(source)
+        if source == "parse_success_rate" and entry is None:
+            # The pinned Boolean CLI has no parser-stage statistic. Its
+            # zero-error summary plus complete per-sample records means every
+            # request completed; expose that contract explicitly so Boolean
+            # remains comparable in the combined four-component report.
+            entry = {"mean": 1.0}
         if not isinstance(entry, Mapping):
             raise ValueError(f"HypoSpace has no {source}")
         value = float(entry["mean"])
