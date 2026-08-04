@@ -20,6 +20,7 @@ module load u22/cuda/12.4
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
+export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"
 baseline_registry="${BASELINE_REGISTRY:-configs/baselines.yaml}"
 if ! [[ "${baseline_registry}" =~ ^configs/[A-Za-z0-9._-]+\.yaml$ ]]; then
   echo "BASELINE_REGISTRY must name a YAML file directly under configs/" >&2

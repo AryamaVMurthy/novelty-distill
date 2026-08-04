@@ -23,6 +23,14 @@ def test_training_environment_mutations_are_serialized() -> None:
     assert script.index("uv pip install") < script.index("flock -u 8")
 
 
+def test_parallel_training_consumers_import_from_source_during_editable_reinstalls() -> None:
+    script = (ROOT / "slurm" / "train_smoke.sbatch").read_text(encoding="utf-8")
+
+    export = 'export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"'
+    assert export in script
+    assert script.index(export) < script.index("flock -u 8")
+
+
 def test_training_retries_reject_concurrent_checkpoint_writers() -> None:
     script = (ROOT / "slurm" / "train_smoke.sbatch").read_text(encoding="utf-8")
 
