@@ -42,6 +42,23 @@ their stable identities remain the original array/task pairs (`19111_*`,
 `19112_*`, and `19113_*`). Dependencies refer to those stable array/task
 identities and remain intact.
 
+## Node02 evaluation staging
+
+To permit a later even split of the twelve seed-29/43 TOMATO evaluation chains,
+the immutable shared inputs were copied from node01 to previously absent paths
+on node02. Canonical tar-stream hashes (sorted names, normalized timestamp and
+ownership) matched across nodes:
+
+| Relative path | Canonical SHA-256 |
+|---|---|
+| `data/tomato-open-test-1658.jsonl` | `331a5d07bb11c32bb4e54f19782429712d80eef7e45dc88402ac9480bca6f6ee` |
+| `data/teacher-targets-tomato1k-v1.json` | `beca2ad13385cf3e4a481f6be89c4b8abffeac9f060934289cafb0806437c585` |
+| `generations/evaluation-teacher/A1-temporal-k16-seed17000` | `9bf87b0d1327b1b58bd3b7c03cfe5f0e7f2040afcdfb463485f04a37c5ff8a4a` |
+| `evaluation-scores/A1-temporal-k16-seed17000` | `da21a0430386373d2334e8aed996224079ac32e62d0c709b58a5c5ee406c3d1a` |
+
+No generation or score job was moved at this point. Method checkpoints will be
+staged and pending chains reassigned only after their training gates pass.
+
 ## Invariants
 
 The GPU count, node placement, time limits, repository commit, dataset, ordered
