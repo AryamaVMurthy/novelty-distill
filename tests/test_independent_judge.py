@@ -1,4 +1,5 @@
 import copy
+from collections import Counter
 
 import pytest
 
@@ -58,6 +59,7 @@ def test_calibration_sample_is_balanced_blinded_and_repeatable() -> None:
     }
     assert {entry.score_stratum for entry in originals} == {0, 1, 2, 3}
     assert len(repeats) == 4
+    assert Counter(entry.method for entry in repeats) == {"A0": 2, "C1": 2}
     assert len({entry.blind_id for entry in first}) == len(first)
 
     payload = build_independent_judge_payload(first[0], model="independent/model")

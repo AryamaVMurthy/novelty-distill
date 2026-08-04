@@ -124,7 +124,10 @@ def main() -> None:
         "schema_version": 1,
         "protocol_hash": independent_judge_protocol_hash(),
         "sampling": {
-            "design": "paired-unique-prompts-pooled-qwen-core-rank-quartiles-v2",
+            "design": (
+                "paired-unique-prompts-pooled-qwen-core-rank-quartiles-"
+                "balanced-repeats-v3"
+            ),
             "samples_per_method": args.samples_per_method,
             "repeat_fraction": args.repeat_fraction,
             "max_sample_index_exclusive": args.max_sample_index,

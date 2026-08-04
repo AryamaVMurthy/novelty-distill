@@ -92,6 +92,32 @@ def _stratum_quotas(total: int) -> tuple[int, int, int, int]:
     return tuple(base + int(index < remainder) for index in range(4))  # type: ignore[return-value]
 
 
+def _balanced_repeat_sources(
+    originals: Sequence[CalibrationEntry], *, repeat_fraction: float, seed: int
+) -> tuple[CalibrationEntry, ...]:
+    """Choose hidden repeats with deterministic near-equal method representation."""
+
+    repeat_count = round(len(originals) * repeat_fraction)
+    if repeat_count == 0:
+        return ()
+    by_method: dict[str, list[CalibrationEntry]] = {}
+    for entry in originals:
+        by_method.setdefault(entry.method, []).append(entry)
+    methods = sorted(by_method, key=lambda method: _hash_order(seed, "method", method))
+    base, remainder = divmod(repeat_count, len(methods))
+    selected: list[CalibrationEntry] = []
+    for index, method in enumerate(methods):
+        quota = base + int(index < remainder)
+        candidates = sorted(
+            by_method[method],
+            key=lambda entry: _hash_order(seed, "repeat-source", entry.blind_id),
+        )
+        if quota > len(candidates):
+            raise ValueError(f"method {method} has too few originals for repeat quota")
+        selected.extend(candidates[:quota])
+    return tuple(sorted(selected, key=lambda entry: _hash_order(seed, entry.blind_id)))
+
+
 def _build_unpaired_calibration_sample(
     *,
     candidates_by_method: Mapping[str, Sequence[Mapping[str, Any]]],
@@ -193,10 +219,9 @@ def _build_unpaired_calibration_sample(
                 )
 
     originals = sorted(selected, key=lambda entry: _hash_order(seed + 2, entry.blind_id))
-    repeat_count = round(len(originals) * repeat_fraction)
-    repeat_sources = sorted(originals, key=lambda entry: _hash_order(seed + 3, entry.blind_id))[
-        :repeat_count
-    ]
+    repeat_sources = _balanced_repeat_sources(
+        originals, repeat_fraction=repeat_fraction, seed=seed + 3
+    )
     repeats = [
         entry.model_copy(
             update={
@@ -377,10 +402,9 @@ def build_blinded_calibration_sample(
             )
 
     originals = sorted(selected, key=lambda entry: _hash_order(seed + 2, entry.blind_id))
-    repeat_count = round(len(originals) * repeat_fraction)
-    repeat_sources = sorted(originals, key=lambda entry: _hash_order(seed + 3, entry.blind_id))[
-        :repeat_count
-    ]
+    repeat_sources = _balanced_repeat_sources(
+        originals, repeat_fraction=repeat_fraction, seed=seed + 3
+    )
     repeats = [
         entry.model_copy(
             update={

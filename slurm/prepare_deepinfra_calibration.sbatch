@@ -1,5 +1,5 @@
 #!/bin/bash
-# Build the superseding unique-prompt, eight-method independent-judge packet.
+# Build the unique-prompt, eight-method, method-balanced-repeat judge packet.
 
 #SBATCH --job-name=nd-prepare-deepinfra
 #SBATCH --account=priyesh.shukla
@@ -22,7 +22,7 @@ repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/data"
 score_root="${scratch_root}/evaluation-scores"
 output_dir="${scratch_root}/evaluations/independent-judge"
-packet_path="${output_dir}/deepinfra-calibration-packet-20260805-v2.json"
+packet_path="${output_dir}/deepinfra-calibration-packet-20260805-v3.json"
 
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
