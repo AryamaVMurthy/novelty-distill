@@ -292,10 +292,12 @@ an ungrounded LLM judge to certify novelty.
 3. Train at least three independent seeds, such as 17/29/41, at the same 1,000
    exposures. Report checkpoint-level variance and a hierarchical analysis
    with prompts nested inside checkpoints.
-4. Calibrate semantic equivalence before test comparison. Draw response pairs
-   around the full similarity range from held-out calibration prompts, blind
-   them, collect at least two domain-aware labels per pair, adjudicate
-   disagreements, and select the threshold without opening test-method labels.
+4. Calibrate semantic equivalence before future test comparison. Draw response
+   pairs around the full similarity range from a method-independent calibration
+   source, blind them, collect at least two domain-aware labels per pair,
+   adjudicate disagreements, and freeze the threshold before future multi-seed
+   test outputs. The prepared packet uses clean prompt-only teacher pairs from
+   the training bank and therefore contains no held-out method identity.
 5. Independently calibrate quality. Use a different-family LLM judge for cheap
    screening, then a blinded human subset for feasibility and soundness. Report
    weighted agreement, rank correlation, ceiling rates, per-method rank
@@ -317,6 +319,32 @@ an ungrounded LLM judge to certify novelty.
     calibration packets, response hashes, model revisions, job manifests, and
     negative findings. Clearly distinguish checkpoint evidence, automatic
     proxy evidence, human evidence, and claims.
+
+## Semantic-equivalence calibration status
+
+The no-inference preparation stage is complete. The frozen Qwen embedding cache
+contained every one of the 28,000 within-prompt pairs from the clean,
+prompt-only 1,000-prompt teacher bank. Packet v2 selects 256 pairs from 256
+different prompts: 32 in each of eight similarity strata from 0.74 through
+1.00. Each rater receives 26 hidden reversed-order repeats, for 282 judgments
+per rater. Similarities, prompt IDs, source indices, repeat flags, and model
+metadata are absent from the public packet.
+
+The first prepared packet was rejected before human use because a list-filter
+implementation allowed multiple pairs from one prompt within a stratum. It had
+only 240 unique prompts. A regression test now covers this case; the v2 runtime
+gate directly verified 256 originals, 256 unique prompts, 32 pairs per stratum,
+and 26 repeats. Its public packet SHA-256 is
+`aae74a1f789f8cf2bfadd5fc4f6b6ae95c9a2a238c06b9d7daf6209e25150f31`;
+full redacted provenance is in
+[`audits/semantic-equivalence-calibration-20260805-v2.manifest.json`](audits/semantic-equivalence-calibration-20260805-v2.manifest.json).
+
+Two domain-aware humans must now label it independently. Every disagreement or
+`uncertain` label requires adjudication. The frozen analyzer reports inter- and
+intra-rater reliability and selects among thresholds 0.80--0.99 by maximum
+balanced accuracy, breaking exact ties toward the higher, more conservative
+boundary. This calibrates semantic equivalence only; it does not validate a
+scientific-novelty claim.
 
 ## DeepInfra calibration plan
 

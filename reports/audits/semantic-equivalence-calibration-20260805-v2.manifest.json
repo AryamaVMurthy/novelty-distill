@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "status": "prepared_awaiting_two_blinded_human_raters",
+  "protocol_hash": "bc26792af1fe54b4a8d69800aea0b2b201da778a692bfe4be517c5bbedf8dec2",
+  "sampling": {
+    "design": "clean-teacher-pairs-global-unique-prompts-stratified-v1",
+    "seed": 20260805,
+    "candidate_pairs": 28000,
+    "original_pairs": 256,
+    "unique_original_prompts": 256,
+    "pairs_per_similarity_bin": 32,
+    "hidden_repeats": 26,
+    "rows_per_rater": 282,
+    "similarity_bins": [
+      [0.74, 0.84],
+      [0.84, 0.88],
+      [0.88, 0.90],
+      [0.90, 0.92],
+      [0.92, 0.94],
+      [0.94, 0.96],
+      [0.96, 0.98],
+      [0.98, 1.001]
+    ]
+  },
+  "sources": {
+    "prompts_sha256": "c041dea22f55949b0eec46c060a4beee9eae65c63090e7c2e6aea7a04da7070e",
+    "teacher_targets_sha256": "eea6b6e35f5d5e181740f656a5ec49a29ed40daa21ba3297ab26dc0ffc2fbd9f",
+    "annotation_config_sha256": "f27b0ebd1a9014dfca2e179c2101ade204b5e411af7a1227d3be2df2b7edc5ef",
+    "embedding_cache_fingerprint": "b2062f27b1d97b841af16f35844e51859479e4a02512c84e4b0ec6766835e7ef"
+  },
+  "artifacts": {
+    "public_packet_sha256": "aae74a1f789f8cf2bfadd5fc4f6b6ae95c9a2a238c06b9d7daf6209e25150f31",
+    "private_key_sha256": "1e7551efb2b76f19f266e0058962db5b0cff3299fe0116fcbbb504ba1b4c1971",
+    "rater_template_sha256": "bde64d3d9567f32d41dec81c8b5c4d7f6d12d53bd3402880ad5c4db92bc3dd6c"
+  },
+  "locations": {
+    "local_ignored_directory": "artifacts/semantic-equivalence-calibration-20260805-v2",
+    "turing_node01_directory": "/scratch/aryama.murthy/novelty-distill/evaluations/semantic-equivalence-calibration-20260805-v2"
+  },
+  "selection_rule": "maximize balanced accuracy across 0.80--0.99; ties choose the higher threshold",
+  "inter_rater_gate": "Cohen's kappa >= 0.60 plus adjudication of every disagreement or uncertainty",
+  "claim_boundary": "This calibrates pairwise semantic equivalence for the frozen embedding model. It does not measure global scientific novelty.",
+  "supersedes": {
+    "artifact": "semantic-equivalence-calibration-20260805",
+    "reason": "v1 selected multiple pairs from some prompts within a similarity bin, yielding 240 rather than 256 unique original prompts; no labels were collected."
+  }
+}

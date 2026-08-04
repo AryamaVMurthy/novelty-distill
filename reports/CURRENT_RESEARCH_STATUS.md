@@ -25,6 +25,11 @@ DeepInfra packet with 420 originals and 42 hidden repeats is prepared and dry-ru
 validated; paid judging awaits a rotated key exported through the environment.
 Its redacted audit is
 [`audits/deepinfra-calibration-packet-20260805.manifest.json`](audits/deepinfra-calibration-packet-20260805.manifest.json).
+The separate semantic-equivalence v2 packet is also prepared from 28,000 clean
+teacher-pair candidates: 256 unique-prompt originals, 32 in each of eight
+similarity strata, and 26 hidden repeats per rater. It awaits two blinded human
+raters and is audited in
+[`audits/semantic-equivalence-calibration-20260805-v2.manifest.json`](audits/semantic-equivalence-calibration-20260805-v2.manifest.json).
 
 ## Historical 2026-08-04 snapshot
 

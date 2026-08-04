@@ -13,6 +13,9 @@ The consolidated interpretation and ICLR research path are in
 - `deepinfra-calibration-packet-20260805.manifest.json`: content identity and balanced-design
   audit for the prepared 420-answer plus 42-hidden-repeat independent-judge calibration. The
   paid judging stage is not yet run because no rotated environment credential is installed.
+- `semantic-equivalence-calibration-20260805-v2.manifest.json`: redacted provenance for 256
+  similarity-stratified clean teacher pairs plus 26 hidden repeats per human rater. The first
+  packet was superseded before labeling after its within-bin unique-prompt bug was detected.
 
 The corrected K=4 compact summary is generated from the full remote evaluation JSONs and will be
 stored here as `corrected-k4-seed17-v2-summary.json`. It contains aggregates, the complete
