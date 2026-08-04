@@ -94,11 +94,24 @@ def test_official_evaluation_serializes_each_isolated_environment() -> None:
 
 
 def test_shared_data_environment_mutations_are_serialized() -> None:
-    for name in ("validate_teacher_targets.sbatch", "analyze_evaluation_matrix.sbatch"):
+    for name in (
+        "validate_teacher_targets.sbatch",
+        "analyze_evaluation_matrix.sbatch",
+        "prepare_deepinfra_calibration.sbatch",
+    ):
         script = (ROOT / "slurm" / name).read_text(encoding="utf-8")
         assert 'exec 8>"${scratch_root}/locks/venv-data.lock"' in script, name
         assert script.index("flock -x 8") < script.index("uv pip"), name
         assert script.rindex("uv pip") < script.index("flock -u 8"), name
+
+
+def test_deepinfra_packet_preparation_imports_from_source() -> None:
+    script = (ROOT / "slurm" / "prepare_deepinfra_calibration.sbatch").read_text(
+        encoding="utf-8"
+    )
+    export = 'export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"'
+    assert export in script
+    assert script.index(export) < script.index("flock -u 8")
 
 
 def test_official_combiner_serializes_inference_environment() -> None:
