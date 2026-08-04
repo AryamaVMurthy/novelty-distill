@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460">
+<rect width="100%" height="100%" fill="white"/>
+<text x="480" y="34" text-anchor="middle" font-family="sans-serif" font-size="22">Quality at matched K=4</text>
+<text x="275" y="68" text-anchor="middle" font-family="sans-serif" font-size="16">Feasibility (1-5)</text>
+<line x1="65" y1="90" x2="65" y2="360" stroke="#444"/>
+<line x1="65" y1="360" x2="485" y2="360" stroke="#444"/>
+<text x="57" y="95" text-anchor="end" font-family="sans-serif" font-size="11">5</text>
+<text x="57" y="364" text-anchor="end" font-family="sans-serif" font-size="11">0</text>
+<rect x="78.3" y="132.251" width="43.4" height="227.749" fill="#4c78a8"/>
+<text x="100" y="126.251" text-anchor="middle" font-family="sans-serif" font-size="10">4.218</text>
+<text x="100" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">A0</text>
+<rect x="148.3" y="163.672" width="43.4" height="196.328" fill="#f58518"/>
+<text x="170" y="157.672" text-anchor="middle" font-family="sans-serif" font-size="10">3.636</text>
+<text x="170" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B1</text>
+<rect x="218.3" y="176.488" width="43.4" height="183.512" fill="#54a24b"/>
+<text x="240" y="170.488" text-anchor="middle" font-family="sans-serif" font-size="10">3.398</text>
+<text x="240" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2b</text>
+<rect x="288.3" y="131.119" width="43.4" height="228.881" fill="#e45756"/>
+<text x="310" y="125.119" text-anchor="middle" font-family="sans-serif" font-size="10">4.239</text>
+<text x="310" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C1-best1</text>
+<rect x="358.3" y="131.046" width="43.4" height="228.954" fill="#72b7b2"/>
+<text x="380" y="125.046" text-anchor="middle" font-family="sans-serif" font-size="10">4.240</text>
+<text x="380" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C2-best1</text>
+<rect x="428.3" y="131.388" width="43.4" height="228.612" fill="#b279a2"/>
+<text x="450" y="125.388" text-anchor="middle" font-family="sans-serif" font-size="10">4.234</text>
+<text x="450" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">D1</text>
+<text x="735" y="68" text-anchor="middle" font-family="sans-serif" font-size="16">Soundness (1-5)</text>
+<line x1="525" y1="90" x2="525" y2="360" stroke="#444"/>
+<line x1="525" y1="360" x2="945" y2="360" stroke="#444"/>
+<text x="517" y="95" text-anchor="end" font-family="sans-serif" font-size="11">5</text>
+<text x="517" y="364" text-anchor="end" font-family="sans-serif" font-size="11">0</text>
+<rect x="538.3" y="111.463" width="43.4" height="248.537" fill="#4c78a8"/>
+<text x="560" y="105.463" text-anchor="middle" font-family="sans-serif" font-size="10">4.603</text>
+<text x="560" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">A0</text>
+<rect x="608.3" y="165.422" width="43.4" height="194.578" fill="#f58518"/>
+<text x="630" y="159.422" text-anchor="middle" font-family="sans-serif" font-size="10">3.603</text>
+<text x="630" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B1</text>
+<rect x="678.3" y="188.49" width="43.4" height="171.51" fill="#54a24b"/>
+<text x="700" y="182.49" text-anchor="middle" font-family="sans-serif" font-size="10">3.176</text>
+<text x="700" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2b</text>
+<rect x="748.3" y="108.499" width="43.4" height="251.501" fill="#e45756"/>
+<text x="770" y="102.499" text-anchor="middle" font-family="sans-serif" font-size="10">4.657</text>
+<text x="770" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C1-best1</text>
+<rect x="818.3" y="108.589" width="43.4" height="251.411" fill="#72b7b2"/>
+<text x="840" y="102.589" text-anchor="middle" font-family="sans-serif" font-size="10">4.656</text>
+<text x="840" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C2-best1</text>
+<rect x="888.3" y="108.451" width="43.4" height="251.549" fill="#b279a2"/>
+<text x="910" y="102.451" text-anchor="middle" font-family="sans-serif" font-size="10">4.658</text>
+<text x="910" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">D1</text>
+</svg>

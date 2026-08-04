@@ -1,0 +1,40 @@
+{
+  "inputs": {
+    "A0": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/A0-temporal-k4-from-k16.json",
+      "sha256": "3fe1961448ca3403aa5a2636bf61d0ecd472582ed2ddad1462b0a85c59b9333d"
+    },
+    "B1": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/B1-tomato1k-seed17-temporal-k4.json",
+      "sha256": "a7dd828c4dce767566f8f4b9ccb74b5b1c6e26f0b782a2eae45a2f80ae9b54c5"
+    },
+    "B2b": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/B2b-tomato1k-seed17-temporal-k4.json",
+      "sha256": "9e88ddb61ec65b3ae45889ba9f38a768194bb3101ffcd287ebe6e5ea22e3a5d2"
+    },
+    "C1-best1": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/C1-best1-tomato1k-seed17-temporal-k4.json",
+      "sha256": "9d59d376570258990cc4d57cccb001bb02e11acd9b09f45bf0fbf98f2ece608a"
+    },
+    "C2-best1": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/C2-best1-tomato1k-seed17-temporal-k4.json",
+      "sha256": "09d9c40feb1d4c39dc4ac6e165697da4c8830076fe6f1e5bcc3116803994c29f"
+    },
+    "D1": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/tomato/D1-tomato1k-seed17-temporal-k4.json",
+      "sha256": "6dbbe91628effaac077db2865c6603de4b61bdf4e525e76cce82692a36f49200"
+    }
+  },
+  "methods": [
+    "A0",
+    "B1",
+    "B2b",
+    "C1-best1",
+    "C2-best1",
+    "D1"
+  ],
+  "num_prompts": 1658,
+  "num_rows": 9948,
+  "output_sha256": "9d2074d5567b3b469daf5a7a0bd38b6b6990e728eb12632c40dce968bffd6757",
+  "schema_version": 1
+}

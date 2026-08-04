@@ -1,0 +1,13 @@
+{
+  "files": [
+    "baseline-summary.csv",
+    "quality.svg",
+    "breadth.svg"
+  ],
+  "schema_version": 1,
+  "sha256": {
+    "baseline-summary.csv": "202ab5377b2c3a4f00b9a3931a211fc74a75fcd9d256a8457e075dd920e583f7",
+    "breadth.svg": "3dd28afbc95055087e57aa101bddde670e4d044200f8711ea96afb2c08ee4c58",
+    "quality.svg": "d4c6a266aedd067e54ac94421f03ae00d6753ebc4dddcc89a13c6504fa324430"
+  }
+}
