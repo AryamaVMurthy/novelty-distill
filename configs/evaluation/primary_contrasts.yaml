@@ -21,7 +21,7 @@ descriptive_metrics:
   - teacher_mode_precision
   - cluster_jsd
   - quality_adjusted_coverage
-  - viable_semantic_yield
+  - quality_qualified_semantic_yield
   - nearest_training_target_similarity_mean
   - length_stop_rate
   - completion_tokens_mean
@@ -31,22 +31,16 @@ threshold_metric_directions:
   teacher_mode_precision: higher
   cluster_jsd: lower
   quality_adjusted_coverage: higher
-  viable_semantic_yield: higher
+  quality_qualified_semantic_yield: higher
 contrasts:
   - {id: B3-vs-B2a, reference: B2a, treatment: B3}
   - {id: B3-vs-B2b, reference: B2b, treatment: B3}
   - {id: B3-vs-B2c, reference: B2c, treatment: B3}
   - {id: B4-vs-B3, reference: B3, treatment: B4}
-  - {id: C2-human-vs-C1-human, reference: C1-human, treatment: C2-human}
   - {id: C2-best1-vs-C1-best1, reference: C1-best1, treatment: C2-best1}
   - {id: C2-diverse4-vs-C1-diverse4, reference: C1-diverse4, treatment: C2-diverse4}
-  - {id: D1-vs-C1-human, reference: C1-human, treatment: D1}
   - {id: D2-vs-D1, reference: D1, treatment: D2}
   - {id: D3-vs-D1, reference: D1, treatment: D3}
   - {id: C3-vs-C1-best1, reference: C1-best1, treatment: C3}
-  - {id: E2-vs-E4, reference: E4, treatment: E2}
-  - {id: E3-vs-E2, reference: E2, treatment: E3}
-  - {id: B1-vs-A0, reference: A0, treatment: B1}
   - {id: B3-vs-A0, reference: A0, treatment: B3}
   - {id: D1-vs-A0, reference: A0, treatment: D1}
-  - {id: E2-vs-A0, reference: A0, treatment: E2}

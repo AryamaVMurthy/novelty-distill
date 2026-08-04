@@ -50,6 +50,19 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
         ),
         "",
     ]
+    evidence_policy = payload.get("evidence_policy")
+    if isinstance(evidence_policy, Mapping):
+        lines.extend(
+            [
+                (
+                    f"Evidence policy: `{evidence_policy.get('policy', 'unknown')}` "
+                    f"(SHA-256 `{evidence_policy.get('sha256', 'unknown')}`)."
+                ),
+                "",
+                str(evidence_policy.get("claim_boundary", "")),
+                "",
+            ]
+        )
     if git_commit := payload.get("git_commit"):
         lines[2:2] = [f"Producer Git commit: `{git_commit}`.", ""]
     mean_fields = sorted(
@@ -65,17 +78,18 @@ def render_contrast_markdown(payload: Mapping[str, Any]) -> str:
         raise ValueError("descriptive method summaries have no metric means")
     lines.extend(
         [
-            "| Method | n | "
+            "| Method | Evidence status | n | "
             + " | ".join(f"`{field.removesuffix('_mean')}` mean" for field in mean_fields)
             + " |",
-            "|---|---:|" + "---:|" * len(mean_fields),
+            "|---|---|---:|" + "---:|" * len(mean_fields),
         ]
     )
     for method, summary in method_summaries.items():
         if not isinstance(summary, Mapping):
             raise ValueError(f"method summary {method!r} is invalid")
         lines.append(
-            f"| `{method}` | {int(summary['n'])} | "
+            f"| `{method}` | {summary.get('evidence_status', 'unspecified')} | "
+            f"{int(summary['n'])} | "
             + " | ".join(_number(summary[field]) for field in mean_fields)
             + " |"
         )

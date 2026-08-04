@@ -9,7 +9,8 @@ sampling_note: >-
   four student samples. All extension contrasts are therefore sampling-budget matched at K=4.
 extension_note: >-
   These three D2 contrasts form a new Holm family declared before inspecting D2 held-out
-  generations or evaluation metrics. The five contrasts in compact_baseline_contrasts.yaml
+  generations or evaluation metrics. The contamination-safe contrasts in
+  compact_baseline_contrasts.yaml
   remain unchanged and retain their original inferential interpretation.
 bootstrap_samples: 10000
 seed: 17
@@ -17,7 +18,7 @@ metrics:
   - student_feasibility_mean
   - student_soundness_mean
   - teacher_mode_recall
-  - viable_semantic_yield
+  - quality_qualified_semantic_yield
 descriptive_metrics:
   - student_quality_mean
   - student_relevance_mean
@@ -30,7 +31,7 @@ descriptive_metrics:
   - teacher_mode_precision
   - cluster_jsd
   - quality_adjusted_coverage
-  - viable_semantic_yield
+  - quality_qualified_semantic_yield
   - nearest_training_target_similarity_mean
   - length_stop_rate
   - completion_tokens_mean
@@ -40,7 +41,7 @@ threshold_metric_directions:
   teacher_mode_precision: higher
   cluster_jsd: lower
   quality_adjusted_coverage: higher
-  viable_semantic_yield: higher
+  quality_qualified_semantic_yield: higher
 contrasts:
   - {id: D2-vs-D1, reference: D1, treatment: D2}
   - {id: D2-vs-C2-best1, reference: C2-best1, treatment: D2}
@@ -51,7 +52,7 @@ artifact_bundle:
     - student_feasibility_mean
     - student_soundness_mean
     - teacher_mode_recall
-    - viable_semantic_yield
+    - quality_qualified_semantic_yield
     - nearest_training_target_similarity_mean
     - length_stop_rate
   plots:
@@ -64,4 +65,4 @@ artifact_bundle:
       title: Semantic breadth at matched K=4 with D2
       panels:
         - {metric: teacher_mode_recall, label: Teacher mode recall, maximum: 1}
-        - {metric: viable_semantic_yield, label: Viable semantic yield, maximum: 4}
+        - {metric: quality_qualified_semantic_yield, label: Quality-qualified semantic yield, maximum: 4}

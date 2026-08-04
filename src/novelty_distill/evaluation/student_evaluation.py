@@ -192,7 +192,7 @@ def summarize_quality_dimensions(
 
 
 def meets_viability_gate(dimensions: Mapping[str, Any], *, minimum: int = 4) -> bool:
-    """Require strong relevance, soundness, and clarity without score compensation."""
+    """Apply the legacy gate, retained only to reproduce historical artifacts."""
 
     if not 1 <= minimum <= 5:
         raise ValueError("viability minimum must be in [1, 5]")
@@ -200,6 +200,20 @@ def meets_viability_gate(dimensions: Mapping[str, Any], *, minimum: int = 4) -> 
     return all(
         getattr(validated, name) >= minimum
         for name in ("relevance", "soundness", "clarity")
+    )
+
+
+def meets_quality_qualified_gate(
+    dimensions: Mapping[str, Any], *, minimum: int = 4
+) -> bool:
+    """Require every scientific-quality axis, including feasibility, without compensation."""
+
+    if not 1 <= minimum <= 5:
+        raise ValueError("quality-qualified minimum must be in [1, 5]")
+    validated = QualityDimensions.model_validate(dimensions)
+    return all(
+        getattr(validated, name) >= minimum
+        for name in ("relevance", "feasibility", "soundness", "clarity")
     )
 
 

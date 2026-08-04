@@ -2,6 +2,7 @@
 """Run the frozen prompt-paired contrast family over collected model metrics."""
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -14,8 +15,14 @@ from novelty_distill.evaluation.contrasts import (
     partition_available_contrasts,
     summarize_method_metrics,
 )
+from novelty_distill.evaluation.evidence_policy import (
+    EvidencePolicy,
+    annotate_method_summaries,
+)
 from novelty_distill.evaluation.reporting import render_contrast_markdown
 from novelty_distill.provenance import repository_commit
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
@@ -25,6 +32,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--markdown", type=Path, required=True)
+    parser.add_argument(
+        "--evidence-policy",
+        type=Path,
+        default=ROOT / "configs/evaluation/evidence_status.yaml",
+    )
     parser.add_argument("--filter-absent-contrasts", action="store_true")
     return parser.parse_args()
 
@@ -52,6 +64,9 @@ def main() -> None:
             contrasts=contrasts,
             methods=tuple(sorted({str(row.get("method", "")) for row in rows})),
         )
+    policy_bytes = args.evidence_policy.read_bytes()
+    policy = EvidencePolicy.from_path(args.evidence_policy)
+    policy.validate_primary_contrasts(contrasts)
     results = analyze_contrasts(
         rows=rows,
         contrasts=contrasts,
@@ -82,9 +97,17 @@ def main() -> None:
             "analyzed_ids": [str(contrast["id"]) for contrast in contrasts],
             "omitted_ids": list(omitted_contrasts),
         },
-        "method_summaries": summarize_method_metrics(
-            rows=rows,
-            metrics=tuple(config.get("descriptive_metrics", config["metrics"])),
+        "evidence_policy": {
+            "policy": policy.name,
+            "sha256": hashlib.sha256(policy_bytes).hexdigest(),
+            "claim_boundary": policy.claim_boundary,
+        },
+        "method_summaries": annotate_method_summaries(
+            summaries=summarize_method_metrics(
+                rows=rows,
+                metrics=tuple(config.get("descriptive_metrics", config["metrics"])),
+            ),
+            policy=policy,
         ),
         "results": results,
         "threshold_direction_counts": threshold_directions,

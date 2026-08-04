@@ -12,7 +12,9 @@ def test_compact_artifact_bundle_writes_table_and_two_svg_plots(tmp_path: Path) 
                 "student_feasibility_mean_mean": 3.0 + index / 10,
                 "student_soundness_mean_mean": 3.5 + index / 10,
                 "teacher_mode_recall_mean": 0.4 + index / 20,
-                "viable_semantic_yield_mean": 1.0 + index / 5,
+                "quality_qualified_semantic_yield_mean": 1.0 + index / 5,
+                "evidence_status": "quarantined" if method == "B1" else "primary_eligible",
+                "evidence_note": "target contamination" if method == "B1" else "",
             }
             for index, method in enumerate(("A0", "B1"))
         }
@@ -23,7 +25,7 @@ def test_compact_artifact_bundle_writes_table_and_two_svg_plots(tmp_path: Path) 
             "student_feasibility_mean",
             "student_soundness_mean",
             "teacher_mode_recall",
-            "viable_semantic_yield",
+            "quality_qualified_semantic_yield",
         ],
         "plots": [
             {
@@ -39,7 +41,11 @@ def test_compact_artifact_bundle_writes_table_and_two_svg_plots(tmp_path: Path) 
                 "title": "Breadth",
                 "panels": [
                     {"metric": "teacher_mode_recall", "label": "Mode recall", "maximum": 1},
-                    {"metric": "viable_semantic_yield", "label": "Viable yield", "maximum": 4},
+                    {
+                        "metric": "quality_qualified_semantic_yield",
+                        "label": "Quality-qualified yield",
+                        "maximum": 4,
+                    },
                 ],
             },
         ],
@@ -48,8 +54,14 @@ def test_compact_artifact_bundle_writes_table_and_two_svg_plots(tmp_path: Path) 
     manifest = write_compact_artifact_bundle(payload=payload, config=config, output_dir=tmp_path)
 
     assert manifest["files"] == ["baseline-summary.csv", "quality.svg", "breadth.svg"]
-    assert (tmp_path / "baseline-summary.csv").read_text().splitlines()[0].startswith("method,n,")
-    assert "A0,10,3" in (tmp_path / "baseline-summary.csv").read_text()
+    assert (tmp_path / "baseline-summary.csv").read_text().splitlines()[0].startswith(
+        "method,evidence_status,evidence_note,n,"
+    )
+    assert "A0,primary_eligible,,10,3" in (tmp_path / "baseline-summary.csv").read_text()
+    assert "B1,quarantined,target contamination" in (
+        tmp_path / "baseline-summary.csv"
+    ).read_text()
     assert "<svg" in (tmp_path / "quality.svg").read_text()
     assert "Mode recall" in (tmp_path / "breadth.svg").read_text()
+    assert "quarantined; descriptive only" in (tmp_path / "breadth.svg").read_text()
     assert json.loads((tmp_path / "artifact-bundle.json").read_text()) == manifest

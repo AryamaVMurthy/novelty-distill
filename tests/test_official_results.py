@@ -5,12 +5,27 @@ from pathlib import Path
 import pytest
 
 from novelty_distill.evaluation.official_results import (
+    NoveltyBenchSamplingDiagnostics,
+    NoveltyBenchSamplingProtocol,
     OfficialEvaluationSummary,
     combine_official_summaries,
     hypospace_metrics,
     noveltybench_metrics,
+    noveltybench_sampling_diagnostics,
     validate_official_summary,
 )
+
+
+def _sampling_fields(base_seed: int = 17) -> dict[str, object]:
+    return {
+        "sampling_protocol": NoveltyBenchSamplingProtocol(base_seed=base_seed),
+        "sampling_diagnostics": NoveltyBenchSamplingDiagnostics(
+            duplicate_completion_prompt_count=0,
+            mean_unique_completions=3.0,
+            minimum_unique_completions=3,
+            sampling_base_seed=base_seed,
+        ),
+    }
 
 
 def test_noveltybench_summary_requires_complete_official_metrics() -> None:
@@ -35,6 +50,41 @@ def test_noveltybench_summary_requires_complete_official_metrics() -> None:
 
     assert metrics["distinct_k_mean"] == 5.0
     assert metrics["utility_k_stderr"] == 0.1
+
+
+def test_noveltybench_sampling_requires_independent_observed_request_seeds() -> None:
+    records = [
+        {
+            "sample_id": "curated-0",
+            "completions": ["first", "second", "third"],
+            "declared_seeds": [17, 18, 19],
+            "observed_seeds": [17, 18, 19],
+        }
+    ]
+
+    diagnostics = noveltybench_sampling_diagnostics(
+        records,
+        expected_samples=1,
+        num_generations=3,
+        base_seed=17,
+    )
+
+    assert diagnostics == {
+        "duplicate_completion_prompt_count": 0,
+        "mean_unique_completions": 3.0,
+        "minimum_unique_completions": 3,
+        "sampling_base_seed": 17,
+        "sampling_seed_stride": 1,
+    }
+
+    records[0]["observed_seeds"] = [17, 17, 17]
+    with pytest.raises(ValueError, match="observed generation seeds"):
+        noveltybench_sampling_diagnostics(
+            records,
+            expected_samples=1,
+            num_generations=3,
+            base_seed=17,
+        )
 
 
 def test_hypospace_summary_rejects_swallowed_errors() -> None:
@@ -82,6 +132,7 @@ def test_official_summary_resume_binds_model_and_controls(tmp_path: Path) -> Non
         artifact=str(artifact),
         artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
         metrics={"distinct_k_mean": 4.0},
+        **_sampling_fields(),
     )
     summary_path.write_text(json.dumps(summary.model_dump(mode="json")), encoding="utf-8")
 
@@ -106,6 +157,51 @@ def test_official_summary_resume_binds_model_and_controls(tmp_path: Path) -> Non
         )
 
 
+def test_noveltybench_summary_rejects_legacy_shared_seed_protocol(tmp_path: Path) -> None:
+    artifact = tmp_path / "result.eval"
+    artifact.write_bytes(b"result")
+    summary_path = tmp_path / "summary.json"
+    summary = OfficialEvaluationSummary(
+        eval_id="A0-corrected",
+        suite="noveltybench",
+        model_identity="sha256:model",
+        expected_samples=1,
+        num_generations=3,
+        artifact=str(artifact),
+        artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
+        metrics={"distinct_k_mean": 2.0},
+    )
+    summary_path.write_text(json.dumps(summary.model_dump(mode="json")), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="independent sampling protocol"):
+        validate_official_summary(
+            summary_path,
+            eval_id="A0-corrected",
+            suite="noveltybench",
+            domain=None,
+            model_identity="sha256:model",
+            expected_samples=1,
+            num_generations=3,
+            novelty_base_seed=17,
+        )
+
+    corrected = summary.model_copy(
+        update=_sampling_fields()
+    )
+    summary_path.write_text(json.dumps(corrected.model_dump(mode="json")), encoding="utf-8")
+
+    assert validate_official_summary(
+        summary_path,
+        eval_id="A0-corrected",
+        suite="noveltybench",
+        domain=None,
+        model_identity="sha256:model",
+        expected_samples=1,
+        num_generations=3,
+        novelty_base_seed=17,
+    )
+
+
 def test_combined_official_suite_requires_every_domain_and_one_model(tmp_path: Path) -> None:
     paths = []
     for index, (suite, domain) in enumerate(
@@ -128,6 +224,7 @@ def test_combined_official_suite_requires_every_domain_and_one_model(tmp_path: P
             artifact=str(artifact),
             artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
             metrics={"score": float(index)},
+            **(_sampling_fields() if suite == "noveltybench" else {}),
         )
         path = tmp_path / f"summary-{index}.json"
         path.write_text(json.dumps(summary.model_dump(mode="json")), encoding="utf-8")

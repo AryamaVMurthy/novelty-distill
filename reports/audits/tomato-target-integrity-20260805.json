@@ -1,0 +1,2137 @@
+{
+  "inputs": [
+    {
+      "path": "/scratch/node01/aryama.murthy/novelty-distill/data/tomato-open-train-1000.jsonl",
+      "sha256": "995c9648a9b591fbae381a2f3f2de265f25a85ebb3e7ba891309403692ae9ccf",
+      "size_bytes": 6767710
+    },
+    {
+      "path": "/scratch/node01/aryama.murthy/novelty-distill/data/tomato-open-test-1658.jsonl",
+      "sha256": "0058f63d0e4004d8a50cec5b7a92cfc27171aa3acbddffd3d8556a4dba2a5925",
+      "size_bytes": 11241927
+    }
+  ],
+  "integrity": {
+    "candidate_groups_total": 56,
+    "candidate_groups_truncated": false,
+    "exact_duplicate_target_row_count": 0,
+    "maximum_prompt_token_coverage": 0.25,
+    "minimum_document_frequency": 3,
+    "ngram_size": 12,
+    "over_word_limit_count": 1468,
+    "rows": 2658,
+    "schema_version": 1,
+    "suspicious_repeated_ngrams": [
+      {
+        "document_frequency": 30,
+        "document_ids": [
+          "2020_32792613",
+          "2021_33248159",
+          "2021_35531351",
+          "2022_35175558",
+          "2023_36788201",
+          "2023_36895100",
+          "2023_37574713",
+          "2023_37723585",
+          "2023_38201248",
+          "2024_38627350",
+          "2024_39126055",
+          "2025_40130701",
+          "2025_40437286",
+          "2025_40537066",
+          "2025_40582245",
+          "2025_40810763",
+          "2025_41025221",
+          "2025_41034896",
+          "2025_41044179",
+          "2025_41053874",
+          "2025_41086129",
+          "2025_41089460",
+          "2025_41092257",
+          "2025_41102374",
+          "2025_41105838",
+          "2025_41116214",
+          "2025_41117217",
+          "2025_41152177",
+          "2025_41152198",
+          "2025_41162376"
+        ],
+        "ngram": "oxytocin signaling via oxtr activates calcium dependent pathways in adult born granule",
+        "prompt_token_coverage": {
+          "2020_32792613": 0.0,
+          "2021_33248159": 0.0,
+          "2021_35531351": 0.09090909090909091,
+          "2022_35175558": 0.09090909090909091,
+          "2023_36788201": 0.0,
+          "2023_36895100": 0.09090909090909091,
+          "2023_37574713": 0.0,
+          "2023_37723585": 0.09090909090909091,
+          "2023_38201248": 0.09090909090909091,
+          "2024_38627350": 0.09090909090909091,
+          "2024_39126055": 0.09090909090909091,
+          "2025_40130701": 0.0,
+          "2025_40437286": 0.18181818181818182,
+          "2025_40537066": 0.0,
+          "2025_40582245": 0.09090909090909091,
+          "2025_40810763": 0.0,
+          "2025_41025221": 0.0,
+          "2025_41034896": 0.09090909090909091,
+          "2025_41044179": 0.09090909090909091,
+          "2025_41053874": 0.0,
+          "2025_41086129": 0.0,
+          "2025_41089460": 0.2727272727272727,
+          "2025_41092257": 0.0,
+          "2025_41102374": 0.0,
+          "2025_41105838": 0.0,
+          "2025_41116214": 0.0,
+          "2025_41117217": 0.0,
+          "2025_41152177": 0.0,
+          "2025_41152198": 0.0,
+          "2025_41162376": 0.0
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "granule",
+          "oxtr",
+          "oxytocin",
+          "pathways",
+          "signaling"
+        ],
+        "unsupported_prompt_ids": [
+          "2020_32792613",
+          "2021_33248159",
+          "2021_35531351",
+          "2022_35175558",
+          "2023_36788201",
+          "2023_36895100",
+          "2023_37574713",
+          "2023_37723585",
+          "2023_38201248",
+          "2024_38627350",
+          "2024_39126055",
+          "2025_40130701",
+          "2025_40437286",
+          "2025_40537066",
+          "2025_40582245",
+          "2025_40810763",
+          "2025_41025221",
+          "2025_41034896",
+          "2025_41044179",
+          "2025_41053874",
+          "2025_41086129",
+          "2025_41092257",
+          "2025_41102374",
+          "2025_41105838",
+          "2025_41116214",
+          "2025_41117217",
+          "2025_41152177",
+          "2025_41152198",
+          "2025_41162376"
+        ]
+      },
+      {
+        "document_frequency": 23,
+        "document_ids": [
+          "2020_32792613",
+          "2021_33248159",
+          "2021_35531351",
+          "2022_35175558",
+          "2023_36788201",
+          "2023_36895100",
+          "2023_37723585",
+          "2023_38201248",
+          "2024_39126055",
+          "2025_40130701",
+          "2025_40582245",
+          "2025_41025221",
+          "2025_41034896",
+          "2025_41044179",
+          "2025_41053874",
+          "2025_41086129",
+          "2025_41089460",
+          "2025_41092257",
+          "2025_41105838",
+          "2025_41116214",
+          "2025_41117217",
+          "2025_41152177",
+          "2025_41152198"
+        ],
+        "ngram": "via oxtr activates calcium dependent pathways in adult born granule cells enhancing",
+        "prompt_token_coverage": {
+          "2020_32792613": 0.0,
+          "2021_33248159": 0.0,
+          "2021_35531351": 0.1,
+          "2022_35175558": 0.1,
+          "2023_36788201": 0.0,
+          "2023_36895100": 0.1,
+          "2023_37723585": 0.1,
+          "2023_38201248": 0.1,
+          "2024_39126055": 0.1,
+          "2025_40130701": 0.0,
+          "2025_40582245": 0.1,
+          "2025_41025221": 0.0,
+          "2025_41034896": 0.1,
+          "2025_41044179": 0.1,
+          "2025_41053874": 0.0,
+          "2025_41086129": 0.0,
+          "2025_41089460": 0.2,
+          "2025_41092257": 0.0,
+          "2025_41105838": 0.0,
+          "2025_41116214": 0.0,
+          "2025_41117217": 0.0,
+          "2025_41152177": 0.0,
+          "2025_41152198": 0.0
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "enhancing",
+          "granule",
+          "oxtr",
+          "pathways"
+        ],
+        "unsupported_prompt_ids": [
+          "2020_32792613",
+          "2021_33248159",
+          "2021_35531351",
+          "2022_35175558",
+          "2023_36788201",
+          "2023_36895100",
+          "2023_37723585",
+          "2023_38201248",
+          "2024_39126055",
+          "2025_40130701",
+          "2025_40582245",
+          "2025_41025221",
+          "2025_41034896",
+          "2025_41044179",
+          "2025_41053874",
+          "2025_41086129",
+          "2025_41089460",
+          "2025_41092257",
+          "2025_41105838",
+          "2025_41116214",
+          "2025_41117217",
+          "2025_41152177",
+          "2025_41152198"
+        ]
+      },
+      {
+        "document_frequency": 18,
+        "document_ids": [
+          "2021_33248159",
+          "2021_34305921",
+          "2022_35175558",
+          "2023_37723585",
+          "2023_38201248",
+          "2024_39126055",
+          "2025_40130701",
+          "2025_40582245",
+          "2025_40622272",
+          "2025_41034896",
+          "2025_41044179",
+          "2025_41089460",
+          "2025_41092257",
+          "2025_41116214",
+          "2025_41117217",
+          "2025_41117376",
+          "2025_41152177",
+          "2025_41152198"
+        ],
+        "ngram": "oxtr activates calcium dependent pathways in adult born granule cells enhancing their",
+        "prompt_token_coverage": {
+          "2021_33248159": 0.0,
+          "2021_34305921": 0.1,
+          "2022_35175558": 0.1,
+          "2023_37723585": 0.1,
+          "2023_38201248": 0.1,
+          "2024_39126055": 0.1,
+          "2025_40130701": 0.0,
+          "2025_40582245": 0.1,
+          "2025_40622272": 0.1,
+          "2025_41034896": 0.1,
+          "2025_41044179": 0.1,
+          "2025_41089460": 0.2,
+          "2025_41092257": 0.0,
+          "2025_41116214": 0.0,
+          "2025_41117217": 0.0,
+          "2025_41117376": 0.0,
+          "2025_41152177": 0.0,
+          "2025_41152198": 0.0
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "enhancing",
+          "granule",
+          "oxtr",
+          "pathways"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_33248159",
+          "2021_34305921",
+          "2022_35175558",
+          "2023_37723585",
+          "2023_38201248",
+          "2024_39126055",
+          "2025_40130701",
+          "2025_40582245",
+          "2025_40622272",
+          "2025_41034896",
+          "2025_41044179",
+          "2025_41089460",
+          "2025_41092257",
+          "2025_41116214",
+          "2025_41117217",
+          "2025_41117376",
+          "2025_41152177",
+          "2025_41152198"
+        ]
+      },
+      {
+        "document_frequency": 9,
+        "document_ids": [
+          "2023_38201248",
+          "2025_39833224",
+          "2025_40569419",
+          "2025_40991179",
+          "2025_41031565",
+          "2025_41039850",
+          "2025_41094684",
+          "2025_41117217",
+          "2025_41162376"
+        ],
+        "ngram": "maze with 4 trials day for 5 days measuring latency to platform",
+        "prompt_token_coverage": {
+          "2023_38201248": 0.0,
+          "2025_39833224": 0.0,
+          "2025_40569419": 0.0,
+          "2025_40991179": 0.0,
+          "2025_41031565": 0.0,
+          "2025_41039850": 0.0,
+          "2025_41094684": 0.0,
+          "2025_41117217": 0.0,
+          "2025_41162376": 0.0
+        },
+        "repeated_content_tokens": [
+          "day",
+          "days",
+          "latency",
+          "maze",
+          "measuring",
+          "morris",
+          "platform",
+          "trials",
+          "water"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_38201248",
+          "2025_39833224",
+          "2025_40569419",
+          "2025_40991179",
+          "2025_41031565",
+          "2025_41039850",
+          "2025_41094684",
+          "2025_41117217",
+          "2025_41162376"
+        ]
+      },
+      {
+        "document_frequency": 9,
+        "document_ids": [
+          "2020_32587154",
+          "2021_34305921",
+          "2024_38403656",
+          "2025_39870620",
+          "2025_40622272",
+          "2025_41041839",
+          "2025_41062460",
+          "2025_41117376",
+          "2025_41163681"
+        ],
+        "ngram": "oxytocin receptor oxtr activates calcium dependent pathways in adult born granule cells",
+        "prompt_token_coverage": {
+          "2020_32587154": 0.08333333333333333,
+          "2021_34305921": 0.08333333333333333,
+          "2024_38403656": 0.0,
+          "2025_39870620": 0.08333333333333333,
+          "2025_40622272": 0.08333333333333333,
+          "2025_41041839": 0.25,
+          "2025_41062460": 0.0,
+          "2025_41117376": 0.0,
+          "2025_41163681": 0.25
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "granule",
+          "oxtr",
+          "oxytocin",
+          "pathways",
+          "receptor",
+          "signaling"
+        ],
+        "unsupported_prompt_ids": [
+          "2020_32587154",
+          "2021_34305921",
+          "2024_38403656",
+          "2025_39870620",
+          "2025_40622272",
+          "2025_41041839",
+          "2025_41062460",
+          "2025_41117376",
+          "2025_41163681"
+        ]
+      },
+      {
+        "document_frequency": 8,
+        "document_ids": [
+          "2021_33248159",
+          "2021_34305921",
+          "2025_40130701",
+          "2025_41034896",
+          "2025_41089460",
+          "2025_41117376",
+          "2025_41152177",
+          "2025_41152198"
+        ],
+        "ngram": "activates calcium dependent pathways in adult born granule cells enhancing their integration",
+        "prompt_token_coverage": {
+          "2021_33248159": 0.09090909090909091,
+          "2021_34305921": 0.09090909090909091,
+          "2025_40130701": 0.09090909090909091,
+          "2025_41034896": 0.09090909090909091,
+          "2025_41089460": 0.18181818181818182,
+          "2025_41117376": 0.0,
+          "2025_41152177": 0.09090909090909091,
+          "2025_41152198": 0.0
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "enhancing",
+          "granule",
+          "integration",
+          "into",
+          "pathways"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_33248159",
+          "2021_34305921",
+          "2025_40130701",
+          "2025_41034896",
+          "2025_41089460",
+          "2025_41117376",
+          "2025_41152177",
+          "2025_41152198"
+        ]
+      },
+      {
+        "document_frequency": 7,
+        "document_ids": [
+          "2021_34299664",
+          "2023_38201248",
+          "2024_38657049",
+          "2025_40991179",
+          "2025_41026859",
+          "2025_41074006",
+          "2025_41137997"
+        ],
+        "ngram": "1 m activates calcium dependent ampar recruitment in adult born granule cells",
+        "prompt_token_coverage": {
+          "2021_34299664": 0.0,
+          "2023_38201248": 0.08333333333333333,
+          "2024_38657049": 0.0,
+          "2025_40991179": 0.0,
+          "2025_41026859": 0.0,
+          "2025_41074006": 0.08333333333333333,
+          "2025_41137997": 0.08333333333333333
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "ampar",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "granule",
+          "oxytocin",
+          "plc",
+          "recruitment",
+          "signaling"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_34299664",
+          "2023_38201248",
+          "2024_38657049",
+          "2025_40991179",
+          "2025_41026859",
+          "2025_41074006",
+          "2025_41137997"
+        ]
+      },
+      {
+        "document_frequency": 6,
+        "document_ids": [
+          "2023_38201248",
+          "2024_39126055",
+          "2025_40582245",
+          "2025_40622272",
+          "2025_41044179",
+          "2025_41057264"
+        ],
+        "ngram": "activates calcium dependent pathways in adult born granule cells enhancing their synaptic",
+        "prompt_token_coverage": {
+          "2023_38201248": 0.09090909090909091,
+          "2024_39126055": 0.09090909090909091,
+          "2025_40582245": 0.09090909090909091,
+          "2025_40622272": 0.09090909090909091,
+          "2025_41044179": 0.2727272727272727,
+          "2025_41057264": 0.0
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "enhancing",
+          "granule",
+          "pathways",
+          "plasticity",
+          "synaptic"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_38201248",
+          "2024_39126055",
+          "2025_40582245",
+          "2025_40622272",
+          "2025_41057264"
+        ]
+      },
+      {
+        "document_frequency": 5,
+        "document_ids": [
+          "2023_38201248",
+          "2024_38218585",
+          "2025_40569419",
+          "2025_41055763",
+          "2025_41162376"
+        ],
+        "ngram": "10 and vehicle treated mice n 10 with blinded observers recording behavior",
+        "prompt_token_coverage": {
+          "2023_38201248": 0.1111111111111111,
+          "2024_38218585": 0.1111111111111111,
+          "2025_40569419": 0.0,
+          "2025_41055763": 0.0,
+          "2025_41162376": 0.0
+        },
+        "repeated_content_tokens": [
+          "behavior",
+          "blinded",
+          "mice",
+          "observers",
+          "operated",
+          "recording",
+          "sham",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_38201248",
+          "2024_38218585",
+          "2025_40569419",
+          "2025_41055763",
+          "2025_41162376"
+        ]
+      },
+      {
+        "document_frequency": 5,
+        "document_ids": [
+          "2022_35175558",
+          "2023_37723585",
+          "2025_41092257",
+          "2025_41116214",
+          "2025_41117217"
+        ],
+        "ngram": "activates calcium dependent pathways in adult born granule cells enhancing their survival",
+        "prompt_token_coverage": {
+          "2022_35175558": 0.08333333333333333,
+          "2023_37723585": 0.08333333333333333,
+          "2025_41092257": 0.0,
+          "2025_41116214": 0.0,
+          "2025_41117217": 0.0
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "enhancing",
+          "granule",
+          "integration",
+          "into",
+          "pathways",
+          "survival"
+        ],
+        "unsupported_prompt_ids": [
+          "2022_35175558",
+          "2023_37723585",
+          "2025_41092257",
+          "2025_41116214",
+          "2025_41117217"
+        ]
+      },
+      {
+        "document_frequency": 5,
+        "document_ids": [
+          "2025_39833224",
+          "2025_40991179",
+          "2025_41039850",
+          "2025_41094684",
+          "2025_41117217"
+        ],
+        "ngram": "assessed via the morris water maze with 4 trials day for 5",
+        "prompt_token_coverage": {
+          "2025_39833224": 0.0,
+          "2025_40991179": 0.0,
+          "2025_41039850": 0.0,
+          "2025_41094684": 0.0,
+          "2025_41117217": 0.0
+        },
+        "repeated_content_tokens": [
+          "assessed",
+          "day",
+          "days",
+          "maze",
+          "measuring",
+          "morris",
+          "trials",
+          "water"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_39833224",
+          "2025_40991179",
+          "2025_41039850",
+          "2025_41094684",
+          "2025_41117217"
+        ]
+      },
+      {
+        "document_frequency": 5,
+        "document_ids": [
+          "2023_36948139",
+          "2025_40794555",
+          "2025_41044098",
+          "2025_41061718",
+          "2025_41094934"
+        ],
+        "ngram": "is trained using the adam optimizer with a learning rate of 0",
+        "prompt_token_coverage": {
+          "2023_36948139": 0.0,
+          "2025_40794555": 0.0,
+          "2025_41044098": 0.0,
+          "2025_41061718": 0.2,
+          "2025_41094934": 0.0
+        },
+        "repeated_content_tokens": [
+          "adam",
+          "learning",
+          "optimizer",
+          "rate",
+          "trained"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_36948139",
+          "2025_40794555",
+          "2025_41044098",
+          "2025_41061718",
+          "2025_41094934"
+        ]
+      },
+      {
+        "document_frequency": 5,
+        "document_ids": [
+          "2023_38066069",
+          "2025_40437286",
+          "2025_40464159",
+          "2025_41053874",
+          "2025_41102374"
+        ],
+        "ngram": "sparse canonical correlation analysis with 0 3 identifies spatially disjoint brain regions",
+        "prompt_token_coverage": {
+          "2023_38066069": 0.1111111111111111,
+          "2025_40437286": 0.0,
+          "2025_40464159": 0.0,
+          "2025_41053874": 0.0,
+          "2025_41102374": 0.1111111111111111
+        },
+        "repeated_content_tokens": [
+          "analysis",
+          "brain",
+          "canonical",
+          "correlation",
+          "disjoint",
+          "identifies",
+          "regions",
+          "sparse",
+          "spatially"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_38066069",
+          "2025_40437286",
+          "2025_40464159",
+          "2025_41053874",
+          "2025_41102374"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2025_39304193",
+          "2025_41034198",
+          "2025_41061718",
+          "2025_41130628"
+        ],
+        "ngram": "a learning rate of 0 001 and a batch size of 32",
+        "prompt_token_coverage": {
+          "2025_39304193": 0.0,
+          "2025_41034198": 0.0,
+          "2025_41061718": 0.2,
+          "2025_41130628": 0.0
+        },
+        "repeated_content_tokens": [
+          "001",
+          "batch",
+          "learning",
+          "rate",
+          "size"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_39304193",
+          "2025_41034198",
+          "2025_41061718",
+          "2025_41130628"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2023_38201248",
+          "2024_38627350",
+          "2024_38657049",
+          "2025_40537066"
+        ],
+        "ngram": "adult born granule cells via g q 11 plc signaling leading to",
+        "prompt_token_coverage": {
+          "2023_38201248": 0.14285714285714285,
+          "2024_38627350": 0.14285714285714285,
+          "2024_38657049": 0.0,
+          "2025_40537066": 0.0
+        },
+        "repeated_content_tokens": [
+          "adult",
+          "born",
+          "cells",
+          "granule",
+          "leading",
+          "plc",
+          "signaling"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_38201248",
+          "2024_38627350",
+          "2024_38657049",
+          "2025_40537066"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2023_38201248",
+          "2025_40569419",
+          "2025_41031565",
+          "2025_41162376"
+        ],
+        "ngram": "assessed via morris water maze with 4 trials day for 5 days",
+        "prompt_token_coverage": {
+          "2023_38201248": 0.0,
+          "2025_40569419": 0.0,
+          "2025_41031565": 0.0,
+          "2025_41162376": 0.0
+        },
+        "repeated_content_tokens": [
+          "assessed",
+          "day",
+          "days",
+          "maze",
+          "measuring",
+          "morris",
+          "trials",
+          "water"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_38201248",
+          "2025_40569419",
+          "2025_41031565",
+          "2025_41162376"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2023_38201248",
+          "2025_40569419",
+          "2025_41055763",
+          "2025_41162376"
+        ],
+        "ngram": "control groups include sham operated mice n 10 and vehicle treated mice",
+        "prompt_token_coverage": {
+          "2023_38201248": 0.25,
+          "2025_40569419": 0.125,
+          "2025_41055763": 0.125,
+          "2025_41162376": 0.125
+        },
+        "repeated_content_tokens": [
+          "control",
+          "groups",
+          "include",
+          "mice",
+          "operated",
+          "sham",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_38201248",
+          "2025_40569419",
+          "2025_41055763",
+          "2025_41162376"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2021_34185246",
+          "2022_35023637",
+          "2022_35328330",
+          "2023_37068235"
+        ],
+        "ngram": "dulbecco s modified eagle medium dmem supplemented with 10 fetal bovine serum",
+        "prompt_token_coverage": {
+          "2021_34185246": 0.0,
+          "2022_35023637": 0.0,
+          "2022_35328330": 0.0,
+          "2023_37068235": 0.0
+        },
+        "repeated_content_tokens": [
+          "bovine",
+          "dmem",
+          "dulbecco",
+          "eagle",
+          "fbs",
+          "fetal",
+          "medium",
+          "modified",
+          "serum",
+          "supplemented"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_34185246",
+          "2022_35023637",
+          "2022_35328330",
+          "2023_37068235"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2021_34299664",
+          "2025_40991179",
+          "2025_41074006",
+          "2025_41137997"
+        ],
+        "ngram": "in adult born granule cells via g q 11 plc signaling enhancing",
+        "prompt_token_coverage": {
+          "2021_34299664": 0.14285714285714285,
+          "2025_40991179": 0.0,
+          "2025_41074006": 0.14285714285714285,
+          "2025_41137997": 0.14285714285714285
+        },
+        "repeated_content_tokens": [
+          "adult",
+          "born",
+          "cells",
+          "enhancing",
+          "granule",
+          "plc",
+          "signaling"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_34299664",
+          "2025_40991179",
+          "2025_41074006",
+          "2025_41137997"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2023_37350319",
+          "2024_39478022",
+          "2025_40269188",
+          "2025_41181154"
+        ],
+        "ngram": "include sham operated mice and vehicle treated mice with blinded observers recording",
+        "prompt_token_coverage": {
+          "2023_37350319": 0.1,
+          "2024_39478022": 0.1,
+          "2025_40269188": 0.0,
+          "2025_41181154": 0.1
+        },
+        "repeated_content_tokens": [
+          "behavior",
+          "blinded",
+          "include",
+          "mice",
+          "observers",
+          "operated",
+          "recording",
+          "sham",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_37350319",
+          "2024_39478022",
+          "2025_40269188",
+          "2025_41181154"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2025_39833224",
+          "2025_40991179",
+          "2025_41094684",
+          "2025_41117217"
+        ],
+        "ngram": "memory is assessed via the morris water maze with 4 trials day",
+        "prompt_token_coverage": {
+          "2025_39833224": 0.0,
+          "2025_40991179": 0.0,
+          "2025_41094684": 0.0,
+          "2025_41117217": 0.0
+        },
+        "repeated_content_tokens": [
+          "assessed",
+          "day",
+          "maze",
+          "memory",
+          "morris",
+          "trials",
+          "water"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_39833224",
+          "2025_40991179",
+          "2025_41094684",
+          "2025_41117217"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2023_36948139",
+          "2025_41061718",
+          "2025_41094934",
+          "2025_41146476"
+        ],
+        "ngram": "network is trained using the adam optimizer with a learning rate of",
+        "prompt_token_coverage": {
+          "2023_36948139": 0.0,
+          "2025_41061718": 0.16666666666666666,
+          "2025_41094934": 0.0,
+          "2025_41146476": 0.16666666666666666
+        },
+        "repeated_content_tokens": [
+          "adam",
+          "learning",
+          "network",
+          "optimizer",
+          "rate",
+          "trained"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_36948139",
+          "2025_41061718",
+          "2025_41094934",
+          "2025_41146476"
+        ]
+      },
+      {
+        "document_frequency": 4,
+        "document_ids": [
+          "2024_39660880",
+          "2025_41039182",
+          "2025_41057304",
+          "2025_41112264"
+        ],
+        "ngram": "operated mice and vehicle treated mice with all experiments conducted in a",
+        "prompt_token_coverage": {
+          "2024_39660880": 0.125,
+          "2025_41039182": 0.0,
+          "2025_41057304": 0.0,
+          "2025_41112264": 0.0
+        },
+        "repeated_content_tokens": [
+          "all",
+          "conducted",
+          "experiments",
+          "mice",
+          "operated",
+          "sham",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2024_39660880",
+          "2025_41039182",
+          "2025_41057304",
+          "2025_41112264"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2021_34185246",
+          "2022_35328330",
+          "2025_41062518"
+        ],
+        "ngram": "10 fetal bovine serum fbs and 1 penicillin streptomycin at 37 c",
+        "prompt_token_coverage": {
+          "2021_34185246": 0.0,
+          "2022_35328330": 0.0,
+          "2025_41062518": 0.0
+        },
+        "repeated_content_tokens": [
+          "bovine",
+          "fbs",
+          "fetal",
+          "penicillin",
+          "serum",
+          "streptomycin"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_34185246",
+          "2022_35328330",
+          "2025_41062518"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_41030101",
+          "2025_41062700",
+          "2025_41157508"
+        ],
+        "ngram": "4 hz theta 4 8 hz alpha 8 13 hz beta 13",
+        "prompt_token_coverage": {
+          "2025_41030101": 0.0,
+          "2025_41062700": 0.0,
+          "2025_41157508": 0.0
+        },
+        "repeated_content_tokens": [
+          "alpha",
+          "beta",
+          "theta"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_41030101",
+          "2025_41062700",
+          "2025_41157508"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_40437286",
+          "2025_41053874",
+          "2025_41102374"
+        ],
+        "ngram": "7 tesla diffusion mri with probabilistic tractography reconstructs optic radiation fibers at",
+        "prompt_token_coverage": {
+          "2025_40437286": 0.0,
+          "2025_41053874": 0.037037037037037035,
+          "2025_41102374": 0.037037037037037035
+        },
+        "repeated_content_tokens": [
+          "5mm",
+          "ann",
+          "bhmt",
+          "brain",
+          "choline",
+          "cochlear",
+          "diffusion",
+          "distinguishes",
+          "drops",
+          "fibers",
+          "homocysteine",
+          "maternal",
+          "microphonic",
+          "mri",
+          "non",
+          "optic",
+          "probabilistic",
+          "radiation",
+          "ratio",
+          "reconstructs",
+          "reduces",
+          "resolution",
+          "supplementation",
+          "tesla",
+          "tractography",
+          "traumatic",
+          "upregulation"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_40437286",
+          "2025_41053874",
+          "2025_41102374"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2024_38657049",
+          "2024_38873931",
+          "2025_41143480"
+        ],
+        "ngram": "a structured summary of the key findings and implications key findings 1",
+        "prompt_token_coverage": {
+          "2024_38657049": 0.0,
+          "2024_38873931": 0.0,
+          "2025_41143480": 0.0
+        },
+        "repeated_content_tokens": [
+          "findings",
+          "here",
+          "implications",
+          "key",
+          "structured",
+          "summary"
+        ],
+        "unsupported_prompt_ids": [
+          "2024_38657049",
+          "2024_38873931",
+          "2025_41143480"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2020_32792613",
+          "2021_35531351",
+          "2023_36788201"
+        ],
+        "ngram": "activates calcium dependent pathways in adult born granule cells enhancing long term",
+        "prompt_token_coverage": {
+          "2020_32792613": 0.0,
+          "2021_35531351": 0.07692307692307693,
+          "2023_36788201": 0.0
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "enhancing",
+          "granule",
+          "long",
+          "oxtr",
+          "pathways",
+          "potentiation",
+          "term"
+        ],
+        "unsupported_prompt_ids": [
+          "2020_32792613",
+          "2021_35531351",
+          "2023_36788201"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2024_38403656",
+          "2025_41157880",
+          "2025_41163681"
+        ],
+        "ngram": "activates calcium dependent pathways in adult born granule cells of the dentate",
+        "prompt_token_coverage": {
+          "2024_38403656": 0.0,
+          "2025_41157880": 0.0,
+          "2025_41163681": 0.2
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dentate",
+          "dependent",
+          "granule",
+          "gyrus",
+          "pathways"
+        ],
+        "unsupported_prompt_ids": [
+          "2024_38403656",
+          "2025_41157880",
+          "2025_41163681"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2023_37723585",
+          "2025_41116214",
+          "2025_41117217"
+        ],
+        "ngram": "adult born granule cells enhancing their survival and integration into the dentate",
+        "prompt_token_coverage": {
+          "2023_37723585": 0.0,
+          "2025_41116214": 0.0,
+          "2025_41117217": 0.0
+        },
+        "repeated_content_tokens": [
+          "adult",
+          "born",
+          "cells",
+          "circuitry",
+          "dentate",
+          "enhancing",
+          "granule",
+          "gyrus",
+          "integration",
+          "into",
+          "survival"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_37723585",
+          "2025_41116214",
+          "2025_41117217"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_41039182",
+          "2025_41057304",
+          "2025_41112264"
+        ],
+        "ngram": "and vehicle treated mice with all experiments conducted in a blinded manner",
+        "prompt_token_coverage": {
+          "2025_41039182": 0.0,
+          "2025_41057304": 0.0,
+          "2025_41112264": 0.0
+        },
+        "repeated_content_tokens": [
+          "all",
+          "blinded",
+          "conducted",
+          "ensure",
+          "experiments",
+          "manner",
+          "mice",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_41039182",
+          "2025_41057304",
+          "2025_41112264"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2023_36801823",
+          "2025_39878865",
+          "2025_41154637"
+        ],
+        "ngram": "are analyzed using one way anova with tukey s post hoc test",
+        "prompt_token_coverage": {
+          "2023_36801823": 0.125,
+          "2025_39878865": 0.125,
+          "2025_41154637": 0.25
+        },
+        "repeated_content_tokens": [
+          "analyzed",
+          "anova",
+          "hoc",
+          "one",
+          "post",
+          "test",
+          "tukey",
+          "way"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_36801823",
+          "2025_39878865",
+          "2025_41154637"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_40569419",
+          "2025_41094684",
+          "2025_41162376"
+        ],
+        "ngram": "are measured using lc ms ms with lipid extracts prepared in methanol",
+        "prompt_token_coverage": {
+          "2025_40569419": 0.2222222222222222,
+          "2025_41094684": 0.1111111111111111,
+          "2025_41162376": 0.1111111111111111
+        },
+        "repeated_content_tokens": [
+          "brain",
+          "chloroform",
+          "dha",
+          "extracts",
+          "levels",
+          "lipid",
+          "measured",
+          "methanol",
+          "prepared"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_40569419",
+          "2025_41094684",
+          "2025_41162376"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2024_38627350",
+          "2024_38657049",
+          "2025_40537066"
+        ],
+        "ngram": "born granule cells via g q 11 plc signaling leading to enhanced",
+        "prompt_token_coverage": {
+          "2024_38627350": 0.14285714285714285,
+          "2024_38657049": 0.0,
+          "2025_40537066": 0.0
+        },
+        "repeated_content_tokens": [
+          "born",
+          "cells",
+          "enhanced",
+          "granule",
+          "leading",
+          "plc",
+          "signaling"
+        ],
+        "unsupported_prompt_ids": [
+          "2024_38627350",
+          "2024_38657049",
+          "2025_40537066"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2023_37350319",
+          "2025_40269188",
+          "2025_40975889"
+        ],
+        "ngram": "conditions include sham operated mice and vehicle treated mice with blinded observers",
+        "prompt_token_coverage": {
+          "2023_37350319": 0.2,
+          "2025_40269188": 0.0,
+          "2025_40975889": 0.0
+        },
+        "repeated_content_tokens": [
+          "blinded",
+          "conditions",
+          "control",
+          "include",
+          "mice",
+          "observers",
+          "operated",
+          "sham",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_37350319",
+          "2025_40269188",
+          "2025_40975889"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2024_38403656",
+          "2024_39858403",
+          "2025_40320759"
+        ],
+        "ngram": "conditions sham operated mice n 10 and vehicle treated mice n 10",
+        "prompt_token_coverage": {
+          "2024_38403656": 0.0,
+          "2024_39858403": 0.0,
+          "2025_40320759": 0.0
+        },
+        "repeated_content_tokens": [
+          "conditions",
+          "control",
+          "mice",
+          "operated",
+          "sham",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2024_38403656",
+          "2024_39858403",
+          "2025_40320759"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2023_37658227",
+          "2024_39660880",
+          "2025_41039182"
+        ],
+        "ngram": "control groups include sham operated mice and vehicle treated mice with all",
+        "prompt_token_coverage": {
+          "2023_37658227": 0.1111111111111111,
+          "2024_39660880": 0.1111111111111111,
+          "2025_41039182": 0.0
+        },
+        "repeated_content_tokens": [
+          "all",
+          "control",
+          "groups",
+          "include",
+          "mice",
+          "operated",
+          "sham",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_37658227",
+          "2024_39660880",
+          "2025_41039182"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2021_33248159",
+          "2021_34305921",
+          "2025_41089460"
+        ],
+        "ngram": "dependent pathways in adult born granule cells enhancing their integration into the",
+        "prompt_token_coverage": {
+          "2021_33248159": 0.09090909090909091,
+          "2021_34305921": 0.09090909090909091,
+          "2025_41089460": 0.09090909090909091
+        },
+        "repeated_content_tokens": [
+          "adult",
+          "born",
+          "cells",
+          "dentate",
+          "dependent",
+          "enhancing",
+          "granule",
+          "gyrus",
+          "integration",
+          "into",
+          "pathways"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_33248159",
+          "2021_34305921",
+          "2025_41089460"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2021_34185246",
+          "2022_35328330",
+          "2023_37068235"
+        ],
+        "ngram": "dmem supplemented with 10 fetal bovine serum fbs and 1 penicillin streptomycin",
+        "prompt_token_coverage": {
+          "2021_34185246": 0.0,
+          "2022_35328330": 0.0,
+          "2023_37068235": 0.0
+        },
+        "repeated_content_tokens": [
+          "bovine",
+          "dmem",
+          "eagle",
+          "fbs",
+          "fetal",
+          "medium",
+          "modified",
+          "penicillin",
+          "serum",
+          "streptomycin",
+          "supplemented"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_34185246",
+          "2022_35328330",
+          "2023_37068235"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2021_33230560",
+          "2022_35059722",
+          "2025_41073384"
+        ],
+        "ngram": "false discovery rate fdr correction is applied to control for multiple comparisons",
+        "prompt_token_coverage": {
+          "2021_33230560": 0.1111111111111111,
+          "2022_35059722": 0.0,
+          "2025_41073384": 0.1111111111111111
+        },
+        "repeated_content_tokens": [
+          "applied",
+          "comparisons",
+          "control",
+          "correction",
+          "discovery",
+          "false",
+          "fdr",
+          "multiple",
+          "rate"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_33230560",
+          "2022_35059722",
+          "2025_41073384"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2023_38201248",
+          "2025_41044179",
+          "2025_41057264"
+        ],
+        "ngram": "in adult born granule cells enhancing their synaptic plasticity and integration into",
+        "prompt_token_coverage": {
+          "2023_38201248": 0.1,
+          "2025_41044179": 0.2,
+          "2025_41057264": 0.0
+        },
+        "repeated_content_tokens": [
+          "adult",
+          "born",
+          "cells",
+          "enhancing",
+          "granule",
+          "integration",
+          "into",
+          "pathways",
+          "plasticity",
+          "synaptic"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_38201248",
+          "2025_41044179",
+          "2025_41057264"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2024_39126055",
+          "2025_40582245",
+          "2025_40622272"
+        ],
+        "ngram": "in adult born granule cells enhancing their synaptic plasticity and memory consolidation",
+        "prompt_token_coverage": {
+          "2024_39126055": 0.1,
+          "2025_40582245": 0.1,
+          "2025_40622272": 0.1
+        },
+        "repeated_content_tokens": [
+          "adult",
+          "born",
+          "cells",
+          "consolidation",
+          "enhancing",
+          "granule",
+          "memory",
+          "pathways",
+          "plasticity",
+          "synaptic"
+        ],
+        "unsupported_prompt_ids": [
+          "2024_39126055",
+          "2025_40582245",
+          "2025_40622272"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2024_39660880",
+          "2025_41039182",
+          "2025_41057304"
+        ],
+        "ngram": "include sham operated mice and vehicle treated mice with all experiments conducted",
+        "prompt_token_coverage": {
+          "2024_39660880": 0.1111111111111111,
+          "2025_41039182": 0.0,
+          "2025_41057304": 0.1111111111111111
+        },
+        "repeated_content_tokens": [
+          "all",
+          "conducted",
+          "experiments",
+          "include",
+          "mice",
+          "operated",
+          "sham",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2024_39660880",
+          "2025_41039182",
+          "2025_41057304"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2023_38201248",
+          "2025_40569419",
+          "2025_41162376"
+        ],
+        "ngram": "is assessed via morris water maze with 4 trials day for 5",
+        "prompt_token_coverage": {
+          "2023_38201248": 0.0,
+          "2025_40569419": 0.0,
+          "2025_41162376": 0.0
+        },
+        "repeated_content_tokens": [
+          "assessed",
+          "day",
+          "maze",
+          "memory",
+          "morris",
+          "trials",
+          "water"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_38201248",
+          "2025_40569419",
+          "2025_41162376"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2023_37858907",
+          "2025_41044098",
+          "2025_41062700"
+        ],
+        "ngram": "is optimized using the adam optimizer with a learning rate of 0",
+        "prompt_token_coverage": {
+          "2023_37858907": 0.2,
+          "2025_41044098": 0.0,
+          "2025_41062700": 0.2
+        },
+        "repeated_content_tokens": [
+          "adam",
+          "learning",
+          "optimized",
+          "optimizer",
+          "rate"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_37858907",
+          "2025_41044098",
+          "2025_41062700"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2023_36841240",
+          "2025_40889678",
+          "2025_41160704"
+        ],
+        "ngram": "mice and vehicle treated mice to ensure specificity of the observed effects",
+        "prompt_token_coverage": {
+          "2023_36841240": 0.0,
+          "2025_40889678": 0.0,
+          "2025_41160704": 0.0
+        },
+        "repeated_content_tokens": [
+          "effects",
+          "ensure",
+          "mice",
+          "observed",
+          "specificity",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_36841240",
+          "2025_40889678",
+          "2025_41160704"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_40794555",
+          "2025_41044098",
+          "2025_41128105"
+        ],
+        "ngram": "model is trained using the adam optimizer with a learning rate of",
+        "prompt_token_coverage": {
+          "2025_40794555": 0.0,
+          "2025_41044098": 0.0,
+          "2025_41128105": 0.16666666666666666
+        },
+        "repeated_content_tokens": [
+          "adam",
+          "learning",
+          "model",
+          "optimizer",
+          "rate",
+          "trained"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_40794555",
+          "2025_41044098",
+          "2025_41128105"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_41053001",
+          "2025_41155357",
+          "2025_41162989"
+        ],
+        "ngram": "one way anova with tukey s post hoc test for multiple comparisons",
+        "prompt_token_coverage": {
+          "2025_41053001": 0.1111111111111111,
+          "2025_41155357": 0.1111111111111111,
+          "2025_41162989": 0.1111111111111111
+        },
+        "repeated_content_tokens": [
+          "anova",
+          "comparisons",
+          "hoc",
+          "multiple",
+          "one",
+          "post",
+          "test",
+          "tukey",
+          "way"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_41053001",
+          "2025_41155357",
+          "2025_41162989"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_41057264",
+          "2025_41060926",
+          "2025_41157880"
+        ],
+        "ngram": "oxytocin signaling via the oxtr receptor activates calcium dependent pathways in adult",
+        "prompt_token_coverage": {
+          "2025_41057264": 0.08333333333333333,
+          "2025_41060926": 0.0,
+          "2025_41157880": 0.0
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "granule",
+          "oxtr",
+          "oxytocin",
+          "pathways",
+          "receptor",
+          "signaling"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_41057264",
+          "2025_41060926",
+          "2025_41157880"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2021_34305921",
+          "2025_40622272",
+          "2025_41117376"
+        ],
+        "ngram": "receptor oxtr activates calcium dependent pathways in adult born granule cells enhancing",
+        "prompt_token_coverage": {
+          "2021_34305921": 0.09090909090909091,
+          "2025_40622272": 0.09090909090909091,
+          "2025_41117376": 0.0
+        },
+        "repeated_content_tokens": [
+          "activates",
+          "adult",
+          "born",
+          "calcium",
+          "cells",
+          "dependent",
+          "enhancing",
+          "granule",
+          "oxtr",
+          "pathways",
+          "receptor"
+        ],
+        "unsupported_prompt_ids": [
+          "2021_34305921",
+          "2025_40622272",
+          "2025_41117376"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_40889678",
+          "2025_41077614",
+          "2025_41160704"
+        ],
+        "ngram": "sham operated mice and vehicle treated mice to ensure specificity of the",
+        "prompt_token_coverage": {
+          "2025_40889678": 0.0,
+          "2025_41077614": 0.0,
+          "2025_41160704": 0.0
+        },
+        "repeated_content_tokens": [
+          "ensure",
+          "mice",
+          "operated",
+          "sham",
+          "specificity",
+          "treated",
+          "vehicle"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_40889678",
+          "2025_41077614",
+          "2025_41160704"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2022_36171254",
+          "2025_40400344",
+          "2025_40873048"
+        ],
+        "ngram": "smoothing with a 6 mm full width half maximum fwhm gaussian kernel",
+        "prompt_token_coverage": {
+          "2022_36171254": 0.0,
+          "2025_40400344": 0.0,
+          "2025_40873048": 0.0
+        },
+        "repeated_content_tokens": [
+          "full",
+          "fwhm",
+          "gaussian",
+          "half",
+          "kernel",
+          "maximum",
+          "smoothing",
+          "width"
+        ],
+        "unsupported_prompt_ids": [
+          "2022_36171254",
+          "2025_40400344",
+          "2025_40873048"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_39792655",
+          "2025_41057719",
+          "2025_41118416"
+        ],
+        "ngram": "the hypothesis is designed to capture the complete logical flow of the",
+        "prompt_token_coverage": {
+          "2025_39792655": 0.16666666666666666,
+          "2025_41057719": 0.16666666666666666,
+          "2025_41118416": 0.16666666666666666
+        },
+        "repeated_content_tokens": [
+          "capture",
+          "complete",
+          "designed",
+          "flow",
+          "hypothesis",
+          "logical"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_39792655",
+          "2025_41057719",
+          "2025_41118416"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2023_36948139",
+          "2025_41061718",
+          "2025_41094934"
+        ],
+        "ngram": "the network is trained using the adam optimizer with a learning rate",
+        "prompt_token_coverage": {
+          "2023_36948139": 0.0,
+          "2025_41061718": 0.16666666666666666,
+          "2025_41094934": 0.0
+        },
+        "repeated_content_tokens": [
+          "adam",
+          "learning",
+          "network",
+          "optimizer",
+          "rate",
+          "trained"
+        ],
+        "unsupported_prompt_ids": [
+          "2023_36948139",
+          "2025_41061718",
+          "2025_41094934"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2025_40794555",
+          "2025_41061718",
+          "2025_41094934"
+        ],
+        "ngram": "trained using the adam optimizer with a learning rate of 0 001",
+        "prompt_token_coverage": {
+          "2025_40794555": 0.0,
+          "2025_41061718": 0.16666666666666666,
+          "2025_41094934": 0.0
+        },
+        "repeated_content_tokens": [
+          "001",
+          "adam",
+          "learning",
+          "optimizer",
+          "rate",
+          "trained"
+        ],
+        "unsupported_prompt_ids": [
+          "2025_40794555",
+          "2025_41061718",
+          "2025_41094934"
+        ]
+      },
+      {
+        "document_frequency": 3,
+        "document_ids": [
+          "2020_32351025",
+          "2025_40810267",
+          "2025_41173827"
+        ],
+        "ngram": "with false discovery rate fdr correction applied to account for multiple comparisons",
+        "prompt_token_coverage": {
+          "2020_32351025": 0.0,
+          "2025_40810267": 0.0,
+          "2025_41173827": 0.1111111111111111
+        },
+        "repeated_content_tokens": [
+          "account",
+          "applied",
+          "comparisons",
+          "correction",
+          "discovery",
+          "false",
+          "fdr",
+          "multiple",
+          "rate"
+        ],
+        "unsupported_prompt_ids": [
+          "2020_32351025",
+          "2025_40810267",
+          "2025_41173827"
+        ]
+      }
+    ],
+    "suspicious_row_ids": [
+      "2020_32351025",
+      "2020_32587154",
+      "2020_32792613",
+      "2021_33230560",
+      "2021_33248159",
+      "2021_34185246",
+      "2021_34299664",
+      "2021_34305921",
+      "2021_35531351",
+      "2022_35023637",
+      "2022_35059722",
+      "2022_35175558",
+      "2022_35328330",
+      "2022_36171254",
+      "2023_36788201",
+      "2023_36801823",
+      "2023_36841240",
+      "2023_36895100",
+      "2023_36948139",
+      "2023_37068235",
+      "2023_37350319",
+      "2023_37574713",
+      "2023_37658227",
+      "2023_37723585",
+      "2023_37858907",
+      "2023_38066069",
+      "2023_38201248",
+      "2024_38218585",
+      "2024_38403656",
+      "2024_38627350",
+      "2024_38657049",
+      "2024_38873931",
+      "2024_39126055",
+      "2024_39478022",
+      "2024_39660880",
+      "2024_39858403",
+      "2025_39304193",
+      "2025_39792655",
+      "2025_39833224",
+      "2025_39870620",
+      "2025_39878865",
+      "2025_40130701",
+      "2025_40269188",
+      "2025_40320759",
+      "2025_40400344",
+      "2025_40437286",
+      "2025_40464159",
+      "2025_40537066",
+      "2025_40569419",
+      "2025_40582245",
+      "2025_40622272",
+      "2025_40794555",
+      "2025_40810267",
+      "2025_40810763",
+      "2025_40873048",
+      "2025_40889678",
+      "2025_40975889",
+      "2025_40991179",
+      "2025_41025221",
+      "2025_41026859",
+      "2025_41030101",
+      "2025_41031565",
+      "2025_41034198",
+      "2025_41034896",
+      "2025_41039182",
+      "2025_41039850",
+      "2025_41041839",
+      "2025_41044098",
+      "2025_41044179",
+      "2025_41053001",
+      "2025_41053874",
+      "2025_41055763",
+      "2025_41057264",
+      "2025_41057304",
+      "2025_41057719",
+      "2025_41060926",
+      "2025_41061718",
+      "2025_41062460",
+      "2025_41062518",
+      "2025_41062700",
+      "2025_41073384",
+      "2025_41074006",
+      "2025_41077614",
+      "2025_41086129",
+      "2025_41089460",
+      "2025_41092257",
+      "2025_41094684",
+      "2025_41094934",
+      "2025_41102374",
+      "2025_41105838",
+      "2025_41112264",
+      "2025_41116214",
+      "2025_41117217",
+      "2025_41117376",
+      "2025_41118416",
+      "2025_41128105",
+      "2025_41130628",
+      "2025_41137997",
+      "2025_41143480",
+      "2025_41146476",
+      "2025_41152177",
+      "2025_41152198",
+      "2025_41154637",
+      "2025_41155357",
+      "2025_41157508",
+      "2025_41157880",
+      "2025_41160704",
+      "2025_41162376",
+      "2025_41162989",
+      "2025_41163681",
+      "2025_41173827",
+      "2025_41181154"
+    ],
+    "target_equals_privileged_count": 2658,
+    "target_words_mean": 340.7689992475546,
+    "target_words_median": 318.0,
+    "word_limit": 300
+  },
+  "schema_version": 1
+}

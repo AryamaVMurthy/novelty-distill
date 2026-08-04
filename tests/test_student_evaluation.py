@@ -3,6 +3,7 @@ import pytest
 from novelty_distill.evaluation.student_evaluation import (
     anchor_student_clusters,
     evaluate_joint_embeddings,
+    meets_quality_qualified_gate,
     meets_viability_gate,
     summarize_generation_diagnostics,
     summarize_quality_dimensions,
@@ -10,7 +11,7 @@ from novelty_distill.evaluation.student_evaluation import (
 )
 
 
-def test_viability_gate_requires_relevance_soundness_and_clarity() -> None:
+def test_legacy_viability_gate_omits_feasibility() -> None:
     assert meets_viability_gate(
         {
             "relevance": 4,
@@ -27,6 +28,27 @@ def test_viability_gate_requires_relevance_soundness_and_clarity() -> None:
             "soundness": 3,
             "clarity": 5,
             "instruction_compliance": 5,
+        }
+    )
+
+
+def test_quality_qualified_gate_requires_feasibility_and_scientific_quality() -> None:
+    assert not meets_quality_qualified_gate(
+        {
+            "relevance": 5,
+            "feasibility": 2,
+            "soundness": 5,
+            "clarity": 5,
+            "instruction_compliance": 5,
+        }
+    )
+    assert meets_quality_qualified_gate(
+        {
+            "relevance": 4,
+            "feasibility": 4,
+            "soundness": 4,
+            "clarity": 4,
+            "instruction_compliance": 1,
         }
     )
 

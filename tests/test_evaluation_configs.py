@@ -69,7 +69,7 @@ def test_compact_k4_configs_change_only_sampling_budget() -> None:
     }
 
 
-def test_compact_contrasts_are_five_budget_matched_distillation_questions() -> None:
+def test_compact_contrasts_exclude_quarantined_targets() -> None:
     config = yaml.safe_load(
         (ROOT / "configs/evaluation/compact_baseline_contrasts.yaml").read_text(
             encoding="utf-8"
@@ -78,10 +78,8 @@ def test_compact_contrasts_are_five_budget_matched_distillation_questions() -> N
 
     assert config["study"] == "tomato1k-compact-k4"
     assert config["claim_scope"] == "descriptive_baseline_comparison_only"
-    assert len(config["contrasts"]) == 5
+    assert len(config["contrasts"]) == 3
     assert {contrast["id"] for contrast in config["contrasts"]} == {
-        "B1-vs-A0",
-        "B2b-vs-B1",
         "C1-best1-vs-B2b",
         "C2-best1-vs-C1-best1",
         "D1-vs-C1-best1",
@@ -211,9 +209,13 @@ def test_contrast_config_keeps_rubric_axes_descriptive() -> None:
         "completion_tokens_mean",
     } <= set(config["descriptive_metrics"])
     assert "student_instruction_compliance_mean" not in config["metrics"]
-    assert "viable_semantic_yield" in config["descriptive_metrics"]
-    assert "viable_semantic_yield" not in config["metrics"]
-    assert config["threshold_metric_directions"]["viable_semantic_yield"] == "higher"
+    assert "quality_qualified_semantic_yield" in config["descriptive_metrics"]
+    assert "viable_semantic_yield" not in config["descriptive_metrics"]
+    assert "quality_qualified_semantic_yield" not in config["metrics"]
+    assert (
+        config["threshold_metric_directions"]["quality_qualified_semantic_yield"]
+        == "higher"
+    )
 
 
 def test_primary_teacher_cluster_threshold_is_nondegenerate_before_student_evaluation() -> None:

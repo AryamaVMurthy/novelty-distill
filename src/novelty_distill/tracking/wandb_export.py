@@ -42,6 +42,7 @@ _CONFIG_KEYS = (
     "primary_cosine_threshold",
     "semantic_clustering",
     "viable_semantic_yield",
+    "quality_qualified_semantic_yield",
     "embedding",
     "inputs",
     "source",

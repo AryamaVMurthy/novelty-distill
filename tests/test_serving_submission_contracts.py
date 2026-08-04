@@ -72,6 +72,18 @@ def test_official_evaluation_supports_scratch_cached_dtype_override() -> None:
     assert 'lora_path="${scratch_root}/${lora_path}"' in script
 
 
+def test_official_noveltybench_uses_independent_official_sampling_protocol() -> None:
+    script = Path("slurm/evaluate_official.sbatch").read_text(encoding="utf-8")
+    novelty_branch = script.split("noveltybench)", maxsplit=1)[1].split(";;", maxsplit=1)[0]
+
+    assert "noveltybench_adapter.py@novelty_bench_independent" in novelty_branch
+    assert '-T base_seed="${novelty_base_seed}"' in novelty_branch
+    assert '--temperature "${NOVELTY_TEMPERATURE:-1.0}"' in novelty_branch
+    assert '--top-p "${NOVELTY_TOP_P:-1.0}"' in novelty_branch
+    assert '--seed "${SEED:-17}"' not in novelty_branch
+    assert '--base-seed "${novelty_base_seed}"' in novelty_branch
+
+
 def test_official_evaluation_does_not_mutate_project_install_between_workers() -> None:
     for path in ("slurm/evaluate_official.sbatch", "slurm/combine_official_results.sbatch"):
         script = Path(path).read_text(encoding="utf-8")

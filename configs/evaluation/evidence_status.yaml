@@ -1,0 +1,14 @@
+schema_version: 1
+policy: posthoc-validity-quarantine-v1
+quarantined_methods:
+  A3: Historical target text contains corpus-level cross-topic passage contamination.
+  B1: Historical target text contains corpus-level cross-topic passage contamination.
+  C1-human: Historical target trajectories contain corpus-level cross-topic contamination.
+  C2-human: Historical target trajectories contain corpus-level cross-topic contamination.
+  E1: Privileged teacher context includes contaminated historical target text.
+  E2: Privileged teacher context includes contaminated historical target text.
+  E3: Privileged teacher context includes contaminated historical target text.
+claim_boundary: >-
+  Quarantined methods remain reproducibility and failure-analysis artifacts. They may appear in
+  descriptive tables but cannot enter primary inferential contrasts until rerun on a reviewed,
+  contamination-controlled historical-target artifact.

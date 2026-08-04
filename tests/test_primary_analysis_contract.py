@@ -7,6 +7,10 @@ from novelty_distill.evaluation.contrasts import (
     analyze_threshold_directions,
     summarize_method_metrics,
 )
+from novelty_distill.evaluation.evidence_policy import (
+    EvidencePolicy,
+    annotate_method_summaries,
+)
 from novelty_distill.evaluation.reporting import render_contrast_markdown
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -72,8 +76,18 @@ def test_primary_analysis_config_executes_as_one_complete_contract() -> None:
         "bootstrap_samples": 100,
         "seed": 17,
         "git_commit": "a" * 40,
-        "method_summaries": summarize_method_metrics(
-            rows=rows, metrics=descriptive_metrics
+        "evidence_policy": {
+            "policy": "test-policy-v1",
+            "sha256": "b" * 64,
+            "claim_boundary": "Quarantined methods are descriptive only.",
+        },
+        "method_summaries": annotate_method_summaries(
+            summaries=summarize_method_metrics(rows=rows, metrics=descriptive_metrics),
+            policy=EvidencePolicy(
+                name="test-policy-v1",
+                quarantined_methods={"A3": "contaminated target"},
+                claim_boundary="Quarantined methods are descriptive only.",
+            ),
         ),
         "results": results,
         "threshold_direction_counts": directions,
@@ -86,3 +100,15 @@ def test_primary_analysis_config_executes_as_one_complete_contract() -> None:
     assert "`student_instruction_compliance_mean` mean" in report
     assert "`A1`" in report
     assert "`A3`" in report
+    assert "quarantined" in report
+
+
+def test_repository_primary_contrasts_exclude_quarantined_methods() -> None:
+    policy = EvidencePolicy.from_path(
+        ROOT / "configs/evaluation/evidence_status.yaml"
+    )
+    for filename in ("primary_contrasts.yaml", "compact_baseline_contrasts.yaml"):
+        config = yaml.safe_load(
+            (ROOT / "configs/evaluation" / filename).read_text(encoding="utf-8")
+        )
+        policy.validate_primary_contrasts(tuple(config["contrasts"]))

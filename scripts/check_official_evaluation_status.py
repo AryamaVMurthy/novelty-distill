@@ -16,6 +16,7 @@ def main() -> None:
     parser.add_argument("--model-identity", required=True)
     parser.add_argument("--expected-samples", type=int, required=True)
     parser.add_argument("--num-generations", type=int, required=True)
+    parser.add_argument("--novelty-base-seed", type=int)
     args = parser.parse_args()
     if validate_official_summary(
         args.summary,
@@ -25,6 +26,7 @@ def main() -> None:
         model_identity=args.model_identity,
         expected_samples=args.expected_samples,
         num_generations=args.num_generations,
+        novelty_base_seed=args.novelty_base_seed,
     ):
         return
     raise SystemExit(3)

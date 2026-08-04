@@ -34,6 +34,13 @@ def _render_svg(
         f'<text x="{width / 2:g}" y="34" text-anchor="middle" '
         f'font-family="sans-serif" font-size="22">{escape(title)}</text>',
     ]
+    if any(
+        summaries[method].get("evidence_status") == "quarantined" for method in methods
+    ):
+        lines.append(
+            '<text x="480" y="450" text-anchor="middle" font-family="sans-serif" '
+            'font-size="11">† quarantined; descriptive only</text>'
+        )
     for panel_index, panel in enumerate(panels):
         metric = str(panel["metric"])
         label = str(panel["label"])
@@ -65,6 +72,11 @@ def _render_svg(
             x = left + method_index * slot + (slot - bar_width) / 2
             y = baseline - bar_height
             color = colors[method_index % len(colors)]
+            display_method = (
+                f"{method}†"
+                if summaries[method].get("evidence_status") == "quarantined"
+                else method
+            )
             lines.extend(
                 [
                     f'<rect x="{x:g}" y="{y:g}" width="{bar_width:g}" '
@@ -73,7 +85,7 @@ def _render_svg(
                     f'font-family="sans-serif" font-size="10">{value:.3f}</text>',
                     f'<text x="{x + bar_width / 2:g}" y="{baseline + 18}" '
                     f'text-anchor="middle" font-family="sans-serif" font-size="10">'
-                    f'{escape(method)}</text>',
+                    f'{escape(display_method)}</text>',
                 ]
             )
     lines.append("</svg>")
@@ -104,12 +116,14 @@ def write_compact_artifact_bundle(
     output_dir.mkdir(parents=True, exist_ok=True)
     table = io.StringIO()
     writer = csv.writer(table, lineterminator="\n")
-    writer.writerow(("method", "n", *metrics))
+    writer.writerow(("method", "evidence_status", "evidence_note", "n", *metrics))
     for method in methods:
         summary = summaries[method]
         writer.writerow(
             (
                 method,
+                str(summary.get("evidence_status", "unspecified")),
+                str(summary.get("evidence_note", "")),
                 int(summary["n"]),
                 *(_summary_value(summary, metric) for metric in metrics),
             )

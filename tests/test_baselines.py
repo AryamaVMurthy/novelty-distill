@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from novelty_distill.config import BaselineConfig, load_baseline_registry
@@ -54,6 +55,35 @@ def test_registry_marks_the_unsupported_static_opsd_control_fail_closed() -> Non
         for baseline in registry.baselines
         if baseline.execution_status == "runnable"
     } == {baseline.id for baseline in registry.baselines} - {"E1"}
+
+
+def test_registry_quarantines_every_historical_target_dependent_method() -> None:
+    policy = yaml.safe_load(
+        Path("configs/evaluation/evidence_status.yaml").read_text(encoding="utf-8")
+    )
+    quarantined = {"A3", "B1", "C1-human", "C2-human", "E1", "E2", "E3"}
+
+    assert set(policy["quarantined_methods"]) == quarantined
+    assert all("target" in note.lower() for note in policy["quarantined_methods"].values())
+
+
+def test_primary_contrast_families_exclude_quarantined_methods() -> None:
+    policy = yaml.safe_load(
+        Path("configs/evaluation/evidence_status.yaml").read_text(encoding="utf-8")
+    )
+    quarantined = set(policy["quarantined_methods"])
+
+    for path in (
+        Path("configs/evaluation/primary_contrasts.yaml"),
+        Path("configs/evaluation/compact_baseline_contrasts.yaml"),
+    ):
+        config = yaml.safe_load(path.read_text(encoding="utf-8"))
+        endpoints = {
+            str(contrast[field])
+            for contrast in config["contrasts"]
+            for field in ("reference", "treatment")
+        }
+        assert not endpoints & quarantined, f"{path} contains quarantined primary contrasts"
 
 
 def test_soft_distillation_config_cannot_omit_official_loss_controls() -> None:

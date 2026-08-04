@@ -80,6 +80,9 @@ def test_offline_export_logs_configs_metrics_tables_and_metadata_artifacts(
             "git_commit": "c" * 40,
             "num_prompts": 2,
             "viable_semantic_yield": {"status": "secondary_descriptive"},
+            "quality_qualified_semantic_yield": {
+                "status": "corrected_secondary_descriptive"
+            },
             "overall": {"student_quality_mean": 0.75, "teacher_mode_recall": 0.5},
             "prompt_metrics": {"large": {"student_quality_mean": 0.75}},
         },
@@ -110,6 +113,9 @@ def test_offline_export_logs_configs_metrics_tables_and_metadata_artifacts(
     assert evaluation_run.summary["student_quality_mean"] == 0.75
     assert evaluation_run.kwargs["config"]["viable_semantic_yield"] == {
         "status": "secondary_descriptive"
+    }
+    assert evaluation_run.kwargs["config"]["quality_qualified_semantic_yield"] == {
+        "status": "corrected_secondary_descriptive"
     }
     assert all(run.finished for run in fake.runs)
     assert json.loads(manifest.read_text())["schema_version"] == 1

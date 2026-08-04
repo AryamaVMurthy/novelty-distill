@@ -29,6 +29,7 @@ lora_path="${LORA_PATH:-}"
 domain="${HYPOSPACE_DOMAIN:-causal}"
 eval_limit="${EVAL_LIMIT:-}"
 num_generations="${NUM_GENERATIONS:-2}"
+novelty_base_seed="${NOVELTY_BASE_SEED:-17}"
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
@@ -67,6 +68,10 @@ for value in "${eval_limit}" "${num_generations}"; do
     exit 2
   fi
 done
+if ! [[ "${novelty_base_seed}" =~ ^[0-9]+$ ]]; then
+  echo "NOVELTY_BASE_SEED must be a non-negative integer" >&2
+  exit 2
+fi
 if [[ -n "${lora_name}" || -n "${lora_path}" ]]; then
   if [[ -z "${lora_name}" || -z "${lora_path}" ]]; then
     echo "LORA_NAME and LORA_PATH must be set together" >&2
@@ -147,10 +152,12 @@ fi
 if [[ "${eval_suite}" == noveltybench ]]; then
   summary_path="${result_root}/noveltybench/summary.json"
   summary_domain=()
+  summary_protocol=(--novelty-base-seed "${novelty_base_seed}")
 elif [[ "${eval_suite}" == hypospace ]]; then
   case "${domain}" in causal|3d|boolean) ;; *) echo "unsupported HYPOSPACE_DOMAIN=${domain}" >&2; exit 2 ;; esac
   summary_path="${result_root}/hypospace/${domain}/summary.json"
   summary_domain=(--domain "${domain}")
+  summary_protocol=()
 else
   echo "unsupported EVAL_SUITE=${eval_suite}" >&2
   exit 2
@@ -161,6 +168,7 @@ set +e
   --eval-id "${eval_id}" \
   --suite "${eval_suite}" \
   "${summary_domain[@]}" \
+  "${summary_protocol[@]}" \
   --model-identity "${model_identity}" \
   --expected-samples "${eval_limit}" \
   --num-generations "${num_generations}"
@@ -233,22 +241,23 @@ case "${eval_suite}" in
       uv sync --frozen
       uv pip install --python "${UV_PROJECT_ENVIRONMENT}/bin/python" \
         openai==2.26.0 distro==1.9.0 jiter==0.13.0 torch==2.9.1
-      uv run --frozen --no-sync inspect eval inspect_evals/novelty_bench \
+      uv run --frozen --no-sync inspect eval \
+        "${repo_dir}/src/novelty_distill/evaluation/noveltybench_adapter.py@novelty_bench_independent" \
         --model "sglang/${request_model}" \
         --model-base-url "${SGLANG_BASE_URL}" \
         -M api_key=local \
         -T dataset_split="${NOVELTY_SPLIT:-curated}" \
         -T num_generations="${num_generations}" \
+        -T base_seed="${novelty_base_seed}" \
         -T shuffle=false \
         -T quality_model=small \
         -T quality_model_device=cuda \
         -T partition_model_device=cuda \
         --limit "${eval_limit}" \
         --max-connections "${MAX_CONNECTIONS:-2}" \
-        --seed "${SEED:-17}" \
-        --temperature "${TEMPERATURE:-0.7}" \
+        --temperature "${NOVELTY_TEMPERATURE:-1.0}" \
         --reasoning-effort none \
-        --top-p "${TOP_P:-0.9}" \
+        --top-p "${NOVELTY_TOP_P:-1.0}" \
         --max-tokens "${MAX_TOKENS:-512}" \
         --log-dir "${evaluation_dir}"
       PYTHONPATH="${repo_dir}/src" \
@@ -259,7 +268,8 @@ case "${eval_suite}" in
           --eval-id "${eval_id}" \
           --model-identity "${model_identity}" \
           --expected-samples "${eval_limit}" \
-          --num-generations "${num_generations}"
+          --num-generations "${num_generations}" \
+          --base-seed "${novelty_base_seed}"
     )
     ;;
   hypospace)

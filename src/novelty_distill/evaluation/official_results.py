@@ -3,11 +3,38 @@
 import hashlib
 import json
 import math
-from collections.abc import Mapping
+import statistics
+from collections.abc import Iterable, Mapping
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class NoveltyBenchSamplingProtocol(BaseModel):
+    """Sampling controls required for reproducible independent benchmark draws."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    name: Literal["independent-per-generation-seed-v1"] = (
+        "independent-per-generation-seed-v1"
+    )
+    base_seed: int = Field(ge=0)
+    seed_stride: Literal[1] = 1
+    temperature: Literal[1.0] = 1.0
+    top_p: Literal[1.0] = 1.0
+
+
+class NoveltyBenchSamplingDiagnostics(BaseModel):
+    """Artifact-derived evidence that the requested seed schedule was observed."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    duplicate_completion_prompt_count: int = Field(ge=0)
+    mean_unique_completions: float = Field(ge=1)
+    minimum_unique_completions: int = Field(ge=1)
+    sampling_base_seed: int = Field(ge=0)
+    sampling_seed_stride: Literal[1] = 1
 
 
 class OfficialEvaluationSummary(BaseModel):
@@ -25,6 +52,8 @@ class OfficialEvaluationSummary(BaseModel):
     artifact: str = Field(min_length=1)
     artifact_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
     metrics: dict[str, float]
+    sampling_protocol: NoveltyBenchSamplingProtocol | None = None
+    sampling_diagnostics: NoveltyBenchSamplingDiagnostics | None = None
 
 
 def validate_official_summary(
@@ -36,6 +65,7 @@ def validate_official_summary(
     model_identity: str,
     expected_samples: int,
     num_generations: int,
+    novelty_base_seed: int | None = None,
 ) -> bool:
     """Return false when absent and reject any stale or incompatible result."""
 
@@ -60,6 +90,18 @@ def validate_official_summary(
         raise ValueError(f"official evaluation controls changed for {path}")
     if not summary.metrics or any(not math.isfinite(value) for value in summary.metrics.values()):
         raise ValueError(f"official evaluation metrics are invalid in {path}")
+    if suite == "noveltybench":
+        if summary.sampling_protocol is None or summary.sampling_diagnostics is None:
+            raise ValueError("NoveltyBench summary has no independent sampling protocol")
+        if (
+            novelty_base_seed is not None
+            and summary.sampling_protocol.base_seed != novelty_base_seed
+        ):
+            raise ValueError(f"official evaluation controls changed for {path}")
+        if summary.sampling_diagnostics.sampling_base_seed != summary.sampling_protocol.base_seed:
+            raise ValueError("NoveltyBench sampling diagnostics contradict the protocol")
+    elif summary.sampling_protocol is not None or summary.sampling_diagnostics is not None:
+        raise ValueError("HypoSpace summary unexpectedly contains NoveltyBench sampling fields")
     artifact = Path(summary.artifact)
     if not artifact.is_file():
         raise ValueError(f"official evaluation artifact is missing: {artifact}")
@@ -108,6 +150,52 @@ def noveltybench_metrics(results: Mapping[str, Any], *, expected_samples: int) -
     }:
         raise ValueError("NoveltyBench is missing required official metrics")
     return metrics
+
+
+def noveltybench_sampling_diagnostics(
+    records: Iterable[Mapping[str, Any]],
+    *,
+    expected_samples: int,
+    num_generations: int,
+    base_seed: int,
+) -> dict[str, float | int]:
+    """Prove that every NoveltyBench completion used its declared independent seed."""
+
+    if expected_samples <= 0 or num_generations <= 0 or base_seed < 0:
+        raise ValueError("NoveltyBench sampling controls are invalid")
+    materialized = tuple(records)
+    if len(materialized) != expected_samples:
+        raise ValueError("NoveltyBench sampling records are incomplete")
+    expected_seeds = tuple(range(base_seed, base_seed + num_generations))
+    unique_counts: list[int] = []
+    for record in materialized:
+        sample_id = str(record.get("sample_id", "")).strip()
+        completions = record.get("completions")
+        declared_seeds = record.get("declared_seeds")
+        observed_seeds = record.get("observed_seeds")
+        if not sample_id:
+            raise ValueError("NoveltyBench sampling record has no sample ID")
+        if not isinstance(completions, list) or len(completions) != num_generations:
+            raise ValueError(f"NoveltyBench completion count changed for {sample_id}")
+        if any(
+            not isinstance(completion, str) or not completion.strip()
+            for completion in completions
+        ):
+            raise ValueError(f"NoveltyBench has an empty completion for {sample_id}")
+        if tuple(declared_seeds or ()) != expected_seeds:
+            raise ValueError(f"NoveltyBench declared generation seeds changed for {sample_id}")
+        if tuple(observed_seeds or ()) != expected_seeds:
+            raise ValueError(f"NoveltyBench observed generation seeds changed for {sample_id}")
+        unique_counts.append(len(set(completions)))
+    return {
+        "duplicate_completion_prompt_count": sum(
+            count < num_generations for count in unique_counts
+        ),
+        "mean_unique_completions": statistics.fmean(unique_counts),
+        "minimum_unique_completions": min(unique_counts),
+        "sampling_base_seed": base_seed,
+        "sampling_seed_stride": 1,
+    }
 
 
 def hypospace_metrics(

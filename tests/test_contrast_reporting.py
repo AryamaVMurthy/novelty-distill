@@ -7,9 +7,25 @@ def test_contrast_report_renders_inference_and_threshold_direction_counts() -> N
         "bootstrap_samples": 10_000,
         "seed": 17,
         "git_commit": "a" * 40,
+        "evidence_policy": {
+            "policy": "posthoc-validity-quarantine-v1",
+            "sha256": "b" * 64,
+            "claim_boundary": "Quarantined methods are descriptive only.",
+        },
         "method_summaries": {
-            "A": {"n": 3, "recall_mean": 0.4, "recall_median": 0.4},
-            "B": {"n": 3, "recall_mean": 0.5, "recall_median": 0.5},
+            "A": {
+                "n": 3,
+                "recall_mean": 0.4,
+                "recall_median": 0.4,
+                "evidence_status": "primary_eligible",
+            },
+            "B": {
+                "n": 3,
+                "recall_mean": 0.5,
+                "recall_median": 0.5,
+                "evidence_status": "quarantined",
+                "evidence_note": "target contamination",
+            },
         },
         "results": {
             "recall": {
@@ -48,8 +64,11 @@ def test_contrast_report_renders_inference_and_threshold_direction_counts() -> N
     assert "# Frozen TOMATO contrast findings" in report
     assert "Producer Git commit: `aaaaaaaa" in report
     assert "## Descriptive method levels" in report
+    assert "posthoc-validity-quarantine-v1" in report
+    assert "Quarantined methods are descriptive only." in report
     assert "A3 is the single historical author response (K=1)" in report
-    assert "| `A` | 3 | 0.4 |" in report
+    assert "| `A` | primary_eligible | 3 | 0.4 |" in report
+    assert "| `B` | quarantined | 3 | 0.5 |" in report
     assert (
         "| `B-vs-A` | 3 | 0.4 | 0.5 | 0.1 | [0.01, 0.2] | 0.5 | 0.02 | 0.04 |"
         in report
