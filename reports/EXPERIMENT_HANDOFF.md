@@ -223,6 +223,11 @@ retained only in `invalid-pre-lora-selection-20260804-r2/`. The current matrix a
 accepted run set once validation completes. Node03 dispatch 18953–18972 failed before execution
 because its repository checkout had not yet been staged; those jobs produced no accepted artifacts.
 
+A0 is now fully validated and combined (job 18887). Its external control metrics are NoveltyBench
+`distinct_k_mean=1.000`, `utility_k_mean=1.841757`, with all three HypoSpace summaries present and
+hash-checked. The remaining six model suites are still in progress; no cross-model external
+comparison is reported until they each pass the same four-summary gate.
+
 ## 13. Exact task and judging contract
 
 The shared TOMATO generation instruction is:
