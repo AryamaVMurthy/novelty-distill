@@ -22,7 +22,8 @@ repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/data"
 evaluation_root="${scratch_root}/evaluations/tomato"
 output="${evaluation_root}/corrected-k4-seed17-v2-summary.json"
-d2_input="${D2_INPUT:-/scratch/node05/${USER}/novelty-distill/evaluations/tomato/D2-tomato1k-seed17-temporal-k4-corrected-v2.json}"
+d2_source="${D2_SOURCE:-/scratch/node05/${USER}/novelty-distill/evaluations/tomato/D2-tomato1k-seed17-temporal-k4-corrected-v2.json}"
+d2_input="${evaluation_root}/D2-tomato1k-seed17-temporal-k4-corrected-v2.json"
 
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
@@ -38,6 +39,11 @@ flock -x 8
 uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/data.lock"
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 flock -u 8
+
+if [[ ! -s "${d2_input}" ]]; then
+  rsync -a --partial --info=stats1 "turing:${d2_source}" "${d2_input}"
+fi
+test -s "${d2_input}"
 
 "${venv_dir}/bin/python" "${repo_dir}/scripts/summarize_corrected_evaluations.py" \
   --input "A0=${evaluation_root}/A0-temporal-k4-from-k16-corrected-v2.json" \
