@@ -1,0 +1,25 @@
+schema_version: 1
+study: tomato1k-compact-k4-three-seed
+claim_scope: operational_judge_replication_not_scientific_novelty
+replication_unit: training_checkpoint_seed
+seeds: [17, 29, 43]
+bootstrap_samples: 10000
+seed: 20260805
+metrics:
+  - student_feasibility_mean
+  - student_soundness_mean
+contrasts:
+  - {id: B2a-vs-A0, reference: A0, treatment: B2a}
+  - {id: B2b-vs-B2a, reference: B2a, treatment: B2b}
+  - {id: C1-best1-vs-B2b, reference: B2b, treatment: C1-best1}
+  - {id: C2-best1-vs-C1-best1, reference: C1-best1, treatment: C2-best1}
+  - {id: D1-vs-C1-best1, reference: C1-best1, treatment: D1}
+  - {id: D2-vs-C2-best1, reference: C2-best1, treatment: D2}
+  - {id: D2-vs-D1, reference: D1, treatment: D2}
+claim_boundary: >-
+  Prompt-paired intervals within each run characterize test-prompt uncertainty, while the
+  across-seed summary uses the independently trained checkpoint seed as the replication unit.
+  With only three checkpoint seeds, the across-seed t interval is low-powered and descriptive.
+  Qwen feasibility and soundness are operational judge measurements, not human ground truth or
+  measurements of global scientific novelty. Semantic threshold metrics remain quarantined until
+  blinded human equivalence calibration is completed.

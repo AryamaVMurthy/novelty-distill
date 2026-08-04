@@ -388,6 +388,57 @@ def test_promoted_analysis_is_seed_balanced_artifact_audited_and_secondary_taste
     assert "scripts/export_wandb_snapshot.py" in script
 
 
+def test_compact_replication_launcher_builds_gated_k4_graph(tmp_path: Path) -> None:
+    output = tmp_path / "compact-evaluation-submission.json"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "scripts/submit_compact_replication_evaluations.py",
+            "--manifest",
+            "reports/audits/compact-4b-1k-three-seed-training-submission-20260805.json",
+            "--seeds",
+            "29,43",
+            "--seed17-b2a-evaluation-job-id",
+            "19099",
+            "--output",
+            str(output),
+            "--dry-run",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    result = json.loads(completed.stdout)
+
+    assert result["dry_run"] is True
+    assert result["seeds"] == [29, 43]
+    assert len(result["runs"]) == 12
+    for run in result["runs"]:
+        assert run["evaluation_id"].endswith("-temporal-k4")
+        assert run["output_name"].endswith("-temporal-k4-corrected-v2")
+        assert run["generation"]["command"][2] == "--nodelist=node01"
+        assert "--array=0-3%4" in run["generation"]["command"]
+        assert run["generation"]["dependency"] == run["training_dependency"]
+        assert run["generation_gate"]["environment"]["SERVED_ARTIFACT_PATH"].endswith(
+            "/final"
+        )
+        assert run["score"]["environment"]["SCORE_NUM_SHARDS"] == "4"
+        assert run["evaluation"]["environment"]["STUDENT_SAMPLES_PER_PROMPT"] == "4"
+        assert run["evaluation"]["environment"]["TEACHER_SAMPLES_PER_PROMPT"] == "4"
+    assert result["analysis"]["environment"]["TRAIN_SEEDS"] == "17,29,43"
+    assert result["analysis"]["external_dependencies"] == ["19099"]
+    assert json.loads(output.read_text(encoding="utf-8")) == result
+
+
+def test_compact_multiseed_analysis_is_checkpoint_seed_aware() -> None:
+    script = Path("slurm/analyze_compact_multiseed.sbatch").read_text(encoding="utf-8")
+
+    assert "scripts/analyze_multiseed_contrasts.py" in script
+    assert "configs/evaluation/compact_multiseed_contrasts.yaml" in script
+    assert "TRAIN_SEEDS" in script
+    assert "-corrected-v2.json" in script
+
+
 def test_replication_control_launcher_builds_independent_scored_taste_graph() -> None:
     script = Path("scripts/submit_replication_controls.sh").read_text(encoding="utf-8")
 
