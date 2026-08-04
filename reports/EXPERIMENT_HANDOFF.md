@@ -93,10 +93,10 @@ Pinned source revisions:
   for `novelty-base:novelty-model` versus `novelty-base`, confirming adapter activation.
 - Corrected A0 jobs: 18883–18887. The first LoRA restart (18888–18917) was stopped after
   HypoSpace exposed the branch-scoped export bug; it is retained under the second invalid
-  archive. The current corrected LoRA jobs are B1 18919–18923; B2b 18924–18928; C1-best1
-  18929–18933; C2-best1 18934–18938; D1 18939–18943; D2 18944–18948. No result is accepted
-  until every LoRA HypoSpace artifact records `OpenRouter(novelty-base:novelty-model)` and all
-  four summaries per model validate and combine successfully.
+  archive. The current corrected LoRA jobs are B1/B2b on node02 (18919–18928) and C1-best1,
+  C2-best1, D1, and D2 on node03 (18975–18994). No result is accepted until every LoRA HypoSpace
+  artifact records `OpenRouter(novelty-base:novelty-model)` and all four summaries per model
+  validate and combine successfully.
 
 ## 6. Where raw logs and artifacts live
 
@@ -206,16 +206,17 @@ records, the canonical adapter records parser completion as 1.0 and documents th
 | Model | NoveltyBench | Causal | 3D | Boolean | Combine |
 |---|---:|---:|---:|---:|---:|
 | A0 | 18883 | 18884 | 18885 | 18886 | 18887 |
-| B1 | 18919 | 18920 | 18921 | 18922 | 18923 |
-| B2b | 18924 | 18925 | 18926 | 18927 | 18928 |
-| C1-best1 | 18929 | 18930 | 18931 | 18932 | 18933 |
-| C2-best1 | 18934 | 18935 | 18936 | 18937 | 18938 |
-| D1 | 18939 | 18940 | 18941 | 18942 | 18943 |
-| D2 | 18944 | 18945 | 18946 | 18947 | 18948 |
+| B1 (node02) | 18919 | 18920 | 18921 | 18922 | 18923 |
+| B2b (node02) | 18924 | 18925 | 18926 | 18927 | 18928 |
+| C1-best1 (node03) | 18975 | 18976 | 18977 | 18978 | 18979 |
+| C2-best1 (node03) | 18980 | 18981 | 18982 | 18983 | 18984 |
+| D1 (node03) | 18985 | 18986 | 18987 | 18988 | 18989 |
+| D2 (node03) | 18990 | 18991 | 18992 | 18993 | 18994 |
 
 Jobs 18827–18846 were duplicate pending submissions caused by an asynchronous launcher-output
 race and were cancelled before execution. Jobs 18792, 18848, 18850, and 18853 were stopped after
 the first LoRA-routing audit; their artifacts are excluded. The first corrected LoRA restart
 18888–18917 was also stopped after the HypoSpace export-scope audit; its B1 causal summary is
 retained only in `invalid-pre-lora-selection-20260804-r2/`. The current matrix above is the only
-accepted run set once validation completes.
+accepted run set once validation completes. Node03 dispatch 18953–18972 failed before execution
+because its repository checkout had not yet been staged; those jobs produced no accepted artifacts.
