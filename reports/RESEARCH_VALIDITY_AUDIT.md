@@ -1,5 +1,11 @@
 # Research validity audit
 
+> **Superseded in part on 2026-08-05.** This earlier pre-result audit did not
+> detect historical-target corruption, earliest-public-date violations, the
+> NoveltyBench repeated-seed defect, or the missing feasibility gate. Its
+> literature notes remain useful, but current evidence status is defined in
+> `EVALUATION_VALIDITY_AUDIT_20260805.md` and `configs/evaluation/`.
+
 This audit records methodological decisions made before inspecting TOMATO-1k model results. It is
 not a results report and does not promote any baseline.
 

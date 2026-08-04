@@ -1,5 +1,12 @@
 # Research run ledger
 
+> **Historical execution ledger.** Job/checkpoint facts are retained, but
+> interpretation is superseded by the 2026-08-05 validity audit: historical
+> targets are contaminated, the issue-month split is not strict temporal OOD,
+> old NoveltyBench generations repeated a seed, and old
+> `viable_semantic_yield` omitted feasibility. See
+> `EVALUATION_VALIDITY_AUDIT_20260805.md` for current evidence status.
+
 This ledger freezes the submitted Turing job graph and completed systems evidence as of
 2026-08-02 (Asia/Kolkata). Slurm state is live; job IDs and dependency edges are the durable
 record. All newly staged jobs use `codex/implementation` and synchronize through

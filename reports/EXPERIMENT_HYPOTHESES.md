@@ -1,5 +1,11 @@
 # Distillation hypotheses and analysis contract
 
+> **Historical preregistration context.** Post-hoc audit findings on 2026-08-05
+> quarantine historical-target methods, withdraw the old NoveltyBench runs,
+> and replace `viable_semantic_yield` with a feasibility-inclusive descriptive
+> metric. See `EVALUATION_VALIDITY_AUDIT_20260805.md` before interpreting these
+> original hypotheses.
+
 This document freezes the main mechanistic comparisons before the TOMATO-1k models are examined.
 It distinguishes predictions motivated by prior work from findings produced by this repository.
 

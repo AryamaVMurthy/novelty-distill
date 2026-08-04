@@ -1,5 +1,11 @@
 # Frozen TOMATO contrast findings
 
+> **Historical automatic analysis; interpretation superseded on 2026-08-05.**
+> `B1` is quarantined, semantic single-threshold inference is disallowed, and
+> `viable_semantic_yield` is legacy-only because it omitted feasibility. Use
+> [`../EVALUATION_VALIDITY_AUDIT_20260805.md`](../EVALUATION_VALIDITY_AUDIT_20260805.md)
+> and [`../audits/corrected-k4-seed17-v2-summary.json`](../audits/corrected-k4-seed17-v2-summary.json).
+
 Producer Git commit: `c26a5dc1593b0d78fffe19637f7716574df29149`.
 
 All estimates are treatment minus reference over paired prompts. Confidence intervals and sign-flip p-values use 10,000 Monte Carlo samples with seed 17; Holm correction is applied across every declared contrast within each metric. The 95% confidence intervals are pointwise, not simultaneous; multiplicity correction applies to p-values only. These are operational judge/embedding outcomes, not human-validated scientific novelty labels.

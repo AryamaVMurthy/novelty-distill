@@ -11,7 +11,21 @@
 > [`audits/README.md`](audits/README.md) and the dated validity report before
 > using any number in this file.
 
-Last authoritative snapshot: 2026-08-04. The compact K=4 baseline study, the
+## Current corrected snapshot
+
+Jobs 19055--19062 completed the feasibility-inclusive K=4 recomputation for
+A0, A1, B1, B2b, C1, C2, D1, and D2. The content-bound summary is
+[`audits/corrected-k4-seed17-v2-summary.json`](audits/corrected-k4-seed17-v2-summary.json),
+and the complete current interpretation is
+[`EVALUATION_VALIDITY_AUDIT_20260805.md`](EVALUATION_VALIDITY_AUDIT_20260805.md).
+The usable pilot reference is C1; B2b is the hard sequence-KD failure control,
+C2 is the static reverse-KL control, and D1/D2 are on-policy controls. B1 is
+descriptive only and quarantined. No run is currently active. A different-family
+DeepInfra judge pass awaits a rotated key exported through the environment.
+
+## Historical 2026-08-04 snapshot
+
+The compact K=4 baseline study, the
 D2 on-policy reverse-KL extension, and the separate seven-model
 NoveltyBench/HypoSpace transfer matrix are complete. External transfer results
 are reported separately from the TOMATO results below.
