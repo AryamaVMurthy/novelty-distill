@@ -1,5 +1,16 @@
 # Current research status
 
+> **Superseded on 2026-08-05 by a post-hoc validity audit.** Do not cite the
+> conclusions below as current evidence. The old NoveltyBench matrix used a
+> repeated generation seed and is invalid; `B1` and all historical-human-target
+> methods are quarantined because TOMATO target text contains cross-topic
+> passage contamination; the issue-month split is not a strict earliest-public
+> temporal split; and the reported `viable_semantic_yield` omitted feasibility
+> from its gate. Feasibility and soundness scores for prompt-only methods remain
+> descriptive frozen-Qwen-judge measurements. See
+> [`audits/README.md`](audits/README.md) and the dated validity report before
+> using any number in this file.
+
 Last authoritative snapshot: 2026-08-04. The compact K=4 baseline study, the
 D2 on-policy reverse-KL extension, and the separate seven-model
 NoveltyBench/HypoSpace transfer matrix are complete. External transfer results

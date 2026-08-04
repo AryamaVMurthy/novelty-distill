@@ -1,5 +1,15 @@
 # Novelty-distillation experiment handoff
 
+> **Historical handoff; superseded by the 2026-08-05 validity audit.** The
+> training/checkpoint and job-accounting sections remain provenance records,
+> but the old evidence interpretation does not. In particular, withdraw the
+> old NoveltyBench results (repeated-seed generation bug), quarantine every
+> historical-human-target method (corrupted target passages), do not describe
+> the issue-month test split as strictly post-training, and treat
+> `viable_semantic_yield` as a legacy metric because its gate omitted
+> feasibility. Consult [`audits/README.md`](audits/README.md) and the dated
+> validity report before reusing results.
+
 Last updated: 2026-08-04 (Asia/Kolkata)
 
 This is the index for the complete experiment history. The TOMATO study and the seven-model

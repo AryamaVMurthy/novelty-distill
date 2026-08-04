@@ -1,5 +1,13 @@
 # Compact K=4 distillation baseline study
 
+> **Interpretation amended on 2026-08-05.** `B1` is quarantined because its
+> historical targets contain cross-topic passage contamination. The split is
+> issue-month-disjoint but not strict earliest-public temporal OOD. The
+> `viable_semantic_yield` column is legacy-only because its quality gate omitted
+> feasibility; corrected `quality_qualified_semantic_yield` is being
+> recomputed. Feasibility and soundness remain descriptive frozen-judge
+> measurements, not expert or novelty judgments.
+
 Status: complete and audited on 2026-08-04.
 
 This is a baseline study, not a novelty claim. It compares the untouched

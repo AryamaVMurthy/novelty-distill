@@ -1,0 +1,31 @@
+{
+  "artifact": "2026-08-04T20-34-46-00-00_novelty-bench-independent_A8ASNAxY3Aj8heerRWPccs.eval",
+  "artifact_sha256": "7c2fa6f3ac7788445c218cecc84dd04ff38e119dac5063d7c79364af67f38b5f",
+  "domain": null,
+  "eval_id": "official-corrected-smoke-A0-k10-seed17-v2",
+  "expected_samples": 2,
+  "metrics": {
+    "distinct_k_mean": 3.5,
+    "distinct_k_stderr": 0.5,
+    "utility_k_mean": 3.3189557612903173,
+    "utility_k_stderr": 0.052153544163856314
+  },
+  "model_identity": "hf:Qwen/Qwen3-4B@1cfa9a7208912126459214e8b04321603b3df60c",
+  "num_generations": 10,
+  "sampling_diagnostics": {
+    "duplicate_completion_prompt_count": 0,
+    "mean_unique_completions": 10.0,
+    "minimum_unique_completions": 10,
+    "sampling_base_seed": 17,
+    "sampling_seed_stride": 1
+  },
+  "sampling_protocol": {
+    "base_seed": 17,
+    "name": "independent-per-generation-seed-v1",
+    "seed_stride": 1,
+    "temperature": 1.0,
+    "top_p": 1.0
+  },
+  "schema_version": 1,
+  "suite": "noveltybench"
+}

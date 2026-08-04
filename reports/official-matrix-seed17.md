@@ -1,5 +1,14 @@
 # Official benchmark matrix
 
+> **Withdrawn as a complete matrix on 2026-08-05.** The NoveltyBench component
+> is invalid because the ten nominal generations reused the same sampling seed;
+> raw A0 evidence contains one repeated completion ten times. HypoSpace values
+> are retained as historical component artifacts but this combined table must
+> not be used for method claims until every suite's sampling protocol is
+> independently re-audited. A corrected two-prompt NoveltyBench implementation
+> smoke is frozen under `audits/noveltybench-corrected-smoke-A0-k10-seed17-v2/`;
+> it is not a replacement full result.
+
 Descriptive mean ± population SD across the declared training seeds.
 
 | Method | Metric | Mean | Population SD | Seeds |

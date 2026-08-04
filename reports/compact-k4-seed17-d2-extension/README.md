@@ -1,5 +1,12 @@
 # D2 on-policy reverse-KL K=4 extension
 
+> **Interpretation amended on 2026-08-05.** The reported
+> `viable_semantic_yield` is legacy-only because its gate omitted feasibility;
+> the issue-month test split is not strict earliest-public temporal OOD; and
+> all judge scores are descriptive Qwen-judge measurements rather than expert
+> or novelty judgments. Corrected feasibility-inclusive yield is being
+> recomputed from the frozen outputs.
+
 Status: complete and audited on 2026-08-04.
 
 This extension adds the previously trained on-policy reverse-KL baseline
