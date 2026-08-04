@@ -17,6 +17,8 @@ The consolidated interpretation and ICLR research path are in
 - `semantic-equivalence-calibration-20260805-v2.manifest.json`: redacted provenance for 256
   similarity-stratified clean teacher pairs plus 26 hidden repeats per human rater. The first
   packet was superseded before labeling after its within-bin unique-prompt bug was detected.
+- `compact-4b-1k-three-seed-training-submission-20260805.json`: exact Slurm dependency graph
+  for the clean six-method 4B replication at seeds 17/29/43 and 1,000 exposures.
 
 The corrected K=4 compact summary is generated from the full remote evaluation JSONs and will be
 stored here as `corrected-k4-seed17-v2-summary.json`. It contains aggregates, the complete
