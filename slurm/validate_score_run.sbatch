@@ -36,6 +36,7 @@ fi
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
+export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"
 if [[ "${generation_config}" != /* ]]; then
   generation_config="${repo_dir}/${generation_config}"
 fi

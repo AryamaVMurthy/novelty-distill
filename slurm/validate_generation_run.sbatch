@@ -42,6 +42,7 @@ fi
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
+export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"
 if [[ -n "${input_name}" ]]; then
   input_path="${scratch_root}/data/${input_name}"
 elif [[ -z "${input_path}" ]]; then

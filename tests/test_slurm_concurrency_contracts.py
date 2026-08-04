@@ -67,6 +67,22 @@ def test_shared_inference_environment_mutations_are_serialized() -> None:
         assert script.rindex("uv pip") < script.index("flock -u 8"), name
 
 
+def test_shared_inference_consumers_import_from_source_during_editable_reinstalls() -> None:
+    """Parallel array tasks must survive another task replacing the editable wheel."""
+
+    for name in (
+        "sglang_smoke.sbatch",
+        "score_teacher.sbatch",
+        "evaluate_student.sbatch",
+        "validate_generation_run.sbatch",
+        "validate_score_run.sbatch",
+    ):
+        script = (ROOT / "slurm" / name).read_text(encoding="utf-8")
+        export = 'export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"'
+        assert export in script, name
+        assert script.index(export) < script.index("flock -u 8"), name
+
+
 def test_official_evaluation_serializes_each_isolated_environment() -> None:
     script = (ROOT / "slurm" / "evaluate_official.sbatch").read_text(encoding="utf-8")
 

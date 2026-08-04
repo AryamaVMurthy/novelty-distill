@@ -60,6 +60,7 @@ repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
+export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"
 if [[ -n "${prompts_name}" ]]; then
   prompts_path="${scratch_root}/data/${prompts_name}"
 elif [[ -z "${prompts_path}" ]]; then

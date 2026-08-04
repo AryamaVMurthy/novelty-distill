@@ -46,6 +46,7 @@ repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
+export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"
 
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
