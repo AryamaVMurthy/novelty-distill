@@ -1,0 +1,21 @@
+diff --git a/3d/run_3d_benchmark.py b/3d/run_3d_benchmark.py
+--- a/3d/run_3d_benchmark.py
++++ b/3d/run_3d_benchmark.py
+@@
+ class Structure3D:
+     """Represents a 3D structure (same as in dataset generator)."""
+     
+     def __init__(self, layers: List[List[List[int]]]):
+@@
+         max_rows = 0
+         max_cols = 0
+         for layer in layers:
+-            if layer:  # Non-empty layer
++            # NumPy arrays have no scalar truth value; use length for both
++            # list-backed and array-backed layers from model outputs.
++            if layer is not None and len(layer) > 0:  # Non-empty layer
+                 max_rows = max(max_rows, len(layer))
+                 for row in layer:
+-                    if row:  # Non-empty row
++                    if row is not None and len(row) > 0:  # Non-empty row
+                         max_cols = max(max_cols, len(row))
