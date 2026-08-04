@@ -170,6 +170,8 @@ def test_official_model_launcher_runs_full_suite_on_four_gpu_jobs() -> None:
     assert "limits=(61 9 35)" in script
     assert "NUM_GENERATIONS=10" in script
     assert "slurm/combine_official_results.sbatch" in script
+    assert 'target_node="${TARGET_NODE:-node02}"' in script
+    assert '--nodelist="${target_node}"' in script
 
 
 def test_single_model_temporal_launcher_can_chain_resumable_taste_annotation() -> None:

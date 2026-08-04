@@ -16,6 +16,7 @@ if [[ -n "${lora_path}" && -z "${lora_name}" ]]; then
   lora_name="novelty-model"
 fi
 dependency_job_id="${DEPENDENCY_JOB_ID:-}"
+target_node="${TARGET_NODE:-node02}"
 for value in "${eval_id}"; do
   if [[ -z "${value}" || "${value}" == */* || "${value}" == *..* || "${value}" == *,* ]]; then
     echo "EVAL_ID must be path-safe and comma-free" >&2
@@ -24,6 +25,10 @@ for value in "${eval_id}"; do
 done
 if [[ -n "${dependency_job_id}" && ! "${dependency_job_id}" =~ ^[0-9]+$ ]]; then
   echo "DEPENDENCY_JOB_ID must be numeric" >&2
+  exit 2
+fi
+if [[ ! "${target_node}" =~ ^node[0-9]+$ ]]; then
+  echo "TARGET_NODE must be a node name such as node02" >&2
   exit 2
 fi
 for value in "${model_path}" "${model_revision}"; do
@@ -45,7 +50,7 @@ fi
 
 submit_job() {
   local output job_id
-  output="$(scripts/turing_submit.sh "$@")"
+  output="$(scripts/turing_submit.sh "$@" --nodelist="${target_node}")"
   printf '%s\n' "${output}" >&2
   job_id="$(printf '%s\n' "${output}" | awk '/Submitted batch job/{print $4}' | tail -1)"
   if ! [[ "${job_id}" =~ ^[0-9]+$ ]]; then
@@ -86,6 +91,6 @@ combine_job="$(
     --dependency="afterok:${suite_dependency}" \
     --export="ALL,EVAL_ID=${eval_id}"
 )"
-printf '{"eval_id":"%s","noveltybench":"%s","hypospace":"%s","combined":"%s"}\n' \
-  "${eval_id}" "${novelty_job}" "$(IFS=','; printf '%s' "${hypospace_jobs[*]}")" \
+printf '{"eval_id":"%s","target_node":"%s","noveltybench":"%s","hypospace":"%s","combined":"%s"}\n' \
+  "${eval_id}" "${target_node}" "${novelty_job}" "$(IFS=','; printf '%s' "${hypospace_jobs[*]}")" \
   "${combine_job}"
