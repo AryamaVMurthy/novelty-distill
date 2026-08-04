@@ -89,6 +89,26 @@ def test_compact_contrasts_are_five_budget_matched_distillation_questions() -> N
     assert "sampling-budget matched at K=4" in config["sampling_note"]
 
 
+def test_d2_extension_predeclares_three_budget_matched_questions() -> None:
+    config = yaml.safe_load(
+        (ROOT / "configs/evaluation/d2_compact_extension_contrasts.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert config["study"] == "tomato1k-compact-k4-d2-extension"
+    assert config["claim_scope"] == "preregistered_d2_extension_comparison"
+    assert len(config["contrasts"]) == 3
+    assert {contrast["id"] for contrast in config["contrasts"]} == {
+        "D2-vs-D1",
+        "D2-vs-C2-best1",
+        "D2-vs-C1-best1",
+    }
+    assert config["artifact_bundle"]["method_order"][-1] == "D2"
+    assert "declared before inspecting D2" in config["extension_note"]
+    assert "sampling-budget matched at K=4" in config["sampling_note"]
+
+
 def test_production_teacher_uses_calibrated_concise_official_decoding() -> None:
     production = _load("teacher.yaml")
     evaluation = _load("eval_qwen3_14b.yaml")
