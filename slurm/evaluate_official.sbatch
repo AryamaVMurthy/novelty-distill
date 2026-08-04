@@ -212,6 +212,9 @@ if [[ "${ready}" != 1 ]]; then
   tail -100 "${server_log}"
   exit 1
 fi
+# Both official suites must use the same SGLang request model. For LoRA jobs
+# this is `novelty-base:novelty-model`; for A0 it is simply `novelty-model`.
+export SGLANG_MODEL_NAME="${request_model}"
 
 case "${eval_suite}" in
   noveltybench)
@@ -224,7 +227,6 @@ case "${eval_suite}" in
     export UV_PROJECT_ENVIRONMENT="${scratch_root}/venvs/noveltybench-${SLURM_JOB_ID}"
     export SGLANG_BASE_URL="http://127.0.0.1:${port}/v1"
     export SGLANG_API_KEY=local
-    export SGLANG_MODEL_NAME="${request_model}"
     (
       cd "${package_dir}"
       uv venv --python 3.12 "${UV_PROJECT_ENVIRONMENT}"
