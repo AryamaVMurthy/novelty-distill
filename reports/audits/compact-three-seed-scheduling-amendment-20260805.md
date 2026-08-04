@@ -31,6 +31,11 @@ on-policy runs also used only a small fraction of their 128 GiB reservation.
   96 GiB to 64,000 MiB. This allowed D1 to occupy the fourth otherwise-idle
   node02 GPU while B2b, C1-best1, and C2-best1 continued. D2 retains its
   original dependency on B2b and will replace it when that run terminates.
+- B2a's seed-17 final LoRA was staged from node01 to an initially absent path
+  on node02. The exact inference-artifact identity matched on both nodes:
+  `sha256:812cb0cbb2b8bc6efbd5163aeb5c54b2c74b0cd4f400ba8b703cd7a62b2aa7f5`.
+  Pending job 19202 was then moved from node01 to node02 so it can replace a
+  completed benchmark rather than waiting behind four long training jobs.
 
 Slurm splits individually updated array elements into new concrete job IDs;
 their stable identities remain the original array/task pairs (`19111_*`,
