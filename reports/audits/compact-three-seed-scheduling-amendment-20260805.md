@@ -59,6 +59,26 @@ ownership) matched across nodes:
 No generation or score job was moved at this point. Method checkpoints will be
 staged and pending chains reassigned only after their training gates pass.
 
+### First four staged chains
+
+At approximately 05:00 IST, four offline-training tasks had complete final
+adapters while the four longer on-policy tasks continued. Those four adapters
+were copied to previously absent node02 paths and verified with the same
+inference-artifact hash on both nodes:
+
+| Chain | Adapter identity | Jobs pinned to node02 |
+|---|---|---|
+| seed 29 B2a | `sha256:cf129f11e7b6e0227832efd26b3b902b3a6dc492ec19ef4bd408c370078907b8` | 19117--19121 |
+| seed 29 C1-best1 | `sha256:9f7974619596b994ecce0f58517ebe0d9f40215c98b56748966b975c96c0a25f` | 19127--19131 |
+| seed 43 B2b | `sha256:e76540925b835a62524e5ded1427f3d6196a2088070fef7881e2c8a9bebf0344` | 19152--19156 |
+| seed 43 C2-best1 | `sha256:4db42299596af95472c43b0c11f0ee7c671f0c2a16bee1c66b8d5793ca4cd551` | 19162--19166 |
+
+Every listed generation, generation gate, scoring array, scoring gate, and
+evaluation job remained pending behind its original dependency. Only
+`ReqNodeList` changed from node01 to node02. The remaining planned node02
+chains, seed-29 D1 and seed-43 D2, cannot be staged until their on-policy final
+adapters exist.
+
 ## Invariants
 
 The GPU count, node placement, time limits, repository commit, dataset, ordered
