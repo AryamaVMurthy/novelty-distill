@@ -268,6 +268,20 @@ taxonomy on an author-audited subset. We can reuse the *analysis idea*, with
 attribution and our own human calibration, but its labels should not become a
 replacement outcome for feasibility or semantic equivalence.
 
+That transfer has an important construct boundary. Chen et al. compare one
+human and one model idea conditioned on the same reconstructed set of proximal
+paper titles and abstracts, and validate GPT-5.4-mini taxonomy annotations on
+150 items audited by two authors. TOMATO instead supplies an explicit research
+question/background/inspiration and does not cleanly separate prior works,
+motivation, and method. Our partial deployment audit already found that the
+TOMATO prompt can nearly determine the opportunity label and that Qwen labels
+change with the output interface. Therefore no full research-taste matrix
+should be interpreted until the local two-human reliability gate passes and
+within-prompt entropy shows that the labels retain response-dependent signal.
+The taxonomy can later motivate a separately preregistered target-selection or
+taxonomy-conditioned treatment; it cannot retroactively define success for the
+present baseline study.
+
 The verified bibliography and claim-by-claim research log are
 [`LITERATURE_SOURCE_LOG_20260805.md`](LITERATURE_SOURCE_LOG_20260805.md) and
 [`../references.bib`](../references.bib).
