@@ -378,6 +378,16 @@ The runner is resumable, stores raw responses and token usage, validates the
 strict schema, and never sends method labels, Qwen scores, or repeat flags to
 the external judge. Zero paid requests have been sent so far.
 
+DeepInfra's public model-metadata endpoint was rechecked on 2026-08-05. The
+frozen `meta-llama/Llama-3.3-70B-Instruct-Turbo` endpoint was public,
+non-deprecated, and advertised JSON/structured-output support. Its listed token
+rates were $0.10 per million input tokens and $0.32 per million output tokens.
+The packet contains 1,733,265 prompt-plus-answer characters before the shared
+rubric; even at the full 256-token output cap for every call, the pass is
+expected to cost roughly $0.10--$0.12 before any bounded retries. Exact provider
+usage will be retained in each raw response rather than inferred from this
+estimate. Source: <https://api.deepinfra.com/models/meta-llama/Llama-3.3-70B-Instruct-Turbo>.
+
 The credential is not currently present as `DEEPINFRA_API_KEY` on the local or
 Turing environment. The key pasted into chat should be rotated because it is
 exposed, then supplied through the environment rather than committed, written
