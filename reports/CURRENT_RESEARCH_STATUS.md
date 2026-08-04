@@ -1,7 +1,10 @@
 # Current research status
 
 Last authoritative snapshot: 2026-08-04. The compact K=4 baseline study and
-the D2 on-policy reverse-KL extension are complete; no cluster jobs remain.
+the D2 on-policy reverse-KL extension are complete. The separate seven-model
+NoveltyBench/HypoSpace transfer matrix is currently running on Turing
+node02/node03; it is tracked in [`EXPERIMENT_HANDOFF.md`](EXPERIMENT_HANDOFF.md)
+and is not mixed into the completed TOMATO results below.
 
 ## TL;DR
 
@@ -74,7 +77,7 @@ Holm-corrected p-values and all threshold curves are in
 The D2 extension's corrected tests and threshold curves are in
 [`compact-k4-seed17-d2-extension/findings.md`](compact-k4-seed17-d2-extension/findings.md).
 
-## Audit status
+## Compact-study audit status
 
 - All 20 generation tasks and all 20 scoring tasks exited 0.
 - All five generation gates and all five score gates validated 1,658 complete
@@ -83,7 +86,8 @@ The D2 extension's corrected tests and threshold curves are in
 - D2 added 6,632 complete generations and judge records; its generation and
   score gates, embedding evaluation, and three-contrast analysis all exited 0.
 - Compact CSV/SVG artifact hashes match their manifest.
-- The Turing queue is empty.
+- The compact-study jobs are complete. Any currently running jobs belong to the
+  separate external transfer matrix, not to this TOMATO analysis.
 
 The canonical compact handoff is
 [`compact-k4-seed17/README.md`](compact-k4-seed17/README.md); full job and

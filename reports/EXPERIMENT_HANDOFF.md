@@ -75,7 +75,9 @@ Pinned source revisions:
 
 - Inspect Evals: `6a35510e530f236fd1dbcd9df888f01937c8494a`.
 - HypoSpace: `c69e9318577b34b5b896996571aefd4ba6053f58`.
-- Repository code for the corrected matrix: commit `176ef1aeb4a8fca8c84d8a7f173cb435e5892fe5`.
+- Repository code for the corrected matrix: commit `7532b52` (the launcher and
+  LoRA-routing fixes are in `176ef1a`; the current matrix dispatch/report
+  bookkeeping is in the newer commit).
 
 ## 5. Live official-run status
 
