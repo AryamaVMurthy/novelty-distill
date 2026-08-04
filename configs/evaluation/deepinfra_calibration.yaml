@@ -1,0 +1,23 @@
+schema_version: 1
+provider: deepinfra
+request_model: meta-llama/Llama-3.3-70B-Instruct-Turbo
+endpoint: https://api.deepinfra.com/v1/openai/chat/completions
+samples_per_method: 60
+repeat_fraction: 0.10
+max_sample_index_exclusive: 4
+sampling_seed: 20260805
+sampling_design: paired-slots-pooled-qwen-core-rank-quartiles-v1
+methods:
+  - A0
+  - A1
+  - B2b
+  - C1-best1
+  - C2-best1
+  - D1
+  - D2
+primary_dimensions:
+  - feasibility
+  - soundness
+claim_boundary: >-
+  This different-family judge is a sensitivity analysis, not ground truth and not a
+  measurement of global scientific novelty. Blinded expert-human calibration remains required.
