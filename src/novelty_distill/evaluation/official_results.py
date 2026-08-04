@@ -215,8 +215,8 @@ def hypospace_metrics(
     per_sample = payload.get("per_sample_results")
     if not isinstance(per_sample, list) or len(per_sample) != expected_samples:
         raise ValueError("HypoSpace per-sample results are incomplete")
-    statistics = payload.get("statistics")
-    if not isinstance(statistics, Mapping):
+    statistic_entries = payload.get("statistics")
+    if not isinstance(statistic_entries, Mapping):
         raise ValueError("HypoSpace result has no statistics")
     fields = {
         "parse_success_rate": "parse_success_rate",
@@ -226,13 +226,25 @@ def hypospace_metrics(
     }
     metrics: dict[str, float] = {}
     for source, destination in fields.items():
-        entry = statistics.get(source)
+        entry = statistic_entries.get(source)
         if source == "parse_success_rate" and entry is None:
-            # The pinned Boolean CLI has no parser-stage statistic. Its
-            # zero-error summary plus complete per-sample records means every
-            # request completed; expose that contract explicitly so Boolean
-            # remains comparable in the combined four-component report.
-            entry = {"mean": 1.0}
+            # The pinned Boolean CLI omits this aggregate even though each
+            # sample records it. Provider success does not imply parser
+            # success, so derive the mean from those explicit records rather
+            # than silently reporting a perfect rate.
+            parse_rates: list[float] = []
+            for sample in per_sample:
+                if not isinstance(sample, Mapping) or "parse_success_rate" not in sample:
+                    raise ValueError(
+                        "HypoSpace has no per-sample parse_success_rate fallback"
+                    )
+                rate = float(sample["parse_success_rate"])
+                if not math.isfinite(rate) or not 0 <= rate <= 1:
+                    raise ValueError(
+                        "HypoSpace per-sample parse_success_rate is outside [0, 1]"
+                    )
+                parse_rates.append(rate)
+            entry = {"mean": statistics.fmean(parse_rates)}
         if not isinstance(entry, Mapping):
             raise ValueError(f"HypoSpace has no {source}")
         value = float(entry["mean"])

@@ -100,12 +100,15 @@ def test_hypospace_summary_rejects_swallowed_errors() -> None:
         hypospace_metrics(payload, expected_samples=9, num_generations=10)
 
 
-def test_hypospace_boolean_schema_uses_explicit_parser_completion_fallback() -> None:
+def test_hypospace_boolean_schema_aggregates_per_sample_parse_success() -> None:
     payload = {
         "n_samples": 35,
         "n_queries_per_sample": 10,
         "error_summary": {"total_errors": 0},
-        "per_sample_results": [{}] * 35,
+        "per_sample_results": [
+            {"parse_success_rate": 0.6 if index < 20 else 0.8}
+            for index in range(35)
+        ],
         "statistics": {
             "valid_rate": {"mean": 0.64},
             "novelty_rate": {"mean": 0.13},
@@ -115,8 +118,13 @@ def test_hypospace_boolean_schema_uses_explicit_parser_completion_fallback() -> 
 
     metrics = hypospace_metrics(payload, expected_samples=35, num_generations=10)
 
-    assert metrics["parse_success_rate"] == 1.0
+    assert metrics["parse_success_rate"] == pytest.approx((20 * 0.6 + 15 * 0.8) / 35)
     assert metrics["validity_rate"] == 0.64
+
+    for sample in payload["per_sample_results"]:
+        sample.pop("parse_success_rate")
+    with pytest.raises(ValueError, match="per-sample parse_success_rate"):
+        hypospace_metrics(payload, expected_samples=35, num_generations=10)
 
 
 def test_official_summary_resume_binds_model_and_controls(tmp_path: Path) -> None:

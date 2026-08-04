@@ -211,11 +211,15 @@ models. The frozen artifact is
 [`noveltybench-corrected-smoke-A0-k10-seed17-v2/`](audits/noveltybench-corrected-smoke-A0-k10-seed17-v2/).
 
 The historical HypoSpace component files were not affected by that exact
-Inspect seed bug, but the combined matrix is withdrawn because one of its four
-components is invalid. HypoSpace should be separately audited for request-level
-sampling, parser behavior, LoRA routing, and task suitability before reuse.
-It measures constrained hypothesis-space recovery/validity, not open-ended
-scientific novelty.
+Inspect seed bug, but the combined matrix remains withdrawn because one of its
+four components is invalid. A separate artifact audit verified matched task
+IDs, corrected LoRA routing, complete K=10 adaptive searches, and zero provider
+errors. It also found severe parser confounding and no retained raw text for
+1,438 syntactically unparseable causal/3D requests. HypoSpace can therefore be
+kept only as a secondary domain-separated structured-search diagnostic. It
+measures constrained hypothesis-space recovery/validity, not open-ended
+scientific novelty. See
+[`HYPOSPACE_VALIDITY_AUDIT_20260805.md`](HYPOSPACE_VALIDITY_AUDIT_20260805.md).
 
 ## What the existing statistics can and cannot say
 
