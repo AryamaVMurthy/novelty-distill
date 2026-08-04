@@ -7,7 +7,7 @@
 #SBATCH --qos=high
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=2
 #SBATCH --mem=8G
 #SBATCH --time=02:00:00
 
@@ -64,7 +64,6 @@ copy_path cache/xdg
 for model_id in Qwen3-4B Qwen3-32B-FP8 Qwen3-Embedding-4B; do
   copy_path "cache/huggingface/hub/models--Qwen--${model_id}"
 done
-copy_path python
 copy_path venvs/inference
 copy_path venvs/data
 
