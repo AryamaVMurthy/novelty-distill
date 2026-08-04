@@ -18,6 +18,10 @@ on-policy runs also used only a small fraction of their 128 GiB reservation.
 - After one seed-43 task started, the still-pending short offline tasks
   (B2b, C1-best1, and C2-best1) were reduced to 32,000 MiB, allowing a fourth
   GPU to become schedulable.
+- The still-pending seed-43 D1 and D2 tasks were reduced from 70,000 MiB to
+  50,000 MiB. Together with the two 128 GiB seed-29 reservations this remains
+  below node01's physical-memory capacity and allows all four long on-policy
+  replications to overlap once the short offline tasks finish.
 - Pending idempotent final-preflight tasks for seeds 29 and 43 were reduced to
   32,000 MiB because they either validate an already-complete checkpoint or
   resume the same bounded trainer under the checkpoint lock.
