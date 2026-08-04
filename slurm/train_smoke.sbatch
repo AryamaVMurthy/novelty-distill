@@ -36,7 +36,7 @@ elif [[ "${matrix_mode}" == "tomato_scale" ]]; then
   scale_seed="${TRAIN_SEED:?tomato_scale requires TRAIN_SEED}"
   model_profile="${MODEL_PROFILE:-main}"
   if [[ "${model_profile}" == main ]]; then
-    valid_scale_sizes="5000 20000"
+    valid_scale_sizes="1000 5000 20000"
   elif [[ "${model_profile}" == replication ]]; then
     valid_scale_sizes="1000 5000 20000"
   else
@@ -53,6 +53,8 @@ elif [[ "${matrix_mode}" == "tomato_scale" ]]; then
   fi
   if [[ "${model_profile}" == replication ]]; then
     default_run_suffix="qwen1p7b-tomato${scale_train_size}-seed${scale_seed}"
+  elif [[ "${scale_train_size}" == 1000 ]]; then
+    default_run_suffix="tomato1k-seed${scale_seed}"
   else
     default_run_suffix="tomato${scale_train_size}-seed${scale_seed}"
   fi

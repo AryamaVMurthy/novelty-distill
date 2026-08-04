@@ -28,6 +28,10 @@ _TOMATO_MATRIX: tuple[tuple[str, str], ...] = (
 )
 
 
+def _main_size_label(train_size: int) -> str:
+    return "1k" if train_size == 1000 else str(train_size)
+
+
 def build_promoted_training_manifest(
     *,
     model_profile: str,
@@ -39,7 +43,7 @@ def build_promoted_training_manifest(
     """Bind every promoted method/seed to its Slurm gate and deployable artifact."""
 
     valid_sizes = {
-        "main": {5000, 20000},
+        "main": {1000, 5000, 20000},
         "replication": {1000, 5000, 20000},
     }
     if model_profile not in valid_sizes or train_size not in valid_sizes[model_profile]:
@@ -68,8 +72,9 @@ def build_promoted_training_manifest(
     if model_profile == "main":
         model = "Qwen/Qwen3-4B"
         revision = "1cfa9a7208912126459214e8b04321603b3df60c"
-        run_infix = f"tomato{train_size}"
-        target_name = f"teacher-targets-tomato{train_size}-v1.json"
+        size_label = _main_size_label(train_size)
+        run_infix = f"tomato{size_label}"
+        target_name = f"teacher-targets-tomato{size_label}-v1.json"
     else:
         model = "Qwen/Qwen3-1.7B"
         revision = "70d244cc86ccca08cf5af4e1e306ecf908b1ad5e"
@@ -140,8 +145,8 @@ def render_scale_training_config(
 ) -> dict[str, Any]:
     """Scale paths and exposure budgets without changing method hyperparameters."""
 
-    if model_profile == "main" and train_size not in {5000, 20000}:
-        raise ValueError("main scale training size must be 5000 or 20000")
+    if model_profile == "main" and train_size not in {1000, 5000, 20000}:
+        raise ValueError("main scale training size must be 1000, 5000, or 20000")
     if model_profile == "replication" and train_size not in {1000, 5000, 20000}:
         raise ValueError("replication training size must be 1000, 5000, or 20000")
     if model_profile not in {"main", "replication"}:
@@ -168,8 +173,9 @@ def render_scale_training_config(
             payload["teacher_model"] = "Qwen/Qwen3-8B"
             payload["teacher_revision"] = "b968826d9c46dd6066d109eabc6255188de91218"
     else:
-        run_name = f"{baseline_id}-tomato{train_size}-seed{seed}"
-        target = f"data/teacher-targets-tomato{train_size}-v1.json"
+        size_label = _main_size_label(train_size)
+        run_name = f"{baseline_id}-tomato{size_label}-seed{seed}"
+        target = f"data/teacher-targets-tomato{size_label}-v1.json"
 
     if backend == "distillm":
         if baseline_id != "C3":

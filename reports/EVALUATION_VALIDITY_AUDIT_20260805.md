@@ -293,7 +293,7 @@ an ungrounded LLM judge to certify novelty.
 2. Keep a compact core ladder: A0, random-1 sequence KD, best-1 sequence KD,
    C1, C2, D1, and D2. Random-1 is essential because best-of-8 selection is
    currently confounded with the same judge later used for evaluation.
-3. Train at least three independent seeds, such as 17/29/41, at the same 1,000
+3. Train at least three independent seeds, 17/29/43, at the same 1,000
    exposures. Report checkpoint-level variance and a hierarchical analysis
    with prompts nested inside checkpoints.
 4. Calibrate semantic equivalence before future test comparison. Draw response

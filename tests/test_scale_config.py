@@ -63,6 +63,39 @@ def test_small_replication_uses_separate_student_teacher_and_target_artifacts() 
     assert spec.output_dir.name == "D1-qwen1p7b-tomato1000-seed17"
 
 
+def test_main_4b_1k_replication_reuses_frozen_target_and_checkpoint_naming() -> None:
+    base = yaml.safe_load(open("configs/training/gkd_tomato1k.yaml", encoding="utf-8"))
+
+    rendered = render_scale_training_config(
+        base,
+        backend="trl",
+        baseline_id="D2",
+        train_size=1000,
+        seed=29,
+        model_profile="main",
+    )
+
+    spec = TRLRunSpec.model_validate(rendered)
+    assert spec.model == "Qwen/Qwen3-4B"
+    assert spec.teacher_model == "Qwen/Qwen3-14B"
+    assert spec.teacher_targets.name == "teacher-targets-tomato1k-v1.json"
+    assert spec.output_dir.name == "D2-tomato1k-seed29"
+    assert spec.max_examples == 1000
+    assert spec.max_steps == 125
+
+    manifest = build_promoted_training_manifest(
+        model_profile="main",
+        train_size=1000,
+        promoted_indices=(14,),
+        seeds=(29,),
+        training_dependencies={(14, 29): "900_14"},
+    )
+    assert manifest["target_name"] == "teacher-targets-tomato1k-v1.json"
+    assert manifest["runs"][0]["lora_path"].endswith(
+        "checkpoints/D2-tomato1k-seed29/final"
+    )
+
+
 def test_promoted_manifest_binds_every_method_seed_to_job_and_deployable_artifact() -> None:
     result = build_promoted_training_manifest(
         model_profile="main",
@@ -170,7 +203,10 @@ def test_every_scale_backend_profile_size_and_seed_has_valid_unique_contract() -
     )
     output_dirs: set[str] = set()
     validated = 0
-    for profile, sizes in (("main", (5000, 20000)), ("replication", (1000, 5000, 20000))):
+    for profile, sizes in (
+        ("main", (1000, 5000, 20000)),
+        ("replication", (1000, 5000, 20000)),
+    ):
         expected_model = "Qwen/Qwen3-4B" if profile == "main" else "Qwen/Qwen3-1.7B"
         for train_size in sizes:
             for seed in (17, 29, 43):
@@ -201,4 +237,4 @@ def test_every_scale_backend_profile_size_and_seed_has_valid_unique_contract() -
                     )
                     assert train_size <= exposures < train_size + 8
                     validated += 1
-    assert validated == 285
+    assert validated == 342

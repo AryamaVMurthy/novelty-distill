@@ -6,13 +6,13 @@ set -euo pipefail
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${repo_dir}"
 
-train_size="${TRAIN_SIZE:?set TRAIN_SIZE to 5000 or 20000}"
+train_size="${TRAIN_SIZE:?set TRAIN_SIZE to 1000, 5000, or 20000}"
 model_profile="${MODEL_PROFILE:-main}"
 promoted_indices="${PROMOTED_INDICES:?set comma-separated baseline matrix indexes}"
 target_gate_job_id="${TARGET_GATE_JOB_ID:?set the validated teacher-target job ID}"
 submission_manifest="${SUBMISSION_MANIFEST:-}"
 case "${model_profile}:${train_size}" in
-  replication:1000)
+  main:1000|replication:1000)
     seeds="${TRAIN_SEEDS:-17}"
     training_passes="${TRAINING_PASSES:-2}"
     ;;
