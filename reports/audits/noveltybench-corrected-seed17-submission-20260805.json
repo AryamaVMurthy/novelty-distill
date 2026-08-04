@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "protocol": {
+    "suite": "NoveltyBench curated",
+    "prompts": 100,
+    "generations_per_prompt": 10,
+    "base_seed": 17,
+    "seed_stride": 1,
+    "temperature": 1.0,
+    "top_p": 1.0,
+    "max_tokens": 512,
+    "max_connections": 2,
+    "adapter": "novelty_bench_independent",
+    "claim_boundary": "generic response-diversity transfer, not scientific novelty"
+  },
+  "runs": {
+    "A0": {"job": "19105", "node": "node02", "status_at_freeze": "completed"},
+    "B2a": {"job": "19202", "node": "node01", "status_at_freeze": "submitted"},
+    "B2b": {"job": "19198", "node": "node02", "status_at_freeze": "submitted"},
+    "C1-best1": {"job": "19199", "node": "node02", "status_at_freeze": "submitted"},
+    "C2-best1": {"job": "19200", "node": "node02", "status_at_freeze": "submitted"},
+    "D1": {"job": "19201", "node": "node02", "status_at_freeze": "submitted"},
+    "D2": {"job": "19203", "node": "node02", "dependency": "afterany:19198", "status_at_freeze": "submitted"}
+  },
+  "concurrency_note": "B2b, C1-best1, C2-best1, and D1 may occupy four node02 GPUs concurrently. D2 starts only after B2b terminates. B2a is independently queued on node01 around the training workload."
+}

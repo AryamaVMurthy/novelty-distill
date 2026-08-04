@@ -38,6 +38,13 @@ similarity strata, and 26 hidden repeats per rater. It awaits two blinded human
 raters and is audited in
 [`audits/semantic-equivalence-calibration-20260805-v2.manifest.json`](audits/semantic-equivalence-calibration-20260805-v2.manifest.json).
 
+The corrected full A0 NoveltyBench gate also passed: Distinct@10 4.080 and
+Utility@10 4.066 over 100 prompts, with the full seed 17--26 schedule observed.
+The exact duplicates on 18 prompts are concentrated in constrained factual
+questions and are not the old repeated-seed bug. The six clean trained
+seed-17 methods are now running on the same corrected protocol. See
+[`audits/noveltybench-corrected-full-A0-k10-seed17-v2/README.md`](audits/noveltybench-corrected-full-A0-k10-seed17-v2/README.md).
+
 ## Historical 2026-08-04 snapshot
 
 The compact K=4 baseline study, the

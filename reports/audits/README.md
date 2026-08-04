@@ -10,6 +10,10 @@ The consolidated interpretation and ICLR research path are in
 - `pubmed-metadata-20260805.json`: frozen PubMed XML-derived metadata used by the temporal audit.
 - `noveltybench-corrected-smoke-A0-k10-seed17-v2/`: first portable independent-seed
   NoveltyBench implementation smoke, retained as raw Inspect evidence and a canonical summary.
+- `noveltybench-corrected-full-A0-k10-seed17-v2/`: full 100-prompt A0 protocol gate, including
+  the canonical summary and raw Inspect log. It passed and released the trained baseline runs.
+- `noveltybench-corrected-seed17-submission-20260805.json`: job identities and concurrency
+  contract for the corrected A0 plus six-method seed-17 NoveltyBench matrix.
 - `deepinfra-calibration-packet-20260805.manifest.json`: immutable identity of the first
   independent-judge packet. It is retained only for provenance and was superseded before paid
   use; see `deepinfra-calibration-packet-20260805.SUPERSEDED.md`.
