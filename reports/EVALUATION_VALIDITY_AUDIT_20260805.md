@@ -326,9 +326,20 @@ automatic truth oracle. The currently available
 because it is Llama-family rather than Qwen-family and supports strict
 structured output. A cost-controlled first pass should score roughly 420
 blinded answers: 60 each from A0, A1, B2b, C1, C2, D1, and D2, stratified over
-within-method Qwen feasibility/soundness quartiles. Re-score a 10% subset to
-measure API/model stability. Expand only if ceiling rate, agreement, and method
-ranking are informative.
+pooled Qwen feasibility/soundness rank quartiles. The same 60 prompt/sample
+slots are used for every method, preserving paired comparisons. Re-score a 10%
+subset to measure API/model stability. Expand only if ceiling rate, agreement,
+and method ranking are informative.
+
+This packet is now prepared: 420 original answers plus 42 hidden repeats, 462
+total calls, seed 20260805. Each pooled score stratum has 105 originals (15
+slots times seven methods). Its SHA-256 is
+`c240ff15948ff042f86b21c41964838e9a60b98521f7ca98894ecb8505f70e6b`;
+the redacted provenance is
+[`audits/deepinfra-calibration-packet-20260805.manifest.json`](audits/deepinfra-calibration-packet-20260805.manifest.json).
+The runner is resumable, stores raw responses and token usage, validates the
+strict schema, and never sends method labels, Qwen scores, or repeat flags to
+the external judge. Zero paid requests have been sent so far.
 
 The credential is not currently present as `DEEPINFRA_API_KEY` on the local or
 Turing environment. The key pasted into chat should be rotated because it is

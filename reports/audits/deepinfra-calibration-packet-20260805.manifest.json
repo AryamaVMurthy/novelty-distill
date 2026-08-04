@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "status": "prepared_not_judged",
+  "packet_sha256": "c240ff15948ff042f86b21c41964838e9a60b98521f7ca98894ecb8505f70e6b",
+  "packet_size_bytes": 1807074,
+  "protocol_hash": "330505af2d90aae1149e09115f27432e2807b3f9ebfc994cecb058f24c8fe71e",
+  "sampling": {
+    "design": "paired-slots-pooled-qwen-core-rank-quartiles-v1",
+    "seed": 20260805,
+    "samples_per_method": 60,
+    "originals": 420,
+    "hidden_repeats": 42,
+    "total_requests": 462,
+    "max_sample_index_exclusive": 4,
+    "methods": ["A0", "A1", "B2b", "C1-best1", "C2-best1", "D1", "D2"],
+    "originals_per_pooled_score_stratum": {"0": 105, "1": 105, "2": 105, "3": 105}
+  },
+  "request_model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+  "claim_boundary": "Different-family sensitivity analysis only; not ground truth and not a global scientific-novelty measurement.",
+  "source_fingerprints": {
+    "prompts": "4b3f5167b45ff4e4a7501eca7c7fcb1e6ff0ca4af70f446db8b046202a05a5a1",
+    "A0": "fa9a9b761e70d675f93c5e46ae707cbcdfac763ab44171d4444589d571425304",
+    "A1": "f85f2b7033208002e2ad702b9b8d31d7e36a7b484baf199971556f5a1e53812d",
+    "B2b": "649620346829c9b9e764099ebd9a518d2d26f01ded0ae6f85ddbee05d38e5a6f",
+    "C1-best1": "a2ebbc2b9bea7ab2c656986dd98822d6b879703a0a73354f88221e4a5d5596db",
+    "C2-best1": "5f192ded7cf51003d3729e28b87e86a6fc10c7f2376b91863a80897eab1d8033",
+    "D1": "47e8015ea2f279285e498b7f51d696b25a5362f22757bae209c05b4709a72aa5",
+    "D2": "5cd8b8e8577f122e26dbc39e99dc27232672c8c54c41a08d59d6c69577f051b9"
+  },
+  "locations": {
+    "local_ignored_packet": "artifacts/deepinfra-calibration/deepinfra-calibration-packet-20260805.json",
+    "turing_node01_packet": "/scratch/aryama.murthy/novelty-distill/evaluations/independent-judge/deepinfra-calibration-packet-20260805.json"
+  },
+  "blocker": "A rotated credential has not yet been installed as DEEPINFRA_API_KEY; zero paid requests have been sent."
+}

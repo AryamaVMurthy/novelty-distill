@@ -21,7 +21,10 @@ and the complete current interpretation is
 The usable pilot reference is C1; B2b is the hard sequence-KD failure control,
 C2 is the static reverse-KL control, and D1/D2 are on-policy controls. B1 is
 descriptive only and quarantined. No run is currently active. A different-family
-DeepInfra judge pass awaits a rotated key exported through the environment.
+DeepInfra packet with 420 originals and 42 hidden repeats is prepared and dry-run
+validated; paid judging awaits a rotated key exported through the environment.
+Its redacted audit is
+[`audits/deepinfra-calibration-packet-20260805.manifest.json`](audits/deepinfra-calibration-packet-20260805.manifest.json).
 
 ## Historical 2026-08-04 snapshot
 
