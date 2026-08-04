@@ -264,6 +264,10 @@ taxonomy on an author-audited subset. We can reuse the *analysis idea*, with
 attribution and our own human calibration, but its labels should not become a
 replacement outcome for feasibility or semantic equivalence.
 
+The verified bibliography and claim-by-claim research log are
+[`LITERATURE_SOURCE_LOG_20260805.md`](LITERATURE_SOURCE_LOG_20260805.md) and
+[`../references.bib`](../references.bib).
+
 ## Recommended ICLR research question
 
 Do not frame the current paper as “we improve novelty.” A defensible and useful
