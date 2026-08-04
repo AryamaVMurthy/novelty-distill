@@ -1,6 +1,7 @@
 import pytest
 
 from novelty_distill.evaluation.score_analysis import (
+    evaluate_score_discrimination,
     render_score_summary_markdown,
     summarize_score_payloads,
 )
@@ -50,6 +51,50 @@ def test_summarize_score_payloads_exposes_ceiling_and_within_prompt_spread() -> 
     assert "# Scored generation diagnostics" in markdown
     assert "not a novelty score" in markdown
     assert "| `clarity` |" in markdown
+
+
+def test_discrimination_gate_keeps_only_non_saturated_scientific_axes_primary() -> None:
+    summary = summarize_score_payloads((_payload("p1", (5, 3)), _payload("p2", (4, 4))))
+    policy = {
+        "schema_version": 1,
+        "policy": "judge-discrimination-v1",
+        "core_dimensions": ["feasibility", "soundness"],
+        "quality_ceiling_rate_max": 0.5,
+        "core_dimension_ceiling_rate_max": 0.8,
+        "within_prompt_unique_scores_mean_min": 1.5,
+        "metric_status": {
+            "student_feasibility_mean": "primary_eligible",
+            "student_soundness_mean": "primary_eligible",
+            "student_quality_mean": "diagnostic_only",
+        },
+        "claim_boundary": "Operational quality only.",
+    }
+
+    result = evaluate_score_discrimination(summary, policy)
+
+    assert result["passed"] is True
+    assert result["failures"] == []
+    assert result["metric_status"]["student_quality_mean"] == "diagnostic_only"
+
+
+def test_discrimination_gate_fails_closed_when_core_axis_is_saturated() -> None:
+    summary = summarize_score_payloads((_payload("p1", (5, 5)), _payload("p2", (5, 5))))
+    policy = {
+        "schema_version": 1,
+        "policy": "judge-discrimination-v1",
+        "core_dimensions": ["feasibility", "soundness"],
+        "quality_ceiling_rate_max": 0.5,
+        "core_dimension_ceiling_rate_max": 0.8,
+        "within_prompt_unique_scores_mean_min": 1.5,
+        "metric_status": {},
+        "claim_boundary": "Operational quality only.",
+    }
+
+    result = evaluate_score_discrimination(summary, policy)
+
+    assert result["passed"] is False
+    assert any("feasibility" in failure for failure in result["failures"])
+    assert any("within_prompt_unique_scores_mean" in failure for failure in result["failures"])
 
 
 def test_summarize_score_payloads_rejects_mixed_judges() -> None:

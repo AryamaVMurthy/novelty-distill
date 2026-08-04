@@ -82,6 +82,9 @@ def test_official_noveltybench_uses_independent_official_sampling_protocol() -> 
     assert '--top-p "${NOVELTY_TOP_P:-1.0}"' in novelty_branch
     assert '--seed "${SEED:-17}"' not in novelty_branch
     assert '--base-seed "${novelty_base_seed}"' in novelty_branch
+    assert "os.path.relpath" in (
+        Path("scripts/summarize_noveltybench.py")
+    ).read_text(encoding="utf-8")
 
 
 def test_official_evaluation_does_not_mutate_project_install_between_workers() -> None:

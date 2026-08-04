@@ -209,6 +209,8 @@ def test_contrast_config_keeps_rubric_axes_descriptive() -> None:
         "completion_tokens_mean",
     } <= set(config["descriptive_metrics"])
     assert "student_instruction_compliance_mean" not in config["metrics"]
+    assert "student_quality_mean" not in config["metrics"]
+    assert "student_soundness_mean" in config["metrics"]
     assert "quality_qualified_semantic_yield" in config["descriptive_metrics"]
     assert "viable_semantic_yield" not in config["descriptive_metrics"]
     assert "quality_qualified_semantic_yield" not in config["metrics"]
@@ -216,6 +218,39 @@ def test_contrast_config_keeps_rubric_axes_descriptive() -> None:
         config["threshold_metric_directions"]["quality_qualified_semantic_yield"]
         == "higher"
     )
+
+
+def test_judge_validity_policy_limits_primary_axes_and_sets_gates() -> None:
+    policy = yaml.safe_load(
+        (ROOT / "configs/evaluation/judge_validity.yaml").read_text(encoding="utf-8")
+    )
+
+    assert policy["core_dimensions"] == ["feasibility", "soundness"]
+    assert policy["metric_status"]["student_quality_mean"] == "diagnostic_only"
+    assert policy["metric_status"]["student_feasibility_mean"] == "primary_eligible"
+    assert policy["metric_status"]["student_soundness_mean"] == "primary_eligible"
+    assert policy["independent_judge_required_for_paper_claims"] is True
+
+
+def test_semantic_validity_policy_requires_calibration_and_full_curves() -> None:
+    policy = yaml.safe_load(
+        (ROOT / "configs/evaluation/semantic_validity.yaml").read_text(encoding="utf-8")
+    )
+
+    assert policy["single_threshold_inference_allowed"] is False
+    assert policy["full_threshold_curve_required"] is True
+    assert policy["human_calibration"]["selection_data"] == "held-out calibration prompts"
+    for filename in (
+        "primary_contrasts.yaml",
+        "compact_baseline_contrasts.yaml",
+        "d2_compact_extension_contrasts.yaml",
+        "exposure_sensitivity_contrasts.yaml",
+        "exploratory_drkl_contrasts.yaml",
+    ):
+        config = yaml.safe_load(
+            (ROOT / "configs/evaluation" / filename).read_text(encoding="utf-8")
+        )
+        assert not set(config["metrics"]) & set(config["threshold_metric_directions"])
 
 
 def test_primary_teacher_cluster_threshold_is_nondegenerate_before_student_evaluation() -> None:

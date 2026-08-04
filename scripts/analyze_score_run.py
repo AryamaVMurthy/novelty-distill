@@ -8,12 +8,17 @@ import os
 import tempfile
 from pathlib import Path
 
+import yaml
+
 from novelty_distill.evaluation.score_analysis import (
+    evaluate_score_discrimination,
     render_score_summary_markdown,
     summarize_score_payloads,
 )
 from novelty_distill.evaluation.score_shards import load_score_shard
 from novelty_distill.provenance import repository_commit
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +28,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--expected-prompts", type=int)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--markdown", type=Path, required=True)
+    parser.add_argument(
+        "--judge-validity-policy",
+        type=Path,
+        default=ROOT / "configs/evaluation/judge_validity.yaml",
+    )
     return parser.parse_args()
 
 
@@ -75,6 +85,12 @@ def main() -> None:
         load_score_shard(path, samples_per_prompt=args.samples_per_prompt) for path in paths
     )
     summary = summarize_score_payloads(payloads)
+    policy_bytes = args.judge_validity_policy.read_bytes()
+    policy = yaml.safe_load(policy_bytes)
+    summary["judge_validity"] = {
+        **evaluate_score_discrimination(summary, policy),
+        "policy_sha256": hashlib.sha256(policy_bytes).hexdigest(),
+    }
     summary["schema_version"] = 1
     summary["git_commit"] = git_commit
     summary["input"] = {
@@ -93,6 +109,7 @@ def main() -> None:
                 "num_samples": summary["num_samples"],
                 "output": str(args.output),
                 "markdown": str(args.markdown),
+                "judge_discrimination_passed": summary["judge_validity"]["passed"],
             },
             sort_keys=True,
         )

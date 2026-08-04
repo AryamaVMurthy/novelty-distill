@@ -1,0 +1,18 @@
+schema_version: 1
+policy: judge-discrimination-and-claim-boundary-v1
+core_dimensions: [feasibility, soundness]
+quality_ceiling_rate_max: 0.50
+core_dimension_ceiling_rate_max: 0.80
+within_prompt_unique_scores_mean_min: 1.50
+metric_status:
+  student_feasibility_mean: primary_eligible
+  student_soundness_mean: primary_eligible
+  student_quality_mean: diagnostic_only
+  student_relevance_mean: diagnostic_only
+  student_clarity_mean: diagnostic_only
+  student_instruction_compliance_mean: diagnostic_only
+independent_judge_required_for_paper_claims: true
+claim_boundary: >-
+  Passing this gate establishes score discrimination only. It does not establish scientific
+  validity, novelty, or agreement with experts. Feasibility and soundness remain operational LLM
+  judgments and require a different-family judge plus blinded human calibration for paper claims.

@@ -3,6 +3,7 @@
 
 import argparse
 import hashlib
+import os
 from pathlib import Path
 
 from inspect_ai.log import read_eval_log
@@ -69,7 +70,7 @@ def main() -> None:
         model_identity=args.model_identity,
         expected_samples=args.expected_samples,
         num_generations=args.num_generations,
-        artifact=str(artifact),
+        artifact=os.path.relpath(artifact.resolve(), args.output.parent.resolve()),
         artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
         metrics=noveltybench_metrics(results_payload, expected_samples=args.expected_samples),
         sampling_protocol=NoveltyBenchSamplingProtocol(base_seed=args.base_seed),

@@ -1,0 +1,20 @@
+schema_version: 1
+policy: uncalibrated-semantic-threshold-quarantine-v1
+single_threshold_inference_allowed: false
+full_threshold_curve_required: true
+observed_threshold_sensitivity:
+  audit_run: A0-temporal-k4-from-k16
+  teacher_mode_recall:
+    "0.900": 0.628
+    "0.940": 0.120
+    "0.950": 0.048
+human_calibration:
+  required_before_single_threshold_inference: true
+  selection_data: held-out calibration prompts
+  unit: blinded response-pair semantic-equivalence labels
+  selection_rule: choose threshold before opening test-method comparisons
+claim_boundary: >-
+  Until the embedding equivalence threshold is calibrated against blinded human labels,
+  teacher-mode recall, precision, ClusterJSD, quality-adjusted coverage, semantic cluster counts,
+  and quality-qualified semantic yield are threshold-curve diagnostics only. They cannot enter a
+  primary single-threshold inferential family.

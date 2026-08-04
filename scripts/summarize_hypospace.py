@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 
 from novelty_distill.evaluation.official_results import (
@@ -31,7 +32,7 @@ def main() -> None:
         model_identity=args.model_identity,
         expected_samples=args.expected_samples,
         num_generations=args.num_generations,
-        artifact=str(args.input),
+        artifact=os.path.relpath(args.input.resolve(), args.output.parent.resolve()),
         artifact_sha256=hashlib.sha256(args.input.read_bytes()).hexdigest(),
         metrics=hypospace_metrics(
             payload,

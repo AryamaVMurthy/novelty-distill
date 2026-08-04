@@ -4,14 +4,8 @@ source: arXiv:2604.00223
 bootstrap_samples: 10000
 seed: 17
 metrics:
-  - student_quality_mean
   - student_feasibility_mean
-  - teacher_mode_recall
-  - teacher_mode_precision
-  - cluster_jsd
-  - quality_adjusted_coverage
-  - nearest_training_target_similarity_mean
-  - length_stop_rate
+  - student_soundness_mean
 descriptive_metrics:
   - student_quality_mean
   - student_relevance_mean

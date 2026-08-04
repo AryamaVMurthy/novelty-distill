@@ -103,6 +103,8 @@ def validate_official_summary(
     elif summary.sampling_protocol is not None or summary.sampling_diagnostics is not None:
         raise ValueError("HypoSpace summary unexpectedly contains NoveltyBench sampling fields")
     artifact = Path(summary.artifact)
+    if not artifact.is_absolute():
+        artifact = path.parent / artifact
     if not artifact.is_file():
         raise ValueError(f"official evaluation artifact is missing: {artifact}")
     if hashlib.sha256(artifact.read_bytes()).hexdigest() != summary.artifact_sha256:

@@ -12,8 +12,6 @@ seed: 17
 metrics:
   - student_feasibility_mean
   - student_soundness_mean
-  - teacher_mode_recall
-  - quality_qualified_semantic_yield
 descriptive_metrics:
   - student_quality_mean
   - student_relevance_mean
@@ -57,7 +55,7 @@ artifact_bundle:
         - {metric: student_feasibility_mean, label: Feasibility (1-5), maximum: 5}
         - {metric: student_soundness_mean, label: Soundness (1-5), maximum: 5}
     - filename: breadth.svg
-      title: Semantic breadth at matched K=4
+      title: Provisional semantic threshold diagnostics at matched K=4
       panels:
         - {metric: teacher_mode_recall, label: Teacher mode recall, maximum: 1}
         - {metric: quality_qualified_semantic_yield, label: Quality-qualified semantic yield, maximum: 4}

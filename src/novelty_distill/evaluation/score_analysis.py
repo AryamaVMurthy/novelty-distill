@@ -9,6 +9,82 @@ from typing import Any
 from novelty_distill.evaluation.teacher_annotation import JudgeSpec, QualityDimensions
 
 
+def evaluate_score_discrimination(
+    summary: Mapping[str, Any], policy: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Apply a frozen discrimination gate without upgrading judge scores to truth."""
+
+    if policy.get("schema_version") != 1:
+        raise ValueError("unsupported judge validity policy schema")
+    name = str(policy.get("policy", "")).strip()
+    claim_boundary = str(policy.get("claim_boundary", "")).strip()
+    core_dimensions = tuple(str(value) for value in policy.get("core_dimensions", ()))
+    metric_status = policy.get("metric_status")
+    if (
+        not name
+        or not claim_boundary
+        or not core_dimensions
+        or not isinstance(metric_status, Mapping)
+    ):
+        raise ValueError("judge validity policy is incomplete")
+    thresholds = {
+        "quality_ceiling_rate_max": float(policy["quality_ceiling_rate_max"]),
+        "core_dimension_ceiling_rate_max": float(
+            policy["core_dimension_ceiling_rate_max"]
+        ),
+        "within_prompt_unique_scores_mean_min": float(
+            policy["within_prompt_unique_scores_mean_min"]
+        ),
+    }
+    if not 0 <= thresholds["quality_ceiling_rate_max"] <= 1:
+        raise ValueError("quality ceiling-rate gate must be in [0, 1]")
+    if not 0 <= thresholds["core_dimension_ceiling_rate_max"] <= 1:
+        raise ValueError("dimension ceiling-rate gate must be in [0, 1]")
+    if thresholds["within_prompt_unique_scores_mean_min"] < 1:
+        raise ValueError("within-prompt unique-score gate must be at least one")
+    quality = summary.get("quality")
+    dimensions = summary.get("dimensions")
+    if not isinstance(quality, Mapping) or not isinstance(dimensions, Mapping):
+        raise ValueError("score summary lacks quality or dimension diagnostics")
+
+    failures: list[str] = []
+    quality_ceiling = float(quality["ceiling_rate"])
+    if quality_ceiling > thresholds["quality_ceiling_rate_max"]:
+        failures.append(
+            "quality.ceiling_rate "
+            f"{quality_ceiling:.6g} exceeds {thresholds['quality_ceiling_rate_max']:.6g}"
+        )
+    unique_mean = float(quality["within_prompt_unique_scores_mean"])
+    if unique_mean < thresholds["within_prompt_unique_scores_mean_min"]:
+        failures.append(
+            "quality.within_prompt_unique_scores_mean "
+            f"{unique_mean:.6g} is below "
+            f"{thresholds['within_prompt_unique_scores_mean_min']:.6g}"
+        )
+    for dimension in core_dimensions:
+        values = dimensions.get(dimension)
+        if not isinstance(values, Mapping):
+            raise ValueError(f"score summary lacks core dimension {dimension!r}")
+        ceiling = float(values["ceiling_rate"])
+        if ceiling > thresholds["core_dimension_ceiling_rate_max"]:
+            failures.append(
+                f"dimensions.{dimension}.ceiling_rate {ceiling:.6g} exceeds "
+                f"{thresholds['core_dimension_ceiling_rate_max']:.6g}"
+            )
+    return {
+        "policy": name,
+        "passed": not failures,
+        "failures": failures,
+        "thresholds": thresholds,
+        "core_dimensions": list(core_dimensions),
+        "metric_status": {str(key): str(value) for key, value in metric_status.items()},
+        "independent_judge_required_for_paper_claims": bool(
+            policy.get("independent_judge_required_for_paper_claims", True)
+        ),
+        "claim_boundary": claim_boundary,
+    }
+
+
 def summarize_score_payloads(payloads: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     """Aggregate judge discrimination and generation diagnostics without inferential claims."""
 
@@ -148,6 +224,18 @@ def render_score_summary_markdown(summary: Mapping[str, Any]) -> str:
     ]
     if git_commit := summary.get("git_commit"):
         lines[2:2] = [f"Producer Git commit: `{git_commit}`.", ""]
+    validity = summary.get("judge_validity")
+    if isinstance(validity, Mapping):
+        status = "PASS" if validity.get("passed") else "FAIL"
+        failures = validity.get("failures") or ["none"]
+        lines[2:2] = [
+            f"Judge discrimination gate: **{status}** (`{validity.get('policy')}`).",
+            "",
+            str(validity.get("claim_boundary", "")),
+            "",
+            "Gate failures: " + "; ".join(str(value) for value in failures) + ".",
+            "",
+        ]
     for name, values in dimensions.items():
         counts = ", ".join(f"{rating}:{count}" for rating, count in values["rating_counts"].items())
         lines.append(

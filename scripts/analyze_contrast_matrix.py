@@ -20,6 +20,7 @@ from novelty_distill.evaluation.evidence_policy import (
     annotate_method_summaries,
 )
 from novelty_distill.evaluation.reporting import render_contrast_markdown
+from novelty_distill.evaluation.semantic_validity import SemanticValidityPolicy
 from novelty_distill.provenance import repository_commit
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +37,11 @@ def parse_args() -> argparse.Namespace:
         "--evidence-policy",
         type=Path,
         default=ROOT / "configs/evaluation/evidence_status.yaml",
+    )
+    parser.add_argument(
+        "--semantic-validity-policy",
+        type=Path,
+        default=ROOT / "configs/evaluation/semantic_validity.yaml",
     )
     parser.add_argument("--filter-absent-contrasts", action="store_true")
     return parser.parse_args()
@@ -67,6 +73,9 @@ def main() -> None:
     policy_bytes = args.evidence_policy.read_bytes()
     policy = EvidencePolicy.from_path(args.evidence_policy)
     policy.validate_primary_contrasts(contrasts)
+    semantic_policy_bytes = args.semantic_validity_policy.read_bytes()
+    semantic_policy = SemanticValidityPolicy.from_path(args.semantic_validity_policy)
+    semantic_policy.validate_analysis_config(config)
     results = analyze_contrasts(
         rows=rows,
         contrasts=contrasts,
@@ -101,6 +110,15 @@ def main() -> None:
             "policy": policy.name,
             "sha256": hashlib.sha256(policy_bytes).hexdigest(),
             "claim_boundary": policy.claim_boundary,
+        },
+        "semantic_validity_policy": {
+            "policy": semantic_policy.name,
+            "sha256": hashlib.sha256(semantic_policy_bytes).hexdigest(),
+            "single_threshold_inference_allowed": (
+                semantic_policy.single_threshold_inference_allowed
+            ),
+            "full_threshold_curve_required": semantic_policy.full_threshold_curve_required,
+            "claim_boundary": semantic_policy.claim_boundary,
         },
         "method_summaries": annotate_method_summaries(
             summaries=summarize_method_metrics(

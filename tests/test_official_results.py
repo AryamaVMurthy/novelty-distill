@@ -157,6 +157,35 @@ def test_official_summary_resume_binds_model_and_controls(tmp_path: Path) -> Non
         )
 
 
+def test_official_summary_resolves_artifact_relative_to_summary(tmp_path: Path) -> None:
+    artifact = tmp_path / "result.eval"
+    artifact.write_bytes(b"portable-result")
+    summary_path = tmp_path / "summary.json"
+    summary = OfficialEvaluationSummary(
+        eval_id="portable",
+        suite="noveltybench",
+        model_identity="sha256:model",
+        expected_samples=1,
+        num_generations=3,
+        artifact="result.eval",
+        artifact_sha256=hashlib.sha256(artifact.read_bytes()).hexdigest(),
+        metrics={"distinct_k_mean": 2.0},
+        **_sampling_fields(),
+    )
+    summary_path.write_text(json.dumps(summary.model_dump(mode="json")), encoding="utf-8")
+
+    assert validate_official_summary(
+        summary_path,
+        eval_id="portable",
+        suite="noveltybench",
+        domain=None,
+        model_identity="sha256:model",
+        expected_samples=1,
+        num_generations=3,
+        novelty_base_seed=17,
+    )
+
+
 def test_noveltybench_summary_rejects_legacy_shared_seed_protocol(tmp_path: Path) -> None:
     artifact = tmp_path / "result.eval"
     artifact.write_bytes(b"result")
