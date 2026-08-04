@@ -108,3 +108,102 @@ The completed TOMATO results are a baseline/distillation study, not a novelty cl
 benchmarks are being used to test transfer beyond the original held-out TOMATO analysis. LLM-judge
 scores are not treated as a novelty oracle; diversity, utility, parsing/validity, and failure rates
 must be inspected together.
+
+## 8. Numerical appendix: production and target construction
+
+The teacher generation pass completed with exactly 1,000 prompt shards and 8,000 completions.
+Every prompt had eight distinct completions; 7,985 completions ended normally and 15 reached the
+512-token cap. The frozen teacher quality aggregate was 0.827656 (population SD 0.104174), with
+feasibility mean 3.733625 and soundness mean 3.71425 on the five-point rubric. Instruction
+compliance was near a ceiling (99.25% rating-5), so it is not a useful discriminator by itself.
+
+The target-release clustering audit selected complete-linkage threshold 0.94 after the earlier
+0.82 threshold produced only about one mode per prompt. The released target has 3.798 instructed
+modes per prompt on average (median 4), and 54.2% of prompts have at least four measured modes.
+The diverse-4 view contains 3.146 measured modes per prompt on average. Best-1 quality averages
+0.9166 versus 0.866088 for diverse-4, which is the intended quality-versus-breadth tradeoff.
+
+## 9. Numerical appendix: training systems costs
+
+These are measured TOMATO-1k production values from the run ledger. “Available rows” counts the
+static prompt-target rows made available to the trainer; “exposures” is the compute-matched number
+of optimizer examples consumed.
+
+| Baseline | Objective/view | Available rows | Exposures | Runtime (s) | Peak GPU MiB |
+|---|---|---:|---:|---:|---:|
+| B1 | CE / human | 1,000 | 1,000 | 305.3 | 15,286 |
+| B2a | CE / random-1 | 1,000 | 1,000 | 245.9 | 10,902 |
+| B2b | CE / best-1 | 1,000 | 1,000 | 245.1 | 10,982 |
+| B2c | CE / mode-1 | 1,000 | 1,000 | 251.0 | 10,924 |
+| B3 | CE / diverse-4 | 4,000 | 1,000 | 240.8 | 10,924 |
+| B4 | GEM / diverse-4 | 4,000 | 1,000 | 340.9 | 39,626 |
+| C1-human | forward KL / human | 1,000 | 1,000 | 617.7 | 45,662 |
+| C1-best1 | forward KL / best-1 | 1,000 | 1,000 | 487.2 | 40,298 |
+| C1-diverse4 | forward KL / diverse-4 | 4,000 | 1,000 | 485.8 | 40,498 |
+| C2-human | reverse KL / human | 1,000 | 1,000 | 617.0 | 43,020 |
+| C2-best1 | reverse KL / best-1 | 1,000 | 1,000 | 489.9 | 40,024 |
+| C2-diverse4 | reverse KL / diverse-4 | 4,000 | 1,000 | 487.7 | 40,078 |
+| D1 | on-policy forward KL | 1,000 prompt exposures | 1,000 | 13,524.8 | ~39,500 |
+| D2 | on-policy reverse KL | 1,000 prompt exposures | 1,000 | 13,638.4 | ~39,500 |
+
+All six production compact baselines are Qwen3-4B rank-16 LoRA adapters with 132,187,888-byte
+validated final artifacts. D1/D2 are not static-target datasets: they generate student
+trajectories during training, then evaluate the teacher distribution on those trajectories.
+
+## 10. Numerical appendix: completed TOMATO held-out results
+
+The frozen compact evaluation used 1,658 held-out prompts, K=4 generations per prompt, and a
+separate Qwen3-32B-FP8 judge. The columns are feasibility (/5), soundness (/5), teacher-mode
+recall, and viable semantic yield (/4).
+
+| Method | Feasibility | Soundness | Teacher recall | Viable yield |
+|---|---:|---:|---:|---:|
+| A0 | 4.218 | 4.603 | 0.120 | 1.900 |
+| B1 | 3.636 | 3.603 | 0.025 | 1.799 |
+| B2b | 3.398 | 3.176 | 0.031 | 0.565 |
+| C1-best1 | 4.239 | 4.657 | 0.134 | 2.248 |
+| C2-best1 | 4.240 | 4.656 | 0.135 | 1.795 |
+| D1 | 4.234 | 4.658 | 0.117 | 2.223 |
+| D2 | 4.231 | 4.638 | 0.125 | 1.737 |
+
+The principal predeclared findings are: B1 is below A0 on all four outcomes; B2b sharply reduces
+viable breadth; C1-best1 recovers quality and breadth; C2-best1 is similar in quality but more
+mode-seeking; and D1 does not improve over C1-best1. The separately predeclared D2 extension
+found no meaningful feasibility or teacher-recall difference from D1/C1/C2, but lower soundness
+and viable yield. D2 viable yield was 0.486 below D1 and 0.511 below C1-best1.
+
+These are baseline-study findings under a frozen operational judge. They are not human validation
+of scientific novelty and are not a claim that the judge is a novelty oracle.
+
+## 11. External benchmark accounting
+
+The external evaluation is deliberately separate from the training prompts and TOMATO judge:
+
+- NoveltyBench: 100 curated prompts × 10 generations = 1,000 generated answers per model.
+- HypoSpace causal: 61 tasks × 10 queries = 610 answers per model.
+- HypoSpace 3D: 9 tasks × 10 queries = 90 answers per model.
+- HypoSpace Boolean: 35 tasks × 10 queries = 350 answers per model.
+- Total: 2,050 generated answers per model, 14,350 across seven models.
+
+Every suite uses seed 17, temperature 0.7, top-p 0.9, max tokens 512, the same pinned source
+revisions, and one GPU. NoveltyBench reports `distinct_k` and `utility_k`. HypoSpace reports
+parse completion, validity, uniqueness/novelty, and recovery. The pinned Boolean schema does not
+emit a parser-stage statistic; because it reports zero provider errors and complete per-sample
+records, the canonical adapter records parser completion as 1.0 and documents that fallback.
+
+## 12. Current official job manifest
+
+| Model | NoveltyBench | Causal | 3D | Boolean | Combine |
+|---|---:|---:|---:|---:|---:|
+| A0 | 18792 | 18793 | 18794 | 18878 (recovery) | pending after validation |
+| B1 | 18848 | 18849 | 18850 | 18851 | 18852 |
+| B2b | 18853 | 18854 | 18855 | 18856 | 18857 |
+| C1-best1 | 18858 | 18859 | 18860 | 18861 | 18862 |
+| C2-best1 | 18863 | 18864 | 18865 | 18866 | 18867 |
+| D1 | 18868 | 18869 | 18870 | 18871 | 18872 |
+| D2 | 18873 | 18874 | 18875 | 18876 | 18877 |
+
+Jobs 18827–18846 were duplicate pending submissions caused by an asynchronous launcher-output
+race and were cancelled before execution. They must not be included in any result table. Job
+18847 generated a complete valid Boolean artifact but failed the old summary schema; it is also
+excluded from the accepted run. Job 18878 is the schema-corrected rerun.
