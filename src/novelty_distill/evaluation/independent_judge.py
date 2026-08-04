@@ -265,6 +265,12 @@ def build_blinded_calibration_sample(
         raise ValueError(
             f"only {len(common)} paired candidate slots exist, needs {samples_per_method}"
         )
+    common_prompt_count = len({prompt_id for prompt_id, _ in common})
+    if common_prompt_count < samples_per_method:
+        raise ValueError(
+            f"only {common_prompt_count} unique common prompts exist, "
+            f"needs {samples_per_method}"
+        )
     methods = sorted(by_method)
     ranked = sorted(
         (
@@ -283,15 +289,61 @@ def build_blinded_calibration_sample(
     for rank, (identity, _) in enumerate(ranked):
         strata[min(3, rank * 4 // len(ranked))].append(identity)
 
-    selected_slots: list[tuple[tuple[str, int], int]] = []
-    for stratum, quota in enumerate(_stratum_quotas(samples_per_method)):
-        choices = sorted(
-            strata[stratum],
-            key=lambda identity: _hash_order(seed + 1, "paired", identity[0], identity[1]),
-        )[:quota]
-        if len(choices) != quota:
-            raise ValueError(f"pooled score stratum {stratum} is too small")
-        selected_slots.extend((identity, stratum) for identity in choices)
+    # Select exactly one sample slot per prompt while retaining fixed stratum
+    # quotas. A prompt can have samples in more than one score stratum, so this
+    # is a small deterministic bipartite matching problem rather than four
+    # independent list slices.
+    candidates_by_stratum: dict[int, list[tuple[str, int]]] = {}
+    for stratum, identities in enumerate(strata):
+        preferred_by_prompt: dict[str, tuple[str, int]] = {}
+        for identity in identities:
+            prompt_id = identity[0]
+            incumbent = preferred_by_prompt.get(prompt_id)
+            if incumbent is None or _hash_order(
+                seed + 1, "paired", identity[0], identity[1]
+            ) < _hash_order(seed + 1, "paired", incumbent[0], incumbent[1]):
+                preferred_by_prompt[prompt_id] = identity
+        candidates_by_stratum[stratum] = sorted(
+            preferred_by_prompt.values(),
+            key=lambda identity: _hash_order(
+                seed + 1, "paired", identity[0], identity[1]
+            ),
+        )
+
+    demands = [
+        (stratum, offset)
+        for stratum, quota in enumerate(_stratum_quotas(samples_per_method))
+        for offset in range(quota)
+    ]
+    prompt_to_demand: dict[str, tuple[int, int]] = {}
+    demand_to_identity: dict[tuple[int, int], tuple[str, int]] = {}
+
+    def assign(demand: tuple[int, int], seen_prompts: set[str]) -> bool:
+        stratum, _ = demand
+        for identity in candidates_by_stratum[stratum]:
+            prompt_id = identity[0]
+            if prompt_id in seen_prompts:
+                continue
+            seen_prompts.add(prompt_id)
+            previous = prompt_to_demand.get(prompt_id)
+            if previous is None or assign(previous, seen_prompts):
+                prompt_to_demand[prompt_id] = demand
+                demand_to_identity[demand] = identity
+                return True
+        return False
+
+    for demand in sorted(
+        demands,
+        key=lambda item: (len(candidates_by_stratum[item[0]]), item[0], item[1]),
+    ):
+        if not assign(demand, set()):
+            raise ValueError(
+                "could not satisfy pooled score-stratum quotas with unique common prompts"
+            )
+    selected_slots = [
+        (demand_to_identity[demand], demand[0])
+        for demand in sorted(demands)
+    ]
 
     selected: list[CalibrationEntry] = []
     for identity, stratum in selected_slots:

@@ -359,12 +359,14 @@ slots are used for every method, preserving paired comparisons. Re-score a 10%
 subset to measure API/model stability. Expand only if ceiling rate, agreement,
 and method ranking are informative.
 
-This packet is now prepared: 420 original answers plus 42 hidden repeats, 462
-total calls, seed 20260805. Each pooled score stratum has 105 originals (15
-slots times seven methods). Its SHA-256 is
-`c240ff15948ff042f86b21c41964838e9a60b98521f7ca98894ecb8505f70e6b`;
-the redacted provenance is
-[`audits/deepinfra-calibration-packet-20260805.manifest.json`](audits/deepinfra-calibration-packet-20260805.manifest.json).
+The first packet was retired before any paid request. It had 420 original
+answers plus 42 hidden repeats, but its 60 paired sample slots represented only
+58 unique prompts, and it omitted the random-1 SeqKD control. The sampler now
+enforces one sample slot per prompt with a regression test. After the matched
+K=4 `B2a` scores finish, a replacement packet will contain A0, A1, B2a, B2b,
+C1, C2, D1, and D2: 480 originals plus 48 hidden repeats, 528 total calls, with
+60 unique paired prompts. The retired packet and reason are preserved in
+[`audits/deepinfra-calibration-packet-20260805.SUPERSEDED.md`](audits/deepinfra-calibration-packet-20260805.SUPERSEDED.md).
 The runner is resumable, stores raw responses and token usage, validates the
 strict schema, and never sends method labels, Qwen scores, or repeat flags to
 the external judge. Zero paid requests have been sent so far.

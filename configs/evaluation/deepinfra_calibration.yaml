@@ -6,10 +6,11 @@ samples_per_method: 60
 repeat_fraction: 0.10
 max_sample_index_exclusive: 4
 sampling_seed: 20260805
-sampling_design: paired-slots-pooled-qwen-core-rank-quartiles-v1
+sampling_design: paired-unique-prompts-pooled-qwen-core-rank-quartiles-v2
 methods:
   - A0
   - A1
+  - B2a
   - B2b
   - C1-best1
   - C2-best1

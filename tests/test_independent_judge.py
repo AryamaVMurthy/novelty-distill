@@ -69,6 +69,73 @@ def test_calibration_sample_is_balanced_blinded_and_repeatable() -> None:
     assert payload["response_format"]["type"] == "json_schema"
 
 
+def test_paired_calibration_uses_one_sample_slot_per_prompt() -> None:
+    prompts = {f"p-{index:02d}": f"research prompt {index}" for index in range(8)}
+    candidates: dict[str, list[dict]] = {}
+    for method in ("A0", "C1"):
+        candidates[method] = [
+            {
+                "prompt_id": prompt_id,
+                "sample_index": sample_index,
+                "text": f"{method} response {prompt_id}/{sample_index}",
+                "dimensions": {
+                    "relevance": 4,
+                    "feasibility": 1 + (prompt_index + sample_index) % 5,
+                    "soundness": 1 + (2 * prompt_index + sample_index) % 5,
+                    "clarity": 4,
+                    "instruction_compliance": 5,
+                },
+            }
+            for prompt_index, prompt_id in enumerate(prompts)
+            for sample_index in range(4)
+        ]
+
+    entries = build_blinded_calibration_sample(
+        candidates_by_method=candidates,
+        prompts=prompts,
+        samples_per_method=8,
+        repeat_fraction=0,
+        seed=17,
+    )
+    originals = [entry for entry in entries if entry.repeat_of is None]
+    selected_slots = {(entry.prompt_id, entry.sample_index) for entry in originals}
+
+    assert len(selected_slots) == 8
+    assert len({prompt_id for prompt_id, _ in selected_slots}) == 8
+
+
+def test_paired_calibration_rejects_too_few_unique_prompts() -> None:
+    prompts = {f"p-{index:02d}": f"research prompt {index}" for index in range(7)}
+    candidates = {
+        method: [
+            {
+                "prompt_id": prompt_id,
+                "sample_index": sample_index,
+                "text": f"{method} response {prompt_id}/{sample_index}",
+                "dimensions": {
+                    "relevance": 4,
+                    "feasibility": 3,
+                    "soundness": 3,
+                    "clarity": 4,
+                    "instruction_compliance": 5,
+                },
+            }
+            for prompt_id in prompts
+            for sample_index in range(4)
+        ]
+        for method in ("A0", "C1")
+    }
+
+    with pytest.raises(ValueError, match="unique common prompts"):
+        build_blinded_calibration_sample(
+            candidates_by_method=candidates,
+            prompts=prompts,
+            samples_per_method=8,
+            repeat_fraction=0,
+            seed=17,
+        )
+
+
 def test_calibration_sample_rejects_missing_prompt_and_text_duplicates() -> None:
     candidates = {"A0": _candidates("A0", 8)}
     prompts = {f"p-{index:02d}": f"prompt {index}" for index in range(7)}
