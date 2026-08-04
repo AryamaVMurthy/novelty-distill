@@ -222,3 +222,129 @@ the first LoRA-routing audit; their artifacts are excluded. The first corrected 
 retained only in `invalid-pre-lora-selection-20260804-r2/`. The current matrix above is the only
 accepted run set once validation completes. Node03 dispatch 18953–18972 failed before execution
 because its repository checkout had not yet been staged; those jobs produced no accepted artifacts.
+
+## 13. Exact task and judging contract
+
+The shared TOMATO generation instruction is:
+
+> Return only one hypothesis and its test plan in at most 300 words. Be specific about the
+> mechanism, how it differs from existing approaches, the intervention or experiment, measurable
+> outcomes, and what result would falsify the hypothesis. Do not add preambles or repeat the
+> research background.
+
+The teacher and student see the same scientific task and response contract during generation. A
+student is not evaluated on whether it reproduces the teacher's wording. The teacher bank is used
+to define a finite reference distribution and training views; the student is sampled independently
+under the frozen decoding settings. The human-target B1 row uses TOMATO's human answer, B2b uses the
+best judged teacher answer, and the KL rows use token-level teacher probabilities on the selected
+training trajectory. D1/D2 generate a student trajectory online and query the teacher on that
+trajectory rather than replaying a static response.
+
+The fixed Qwen3-32B-FP8 judge receives only `Task:` followed by the prompt and `Candidate answer:`
+followed by one answer. Its system rubric asks it to score five dimensions independently from 1 to
+5: relevance, feasibility, soundness, clarity, and instruction compliance. It explicitly says not
+to give a 5 merely for fluency or length and reserves 5 for an exceptional answer with a concrete
+mechanism, operational test, and no material gap. It returns strict JSON; the normalized quality
+proxy is `(mean(score)-1)/4`. Feasibility and soundness are retained separately, so a high mean
+cannot hide a failed dimension.
+
+The viability gate is stricter than the quality mean: relevance, soundness, and clarity must each
+be at least 4/5. The `viable_semantic_yield` metric then counts the largest set of mutually
+distinct viable answers under the selected embedding threshold. This is deliberately named an
+operational yield, not a scientific-novelty score.
+
+The embedding model is Qwen3-Embedding-4B with the instruction “Represent the scientific
+hypothesis for clustering by its central mechanism, intervention, and experimental test.” Teacher
+embeddings are complete-link clustered first at cosine 0.94. Each student embedding is assigned
+to a teacher mode only when its minimum similarity to every member of that mode reaches 0.94;
+otherwise it is clustered as a separately named student-novel mode. This prevents student bridge
+samples from changing the teacher partition.
+
+## 14. Metric dictionary and how to read the results
+
+| Metric | Meaning | Good direction | Important limitation |
+|---|---|---|---|
+| Feasibility | Judge score for an actionable, resource-credible test | higher | LLM rubric proxy, not expert review |
+| Soundness | Judge score for coherent mechanism and non-overclaiming conclusion | higher | Can be biased by fluent presentation |
+| Quality | Normalized mean of all five rubric dimensions | higher | Not novelty; instruction compliance is near ceiling |
+| Teacher-mode recall | Fraction of sampled teacher modes represented by students | higher | Only covers eight teacher samples, not all valid ideas |
+| Teacher-mode precision | Fraction of student modes assigned to teacher modes | higher | Depends on the 0.94 embedding boundary |
+| Cluster JSD | Plug-in divergence between teacher/student mode counts | lower | Finite-sample, threshold- and budget-dependent |
+| Semantic clusters | Number of distinct embedding clusters in student outputs | descriptive | Raw clusters may be low-quality or paraphrastic |
+| Quality-adjusted coverage | Quality-weighted breadth before the viability gate | higher | Still inherits judge and embedding bias |
+| Viable semantic yield | Count of distinct outputs passing the quality gate | higher | Operational proxy; not human novelty |
+| Length-stop rate | Fraction ending at the 512-token cap | lower | A truncation diagnostic, not a quality metric |
+
+All TOMATO comparisons use paired held-out prompt IDs and treat the prompt, not each completion,
+as the statistical unit. The contrast reports use 10,000 prompt-level sign-flip/bootstrap draws,
+pointwise 95% intervals, and Holm correction within each declared metric family. A low p-value only
+supports a difference in this operational protocol; it does not validate a scientific novelty claim.
+
+## 15. Findings in plain language
+
+The untouched A0 model is already strong on judged quality (4.218 feasibility, 4.603 soundness),
+but its four-sample viable yield is only 1.900 per prompt. Human-target SFT (B1) is a negative
+control: it falls to 3.636/3.603 and 1.799 yield, with teacher-mode recall dropping from 0.120 to
+0.025. This says that simply imitating the human target under this compute budget is not a safe
+quality-preserving baseline.
+
+B2b hard sequence KD improves neither quality nor breadth: 3.398 feasibility, 3.176 soundness,
+0.031 recall, and only 0.565 viable modes per prompt. Its average completion is 212 tokens versus
+329 for A0, so the model is producing shorter, narrower answers. This is the clearest baseline
+evidence of response-distribution collapse under best-of-eight sequence imitation.
+
+C1-best1 forward-KL distillation is the strongest practical baseline: 4.239 feasibility, 4.657
+soundness, 0.134 recall, and 2.248 viable modes. Relative to B2b, its paired viable-yield gain is
+1.683 modes/prompt (95% CI [1.622, 1.745]); relative to A0 it adds about 0.348 viable modes while
+also slightly improving judged quality. C1 is therefore the reference for any later proposed
+method.
+
+C2-best1 reverse-KL is essentially tied with C1 on feasibility, soundness, and recall, but its
+viable yield is lower by 0.453 modes/prompt (95% CI [-0.496, -0.410]). Its semantic-cluster mean
+is 2.001 versus C1's 2.491. In this finite-step experiment, reverse KL behaves as the more
+mode-seeking/narrow control, but the result is empirical and does not establish a universal theorem
+about reverse KL.
+
+D1 on-policy forward KL preserves quality and yield close to C1 (4.234/4.658 and 2.223) but does
+not improve it; its teacher recall is slightly lower by 0.0164. D2 on-policy reverse KL also keeps
+high quality (4.231/4.638), yet yield falls to 1.737, 0.486 below D1 and 0.511 below C1. Thus the
+current ladder supplies both KL directions and both trajectory regimes without claiming a winner
+beyond this baseline comparison.
+
+## 16. What has and has not been evaluated
+
+Completed: teacher-bank integrity, target-view construction, six compact LoRA trainings, all
+paired K=4 TOMATO held-out generations, Qwen3-32B scoring, embedding clustering, threshold curves,
+paired statistical contrasts, and the D2 extension. Also completed are smoke tests for the official
+benchmark clients and direct LoRA-routing audits.
+
+In progress: transfer of A0/B1/B2b/C1-best1/C2-best1/D1/D2 to the pinned NoveltyBench and three
+HypoSpace domains. These are not scored by the TOMATO Qwen judge. NoveltyBench uses its official
+utility/distinctness scorer; HypoSpace uses official domain-specific parse, recovery, uniqueness,
+and validity checks. The external results are a generalization check, not a replacement for the
+paired TOMATO analysis. They will be appended only after all four component summaries per model
+pass strict count, error, identity, and hash validation.
+
+Not completed and intentionally not claimed: expert human judgments of literature-grounded novelty,
+retrieval-based novelty against a citation corpus, or a novelty benchmark score derived from the
+TOMATO judge. The project is a basic baseline/distillation study, not a novelty claim.
+
+## 17. Reproducibility map
+
+- Dataset/configuration contracts: `configs/data/`, `configs/generation/`, and
+  `configs/training/`.
+- Baseline registry and objective definitions: `configs/baselines.yaml`.
+- Teacher and target provenance: `reports/RESEARCH_RUN_LEDGER.md`,
+  `reports/TEACHER_SCORE_FINDINGS.md`, and `reports/TEACHER_TARGET_FINDINGS.md`.
+- Completed TOMATO analysis: `reports/compact-k4-seed17/` and
+  `reports/compact-k4-seed17-d2-extension/`.
+- Strict official launcher: `slurm/evaluate_official.sbatch`.
+- Strict four-way combiner: `slurm/combine_official_results.sbatch`.
+- Local verification: `uv run --with pytest pytest -q` (282 passed, 2 optional Torch skips at
+  the last completed check).
+- Turing raw artifacts: `/scratch/node02/aryama.murthy/novelty-distill/` and
+  `/scratch/node03/aryama.murthy/novelty-distill/`, with `logs/`, `evaluations/official/`,
+  `checkpoints/`, and staged pinned upstream repositories.
+
+The report is intentionally split into a completed TOMATO section and a live external-run section
+so that partial official artifacts cannot be mistaken for final benchmark numbers.
