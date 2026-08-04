@@ -763,3 +763,32 @@ outputs, whereas decreases in both raw coverage and viable yield are evidence of
 narrowing among operationally viable responses. Karouzos et al. (2026) motivate this distinction;
 NovBench independently reinforces the existing rule that the quality judge is not a novelty
 oracle. No new training, scorer, endpoint, contrast, or promotion criterion was introduced.
+
+## 2026-08-04 D2 on-policy reverse-KL extension completion
+
+D2's audited checkpoint-125 adapter (`sha256:56904eba...`) was evaluated end to end under the
+same frozen K=4 temporal contract as the compact baseline study. Four L40S jobs generated all
+6,632 hypotheses for 1,658 held-out TOMATO prompts; the Qwen3-32B-FP8 judge produced all 6,632
+rubric records, and Qwen3-Embedding-4B embedded the new outputs against the shared teacher modes
+and training-reference targets. Generation and score validators each reported 1,658 complete
+prompt shards with zero pending. Evaluation job 18755 and analysis job 18756 exited 0, and the
+final queue audit was empty.
+
+The three D2 contrasts were committed before D2 held-out outputs were inspected and form a new
+Holm family, leaving the compact study's original five contrasts unchanged. D2's feasibility
+(4.2307) and teacher-mode recall (0.1254) were not distinguishable from D1, C2-best1, or C1-best1.
+Its soundness was about 0.018--0.020 lower than all three, with Holm-corrected p < 0.04. The large
+effect is breadth: viable semantic yield was 1.7370, lower than D1 by 0.4855 (95% CI
+[-0.5283, -0.4415]), lower than C2-best1 by 0.0579 ([-0.0971, -0.0181]), and lower than C1-best1
+by 0.5109 ([-0.5537, -0.4662]). The first and third corrected p-values are 0.000300; the second
+is 0.00470. Thus on-policy reverse KL is a high-quality but strongly mode-seeking control and does
+not displace C1-best1 as the practical trained baseline.
+
+The deployment required two transparent operational recoveries. Three initial generation shards
+exited immediately during a concurrent repository-clone race and were rerun without accepting
+partial output. The first judge pass exhausted transient L40S activation memory when configured
+at concurrency eight after 100 valid shards; idempotent recovery at concurrency two preserved the
+same judge, revision, prompts, rubric, decoding, and deterministic output contract. Full provenance,
+job IDs,
+hashes, and interpretation limits are frozen in
+`reports/compact-k4-seed17-d2-extension/RUN_AUDIT.md`.

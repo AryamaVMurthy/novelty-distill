@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="460" viewBox="0 0 960 460">
+<rect width="100%" height="100%" fill="white"/>
+<text x="480" y="34" text-anchor="middle" font-family="sans-serif" font-size="22">Quality at matched K=4 with D2</text>
+<text x="275" y="68" text-anchor="middle" font-family="sans-serif" font-size="16">Feasibility (1-5)</text>
+<line x1="65" y1="90" x2="65" y2="360" stroke="#444"/>
+<line x1="65" y1="360" x2="485" y2="360" stroke="#444"/>
+<text x="57" y="95" text-anchor="end" font-family="sans-serif" font-size="11">5</text>
+<text x="57" y="364" text-anchor="end" font-family="sans-serif" font-size="11">0</text>
+<rect x="76.4" y="132.251" width="37.2" height="227.749" fill="#4c78a8"/>
+<text x="95" y="126.251" text-anchor="middle" font-family="sans-serif" font-size="10">4.218</text>
+<text x="95" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">A0</text>
+<rect x="136.4" y="163.672" width="37.2" height="196.328" fill="#f58518"/>
+<text x="155" y="157.672" text-anchor="middle" font-family="sans-serif" font-size="10">3.636</text>
+<text x="155" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B1</text>
+<rect x="196.4" y="176.488" width="37.2" height="183.512" fill="#54a24b"/>
+<text x="215" y="170.488" text-anchor="middle" font-family="sans-serif" font-size="10">3.398</text>
+<text x="215" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2b</text>
+<rect x="256.4" y="131.119" width="37.2" height="228.881" fill="#e45756"/>
+<text x="275" y="125.119" text-anchor="middle" font-family="sans-serif" font-size="10">4.239</text>
+<text x="275" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C1-best1</text>
+<rect x="316.4" y="131.046" width="37.2" height="228.954" fill="#72b7b2"/>
+<text x="335" y="125.046" text-anchor="middle" font-family="sans-serif" font-size="10">4.240</text>
+<text x="335" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C2-best1</text>
+<rect x="376.4" y="131.388" width="37.2" height="228.612" fill="#b279a2"/>
+<text x="395" y="125.388" text-anchor="middle" font-family="sans-serif" font-size="10">4.234</text>
+<text x="395" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">D1</text>
+<rect x="436.4" y="131.542" width="37.2" height="228.458" fill="#4c78a8"/>
+<text x="455" y="125.542" text-anchor="middle" font-family="sans-serif" font-size="10">4.231</text>
+<text x="455" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">D2</text>
+<text x="735" y="68" text-anchor="middle" font-family="sans-serif" font-size="16">Soundness (1-5)</text>
+<line x1="525" y1="90" x2="525" y2="360" stroke="#444"/>
+<line x1="525" y1="360" x2="945" y2="360" stroke="#444"/>
+<text x="517" y="95" text-anchor="end" font-family="sans-serif" font-size="11">5</text>
+<text x="517" y="364" text-anchor="end" font-family="sans-serif" font-size="11">0</text>
+<rect x="536.4" y="111.463" width="37.2" height="248.537" fill="#4c78a8"/>
+<text x="555" y="105.463" text-anchor="middle" font-family="sans-serif" font-size="10">4.603</text>
+<text x="555" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">A0</text>
+<rect x="596.4" y="165.422" width="37.2" height="194.578" fill="#f58518"/>
+<text x="615" y="159.422" text-anchor="middle" font-family="sans-serif" font-size="10">3.603</text>
+<text x="615" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B1</text>
+<rect x="656.4" y="188.49" width="37.2" height="171.51" fill="#54a24b"/>
+<text x="675" y="182.49" text-anchor="middle" font-family="sans-serif" font-size="10">3.176</text>
+<text x="675" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">B2b</text>
+<rect x="716.4" y="108.499" width="37.2" height="251.501" fill="#e45756"/>
+<text x="735" y="102.499" text-anchor="middle" font-family="sans-serif" font-size="10">4.657</text>
+<text x="735" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C1-best1</text>
+<rect x="776.4" y="108.589" width="37.2" height="251.411" fill="#72b7b2"/>
+<text x="795" y="102.589" text-anchor="middle" font-family="sans-serif" font-size="10">4.656</text>
+<text x="795" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">C2-best1</text>
+<rect x="836.4" y="108.451" width="37.2" height="251.549" fill="#b279a2"/>
+<text x="855" y="102.451" text-anchor="middle" font-family="sans-serif" font-size="10">4.658</text>
+<text x="855" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">D1</text>
+<rect x="896.4" y="109.55" width="37.2" height="250.45" fill="#4c78a8"/>
+<text x="915" y="103.55" text-anchor="middle" font-family="sans-serif" font-size="10">4.638</text>
+<text x="915" y="378" text-anchor="middle" font-family="sans-serif" font-size="10">D2</text>
+</svg>
