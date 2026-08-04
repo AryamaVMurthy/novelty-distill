@@ -129,6 +129,15 @@ def test_global_generation_gate_ignores_worker_sharding() -> None:
     assert "EXPECTED_PROMPTS" in script
 
 
+def test_global_generation_gate_can_hash_a_training_dependent_artifact() -> None:
+    script = Path("slurm/validate_generation_run.sbatch").read_text(encoding="utf-8")
+
+    assert 'served_artifact_path="${SERVED_ARTIFACT_PATH:-}"' in script
+    assert "SERVED_ARTIFACT_PATH and SERVED_ARTIFACT_IDENTITY are mutually exclusive" in script
+    assert 'served_artifact_path="${scratch_root}/${served_artifact_path}"' in script
+    assert "scripts/hash_model_artifact.py" in script
+
+
 def test_global_score_gate_ignores_worker_sharding() -> None:
     script = Path("slurm/validate_score_run.sbatch").read_text(encoding="utf-8")
 

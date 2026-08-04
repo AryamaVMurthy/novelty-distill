@@ -24,6 +24,7 @@ input_path="${INPUT_PATH:-}"
 input_name="${INPUT_NAME:-}"
 expected_prompts="${EXPECTED_PROMPTS:-1000}"
 served_artifact_identity="${SERVED_ARTIFACT_IDENTITY:-}"
+served_artifact_path="${SERVED_ARTIFACT_PATH:-}"
 for value in "${generation_name}" "${generation_id}"; do
   if [[ -z "${value}" || "${value}" == */* || "${value}" == *..* ]]; then
     echo "generation names must be path-safe" >&2
@@ -42,6 +43,22 @@ fi
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
+if [[ -n "${served_artifact_path}" && -n "${served_artifact_identity}" ]]; then
+  echo "SERVED_ARTIFACT_PATH and SERVED_ARTIFACT_IDENTITY are mutually exclusive" >&2
+  exit 2
+fi
+if [[ -n "${served_artifact_path}" ]]; then
+  if [[ "${served_artifact_path}" != /* ]]; then
+    if [[ "${served_artifact_path}" != checkpoints/* || "${served_artifact_path}" == *..* ]]; then
+      echo "relative SERVED_ARTIFACT_PATH must be below checkpoints/" >&2
+      exit 2
+    fi
+    served_artifact_path="${scratch_root}/${served_artifact_path}"
+  elif [[ "${served_artifact_path}" != "${scratch_root}"/checkpoints/* ]]; then
+    echo "absolute SERVED_ARTIFACT_PATH must be below the scratch checkpoint root" >&2
+    exit 2
+  fi
+fi
 export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"
 if [[ -n "${input_name}" ]]; then
   input_path="${scratch_root}/data/${input_name}"
@@ -70,6 +87,14 @@ exec 8>"${scratch_root}/locks/venv-inference.lock"
 flock -x 8
 uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
 flock -u 8
+
+if [[ -n "${served_artifact_path}" ]]; then
+  test -d "${served_artifact_path}"
+  served_artifact_identity="$(
+    "${venv_dir}/bin/python" "${repo_dir}/scripts/hash_model_artifact.py" \
+      --path "${served_artifact_path}"
+  )"
+fi
 
 test -f "${input_path}"
 head -n "${expected_prompts}" "${input_path}" >"${input_slice}"
