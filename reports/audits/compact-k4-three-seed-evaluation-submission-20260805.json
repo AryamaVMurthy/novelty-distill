@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "repository_commit": "af5266617690fb408e073d15b2fc2f4e7ff0ae4d",
+  "source_submission_sha256": "b82866b29b6d648e4d66b5666e48726f2fbff14afcca30cb80cbadf6cd4f8eff",
+  "training_manifest": "reports/audits/compact-4b-1k-three-seed-training-submission-20260805.json",
+  "target_node": "node01",
+  "new_evaluation_seeds": [29, 43],
+  "analysis_seeds": [17, 29, 43],
+  "methods": ["B2a", "B2b", "C1-best1", "C2-best1", "D1", "D2"],
+  "protocol": {
+    "samples_per_prompt": 4,
+    "generation_shards": 4,
+    "score_shards": 4,
+    "generation_config": "configs/generation/eval_qwen3_4b_lora_k4.yaml",
+    "judge": "Qwen/Qwen3-32B-FP8",
+    "output_suffix": "temporal-k4-corrected-v2",
+    "artifact_binding": "dynamic post-training checkpoint hash"
+  },
+  "runs": [
+    {"method": "B2a", "seed": 29, "training": "19111_1", "generation": "19117", "generation_gate": "19118", "score": "19119", "score_gate": "19120", "evaluation": "19121"},
+    {"method": "B2b", "seed": 29, "training": "19111_2", "generation": "19122", "generation_gate": "19123", "score": "19124", "score_gate": "19125", "evaluation": "19126"},
+    {"method": "C1-best1", "seed": 29, "training": "19111_7", "generation": "19127", "generation_gate": "19128", "score": "19129", "score_gate": "19130", "evaluation": "19131"},
+    {"method": "C2-best1", "seed": 29, "training": "19111_10", "generation": "19132", "generation_gate": "19133", "score": "19134", "score_gate": "19135", "evaluation": "19136"},
+    {"method": "D1", "seed": 29, "training": "19111_13", "generation": "19137", "generation_gate": "19138", "score": "19139", "score_gate": "19140", "evaluation": "19141"},
+    {"method": "D2", "seed": 29, "training": "19111_14", "generation": "19142", "generation_gate": "19143", "score": "19144", "score_gate": "19145", "evaluation": "19146"},
+    {"method": "B2a", "seed": 43, "training": "19113_1", "generation": "19147", "generation_gate": "19148", "score": "19149", "score_gate": "19150", "evaluation": "19151"},
+    {"method": "B2b", "seed": 43, "training": "19113_2", "generation": "19152", "generation_gate": "19153", "score": "19154", "score_gate": "19155", "evaluation": "19156"},
+    {"method": "C1-best1", "seed": 43, "training": "19113_7", "generation": "19157", "generation_gate": "19158", "score": "19159", "score_gate": "19160", "evaluation": "19161"},
+    {"method": "C2-best1", "seed": 43, "training": "19113_10", "generation": "19162", "generation_gate": "19163", "score": "19164", "score_gate": "19165", "evaluation": "19166"},
+    {"method": "D1", "seed": 43, "training": "19113_13", "generation": "19167", "generation_gate": "19168", "score": "19169", "score_gate": "19170", "evaluation": "19171"},
+    {"method": "D2", "seed": 43, "training": "19113_14", "generation": "19172", "generation_gate": "19173", "score": "19174", "score_gate": "19175", "evaluation": "19176"}
+  ],
+  "seed17_b2a_evaluation_dependency": "19099",
+  "three_seed_analysis_job": "19177"
+}
