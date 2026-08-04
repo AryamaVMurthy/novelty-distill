@@ -1,0 +1,41 @@
+{
+  "eval_id": "official-A0-tomato1k-seed17",
+  "inputs": {
+    "hypospace_3d": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-A0-tomato1k-seed17/hypospace/3d/summary.json",
+      "sha256": "21ea94c552e035403145c46912f066b9c32066f3fa0f124f3fd6979e72ffe934"
+    },
+    "hypospace_boolean": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-A0-tomato1k-seed17/hypospace/boolean/summary.json",
+      "sha256": "3cff6bc85da0ce79662f8eb9539e8fda3337edbf46fa219d30e86580c0965e88"
+    },
+    "hypospace_causal": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-A0-tomato1k-seed17/hypospace/causal/summary.json",
+      "sha256": "fdffda5ba609e5e1c47805a914aa04749024235b55a77cb1c268a8b61f881fbd"
+    },
+    "noveltybench": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-A0-tomato1k-seed17/noveltybench/summary.json",
+      "sha256": "095146b65f75c71cb6a5f4b2b2a072997c541f083a9d065dca8eec53e4a06510"
+    }
+  },
+  "metrics": {
+    "hypospace_3d.parse_success_rate": 0.8888888888888888,
+    "hypospace_3d.recovery_rate": 0.07407407407407407,
+    "hypospace_3d.uniqueness_rate": 0.17777777777777778,
+    "hypospace_3d.validity_rate": 0.1111111111111111,
+    "hypospace_boolean.parse_success_rate": 1.0,
+    "hypospace_boolean.recovery_rate": 0.18666666666666668,
+    "hypospace_boolean.uniqueness_rate": 0.1,
+    "hypospace_boolean.validity_rate": 0.5942857142857143,
+    "hypospace_causal.parse_success_rate": 0.9704918032786886,
+    "hypospace_causal.recovery_rate": 0.2448087431693989,
+    "hypospace_causal.uniqueness_rate": 0.21311475409836061,
+    "hypospace_causal.validity_rate": 0.22295081967213115,
+    "noveltybench.distinct_k_mean": 1.0,
+    "noveltybench.distinct_k_stderr": 0.0,
+    "noveltybench.utility_k_mean": 1.8417571703451474,
+    "noveltybench.utility_k_stderr": 0.05621377341727245
+  },
+  "model_identity": "hf:Qwen/Qwen3-4B@1cfa9a7208912126459214e8b04321603b3df60c",
+  "schema_version": 1
+}

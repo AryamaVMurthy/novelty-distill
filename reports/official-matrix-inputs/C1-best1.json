@@ -1,0 +1,41 @@
+{
+  "eval_id": "official-C1-best1-tomato1k-seed17",
+  "inputs": {
+    "hypospace_3d": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-C1-best1-tomato1k-seed17/hypospace/3d/summary.json",
+      "sha256": "ffa7ed70ba852b08759983b6fcff389e6236835a8a32a434582db7dc5b520bfe"
+    },
+    "hypospace_boolean": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-C1-best1-tomato1k-seed17/hypospace/boolean/summary.json",
+      "sha256": "104f554eeefc9929ee09037f5153909a95a49f5143e64763bed52f5af31fbf15"
+    },
+    "hypospace_causal": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-C1-best1-tomato1k-seed17/hypospace/causal/summary.json",
+      "sha256": "86788f26531c26039370ff04c88a920a307f25f64cbb95d185f4dbf22fa4d5b4"
+    },
+    "noveltybench": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-C1-best1-tomato1k-seed17/noveltybench/summary.json",
+      "sha256": "4da2cbbcfb4e7e878c92e5e9a8faa7b13c2a1c2c89f9b3018874d3b70cdf4da3"
+    }
+  },
+  "metrics": {
+    "hypospace_3d.parse_success_rate": 0.1111111111111111,
+    "hypospace_3d.recovery_rate": 0.0,
+    "hypospace_3d.uniqueness_rate": 0.022222222222222223,
+    "hypospace_3d.validity_rate": 0.0,
+    "hypospace_boolean.parse_success_rate": 1.0,
+    "hypospace_boolean.recovery_rate": 0.20571428571428568,
+    "hypospace_boolean.uniqueness_rate": 0.11142857142857143,
+    "hypospace_boolean.validity_rate": 0.6485714285714287,
+    "hypospace_causal.parse_success_rate": 0.8360655737704918,
+    "hypospace_causal.recovery_rate": 0.21338797814207652,
+    "hypospace_causal.uniqueness_rate": 0.19344262295081965,
+    "hypospace_causal.validity_rate": 0.2836065573770492,
+    "noveltybench.distinct_k_mean": 1.0,
+    "noveltybench.distinct_k_stderr": 0.0,
+    "noveltybench.utility_k_mean": 1.8193513653531141,
+    "noveltybench.utility_k_stderr": 0.05555135493150307
+  },
+  "model_identity": "sha256:7fc74fcd56d0150faf987eb5234536cac649cd24882a4e35716ff2aedc1b50f8",
+  "schema_version": 1
+}

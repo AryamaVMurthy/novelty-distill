@@ -2,9 +2,9 @@
 
 Last updated: 2026-08-04 (Asia/Kolkata)
 
-This is the index for the complete experiment history. The official NoveltyBench/HypoSpace
-matrix is still in progress; the older TOMATO study is complete and should not be confused with
-the external benchmark run.
+This is the index for the complete experiment history. The TOMATO study and the seven-model
+official NoveltyBench/HypoSpace transfer matrix are complete. They remain separate analyses:
+the external benchmark is a transfer check, not a replacement for the paired TOMATO study.
 
 ## 1. Data production
 
@@ -75,11 +75,10 @@ Pinned source revisions:
 
 - Inspect Evals: `6a35510e530f236fd1dbcd9df888f01937c8494a`.
 - HypoSpace: `c69e9318577b34b5b896996571aefd4ba6053f58`.
-- Repository code for the corrected matrix: commit `7532b52` (the launcher and
-  LoRA-routing fixes are in `176ef1a`; the current matrix dispatch/report
-  bookkeeping is in the newer commit).
+- Repository code for the corrected matrix: commit `63d80ab` (including the launcher,
+  LoRA-routing, strict-combination, and HypoSpace 3D compatibility provenance).
 
-## 5. Live official-run status
+## 5. Official-run status and provenance
 
 - Job 18789: D2 NoveltyBench smoke completed and passed. It produced a valid 2-prompt ×
   2-generation summary under
@@ -93,22 +92,29 @@ Pinned source revisions:
 - The corrected launcher uses `novelty-base:novelty-model` for every LoRA request and leaves A0
   on `novelty-model`. A direct live request on the corrected B1 server produced different text
   for `novelty-base:novelty-model` versus `novelty-base`, confirming adapter activation.
-- Corrected A0 jobs: 18883–18887. The first LoRA restart (18888–18917) was stopped after
-  HypoSpace exposed the branch-scoped export bug; it is retained under the second invalid
-  archive. The current corrected LoRA jobs are B1/B2b on node02 (18919–18928) and C1-best1,
-  C2-best1, D1, and D2 on node03 (18975–18994). No result is accepted until every LoRA HypoSpace
-  artifact records `OpenRouter(novelty-base:novelty-model)` and all four summaries per model
-  validate and combine successfully.
+- Corrected A0 jobs were 18883–18887. The accepted LoRA runs were B1/B2b on node02
+  (18919–18928), C1-best1 on node03 (18975–18979), C2-best1 with a patched 3D retry
+  (18980, 18981, 19029, 18983, 19035), D1 with node03-to-node01 staging
+  (18985, 18986, 18987, 19019, 19041, 19042), and D2 with a patched 3D retry
+  (19011, 19012, 19031, 19014, 19036). Every accepted LoRA artifact records
+  `OpenRouter(novelty-base:novelty-model)` and passed the four-summary validation gate.
+- The pinned HypoSpace 3D revision has a NumPy truth-value bug in `Structure3D`; the required
+  compatibility patch is recorded in `patches/hypospace_3d_numpy_truth.patch` and applied by
+  `slurm/apply_hypospace_3d_compat.sbatch`. The 3D retries are therefore “pinned revision plus
+  required NumPy compatibility patch,” not an assertion that untouched upstream ran cleanly.
+- All partial or pre-fix artifacts are retained for audit but excluded from the accepted matrix.
 
 ## 6. Where raw logs and artifacts live
 
-On Turing node02:
+On Turing node-local scratch (node01, node02, and node03):
 
 `/scratch/node02/aryama.murthy/novelty-distill/logs/`
 
 contains Slurm logs, SGLang server logs, and Inspect traces. Official results are under:
 
 `/scratch/node02/aryama.murthy/novelty-distill/evaluations/official/`
+
+The corresponding node01/node03 paths contain the D1/D2 and C1/C2 artifacts respectively.
 
 The repository source, configs, tests, and scripts are in this checkout. The official evaluator
 is `slurm/evaluate_official.sbatch`; model-level validation/combination is
@@ -203,7 +209,27 @@ parse completion, validity, uniqueness/novelty, and recovery. The pinned Boolean
 emit a parser-stage statistic; because it reports zero provider errors and complete per-sample
 records, the canonical adapter records parser completion as 1.0 and documents that fallback.
 
-## 12. Current official job manifest
+### Final official metrics (seed 17)
+
+The following are descriptive one-seed results; they are not significance tests. `NB utility` is
+NoveltyBench `utility_k_mean`; HypoSpace columns are parse/recovery/uniqueness/validity rates.
+
+| Method | NB utility | Causal P/R/U/V | 3D P/R/U/V | Boolean P/R/U/V |
+|---|---:|---|---|---|
+| A0 | 1.841757 | .970/.245/.213/.223 | .889/.074/.178/.111 | 1.000/.187/.100/.594 |
+| B1 | 1.590812 | .143/.338/.079/.118 | .800/.185/.367/.056 | 1.000/.232/.097/.597 |
+| B2b | 1.772299 | 1.000/.169/.180/.228 | 1.000/.074/.189/.111 | 1.000/.213/.111/.631 |
+| C1-best1 | 1.819351 | .836/.213/.193/.284 | .111/.000/.022/.000 | 1.000/.206/.111/.649 |
+| C2-best1 | 1.855201 | 1.000/.224/.202/.270 | .333/.074/.122/.100 | 1.000/.215/.111/.603 |
+| D1 | 1.908975 | .230/.198/.134/.126 | .011/.000/.011/.000 | 1.000/.206/.111/.606 |
+| D2 | 1.870885 | 1.000/.210/.205/.254 | .222/.074/.156/.022 | 1.000/.227/.111/.634 |
+
+`distinct_k_mean` is 1.0 for every model and is therefore saturated in this run; utility and the
+domain-specific validity/recovery metrics carry more information. The very low C1/D1 3D values
+are accepted official outcomes after count, error, identity, hash, and compatibility-patch gates;
+they are not silently replaced by a different scorer.
+
+## 12. Final official job manifest
 
 | Model | NoveltyBench | Causal | 3D | Boolean | Combine |
 |---|---:|---:|---:|---:|---:|
@@ -211,22 +237,26 @@ records, the canonical adapter records parser completion as 1.0 and documents th
 | B1 (node02) | 18919 | 18920 | 18921 | 18922 | 18923 |
 | B2b (node02) | 18924 | 18925 | 18926 | 18927 | 18928 |
 | C1-best1 (node03) | 18975 | 18976 | 18977 | 18978 | 18979 |
-| C2-best1 (node03) | 18980 | 18981 | 18982 | 18983 | 18984 |
-| D1 (node03) | 18985 | 18986 | 18987 | 18988 | 18989 |
-| D2 (node03) | 18990 | 18991 | 18992 | 18993 | 18994 |
+| C2-best1 (node03) | 18980 | 18981 | 19029 (patched) | 18983 | 19035 |
+| D1 (node03/01) | 18985 | 18986 | 18987 | 19019 | 19042 |
+| D2 (node01) | 19011 | 19012 | 19031 (patched) | 19014 | 19036 |
 
 Jobs 18827–18846 were duplicate pending submissions caused by an asynchronous launcher-output
 race and were cancelled before execution. Jobs 18792, 18848, 18850, and 18853 were stopped after
 the first LoRA-routing audit; their artifacts are excluded. The first corrected LoRA restart
 18888–18917 was also stopped after the HypoSpace export-scope audit; its B1 causal summary is
-retained only in `invalid-pre-lora-selection-20260804-r2/`. The current matrix above is the only
-accepted run set once validation completes. Node03 dispatch 18953–18972 failed before execution
-because its repository checkout had not yet been staged; those jobs produced no accepted artifacts.
+retained only in `invalid-pre-lora-selection-20260804-r2/`. Original C2 3D job 18982 and original
+D2 3D job 19013 were rejected by the known NumPy truth-value failure and superseded by the patched
+retries. D1 Boolean 18988 and its old combine were superseded by the validated node01 Boolean
+artifact and combine 19042. Node03 dispatch 18953–18972 failed before execution because its
+repository checkout had not yet been staged; those jobs produced no accepted artifacts.
 
 A0 is now fully validated and combined (job 18887). Its external control metrics are NoveltyBench
 `distinct_k_mean=1.000`, `utility_k_mean=1.841757`, with all three HypoSpace summaries present and
-hash-checked. The remaining six model suites are still in progress; no cross-model external
-comparison is reported until they each pass the same four-summary gate.
+hash-checked. The remaining six model suites now pass the same four-summary gate. The complete
+descriptive matrix is `reports/official-matrix-seed17.md` (machine-readable form:
+`reports/official-matrix-seed17.json`). The seven compact combined summaries are preserved under
+`reports/official-matrix-inputs/` as well as on node-local scratch.
 
 ## 13. Exact task and judging contract
 
@@ -320,15 +350,16 @@ beyond this baseline comparison.
 
 Completed: teacher-bank integrity, target-view construction, six compact LoRA trainings, all
 paired K=4 TOMATO held-out generations, Qwen3-32B scoring, embedding clustering, threshold curves,
-paired statistical contrasts, and the D2 extension. Also completed are smoke tests for the official
-benchmark clients and direct LoRA-routing audits.
+paired statistical contrasts, the D2 extension, official-client smoke tests, direct LoRA-routing
+audits, and the complete seven-model NoveltyBench/HypoSpace transfer matrix. Each external model
+has all four component summaries and a hash-checked combined result. These external suites are not
+scored by the TOMATO Qwen judge: NoveltyBench uses its official utility/distinctness scorer and
+HypoSpace uses official domain-specific parse, recovery, uniqueness, and validity checks.
 
-In progress: transfer of A0/B1/B2b/C1-best1/C2-best1/D1/D2 to the pinned NoveltyBench and three
-HypoSpace domains. These are not scored by the TOMATO Qwen judge. NoveltyBench uses its official
-utility/distinctness scorer; HypoSpace uses official domain-specific parse, recovery, uniqueness,
-and validity checks. The external results are a generalization check, not a replacement for the
-paired TOMATO analysis. They will be appended only after all four component summaries per model
-pass strict count, error, identity, and hash validation.
+The committed aggregate is `reports/official-matrix-seed17.md` with JSON provenance in
+`reports/official-matrix-seed17.json`; the seven source summaries are in
+`reports/official-matrix-inputs/`. The external results are a generalization check, not a
+replacement for the paired TOMATO analysis.
 
 Not completed and intentionally not claimed: expert human judgments of literature-grounded novelty,
 retrieval-based novelty against a citation corpus, or a novelty benchmark score derived from the
@@ -345,11 +376,15 @@ TOMATO judge. The project is a basic baseline/distillation study, not a novelty 
   `reports/compact-k4-seed17-d2-extension/`.
 - Strict official launcher: `slurm/evaluate_official.sbatch`.
 - Strict four-way combiner: `slurm/combine_official_results.sbatch`.
+- Official aggregate: `reports/official-matrix-seed17.md` and
+  `reports/official-matrix-seed17.json`.
+- Committed combined summaries: `reports/official-matrix-inputs/`.
 - Local verification: `uv run --with pytest pytest -q` (282 passed, 2 optional Torch skips at
   the last completed check).
-- Turing raw artifacts: `/scratch/node02/aryama.murthy/novelty-distill/` and
+- Turing raw artifacts: `/scratch/node01/aryama.murthy/novelty-distill/`,
+  `/scratch/node02/aryama.murthy/novelty-distill/`, and
   `/scratch/node03/aryama.murthy/novelty-distill/`, with `logs/`, `evaluations/official/`,
   `checkpoints/`, and staged pinned upstream repositories.
 
-The report is intentionally split into a completed TOMATO section and a live external-run section
-so that partial official artifacts cannot be mistaken for final benchmark numbers.
+The report is intentionally split into a completed TOMATO section and a completed external-transfer
+section so that the two protocols and their interpretation limits remain explicit.

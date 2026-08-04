@@ -1,0 +1,41 @@
+{
+  "eval_id": "official-B1-tomato1k-seed17",
+  "inputs": {
+    "hypospace_3d": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-B1-tomato1k-seed17/hypospace/3d/summary.json",
+      "sha256": "4274e7b1a3f406155e1d4f1356e3f1fd214cf4d6b2a829b68c0420926c571660"
+    },
+    "hypospace_boolean": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-B1-tomato1k-seed17/hypospace/boolean/summary.json",
+      "sha256": "80b8b0a305321dedc26080ee80c7cea317be9177bc80366dd72b4933eb454526"
+    },
+    "hypospace_causal": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-B1-tomato1k-seed17/hypospace/causal/summary.json",
+      "sha256": "e15a94f7a431b69ae33b1877a4ed8d54babcfa274a0f987749891707ecc6b5d4"
+    },
+    "noveltybench": {
+      "path": "/scratch/aryama.murthy/novelty-distill/evaluations/official/official-B1-tomato1k-seed17/noveltybench/summary.json",
+      "sha256": "a71b1a3c63a8859aa6cfffeb0d4139bda73a696cae659841ffc927d39330d538"
+    }
+  },
+  "metrics": {
+    "hypospace_3d.parse_success_rate": 0.8,
+    "hypospace_3d.recovery_rate": 0.18518518518518517,
+    "hypospace_3d.uniqueness_rate": 0.36666666666666675,
+    "hypospace_3d.validity_rate": 0.05555555555555555,
+    "hypospace_boolean.parse_success_rate": 1.0,
+    "hypospace_boolean.recovery_rate": 0.23238095238095235,
+    "hypospace_boolean.uniqueness_rate": 0.09714285714285716,
+    "hypospace_boolean.validity_rate": 0.5971428571428572,
+    "hypospace_causal.parse_success_rate": 0.1426229508196721,
+    "hypospace_causal.recovery_rate": 0.3377049180327869,
+    "hypospace_causal.uniqueness_rate": 0.07868852459016393,
+    "hypospace_causal.validity_rate": 0.11803278688524589,
+    "noveltybench.distinct_k_mean": 1.0,
+    "noveltybench.distinct_k_stderr": 0.0,
+    "noveltybench.utility_k_mean": 1.5908121544343732,
+    "noveltybench.utility_k_stderr": 0.06893070969807473
+  },
+  "model_identity": "sha256:cfb6e32ef2a0648b6d8e372f0d2325098faa352c8d3a6f4af1cfc55fa75cf280",
+  "schema_version": 1
+}

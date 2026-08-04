@@ -1,10 +1,9 @@
 # Current research status
 
-Last authoritative snapshot: 2026-08-04. The compact K=4 baseline study and
-the D2 on-policy reverse-KL extension are complete. The separate seven-model
-NoveltyBench/HypoSpace transfer matrix is currently running on Turing
-node02/node03; it is tracked in [`EXPERIMENT_HANDOFF.md`](EXPERIMENT_HANDOFF.md)
-and is not mixed into the completed TOMATO results below.
+Last authoritative snapshot: 2026-08-04. The compact K=4 baseline study, the
+D2 on-policy reverse-KL extension, and the separate seven-model
+NoveltyBench/HypoSpace transfer matrix are complete. External transfer results
+are reported separately from the TOMATO results below.
 
 ## TL;DR
 
@@ -19,6 +18,10 @@ yield is 0.486 below D1 and 0.511 below C1-best1.
 This is a baseline result, not a novelty claim. The metrics are operational
 frozen-judge and embedding outcomes, not human validation of scientific
 novelty.
+
+The final external aggregate is [`official-matrix-seed17.md`](official-matrix-seed17.md).
+It uses one declared seed, so its means are descriptive and its population SD is
+zero by construction; it is not a multi-seed significance analysis.
 
 ## What was compared
 
@@ -48,6 +51,29 @@ Qwen3-14B training teacher.
 | `C2-best1` | 4.240 | 4.656 | 0.135 | 1.795 |
 | `D1` | 4.234 | 4.658 | 0.117 | 2.223 |
 | `D2` | 4.231 | 4.638 | 0.125 | 1.737 |
+
+## Official transfer matrix
+
+Each model generated 1,000 NoveltyBench answers and 610/90/350 HypoSpace causal/3D/Boolean
+answers under the pinned seed-17 protocol. NoveltyBench `distinct_k_mean` is 1.0 for every model,
+so utility is the informative NoveltyBench number. The compact summary below reports
+NB utility followed by HypoSpace causal validity and Boolean validity; the complete metric table
+is in [`official-matrix-seed17.md`](official-matrix-seed17.md).
+
+| Method | NB utility | Causal validity | 3D validity | Boolean validity |
+|---|---:|---:|---:|---:|
+| `A0` | 1.841757 | 0.222951 | 0.111111 | 0.594286 |
+| `B1` | 1.590812 | 0.118033 | 0.055556 | 0.597143 |
+| `B2b` | 1.772299 | 0.227869 | 0.111111 | 0.631429 |
+| `C1-best1` | 1.819351 | 0.283607 | 0.000000 | 0.648571 |
+| `C2-best1` | 1.855201 | 0.270492 | 0.100000 | 0.602857 |
+| `D1` | 1.908975 | 0.126230 | 0.000000 | 0.605714 |
+| `D2` | 1.870885 | 0.254098 | 0.022222 | 0.634286 |
+
+This transfer matrix has no universal winner: D1 has the highest NoveltyBench utility but weak
+causal/3D validity; C1-best1 has the strongest causal and Boolean validity but zero 3D validity;
+and D2 has strong causal/Boolean transfer with low 3D validity. These are benchmark-specific
+descriptive outcomes, not novelty claims.
 
 ## Predeclared paired conclusions
 
@@ -86,8 +112,8 @@ The D2 extension's corrected tests and threshold curves are in
 - D2 added 6,632 complete generations and judge records; its generation and
   score gates, embedding evaluation, and three-contrast analysis all exited 0.
 - Compact CSV/SVG artifact hashes match their manifest.
-- The compact-study jobs are complete. Any currently running jobs belong to the
-  separate external transfer matrix, not to this TOMATO analysis.
+- The compact-study jobs and the separate external transfer matrix are complete; no
+  benchmark job remains in the queue.
 
 The canonical compact handoff is
 [`compact-k4-seed17/README.md`](compact-k4-seed17/README.md); full job and
