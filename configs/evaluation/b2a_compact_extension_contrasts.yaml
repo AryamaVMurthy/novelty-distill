@@ -1,0 +1,67 @@
+schema_version: 1
+study: tomato1k-compact-k4-b2a-extension
+purpose: random_one_sequence_kd_control
+claim_scope: operational_qwen_judge_checkpoint_extension
+sampling_note: >-
+  B2a is newly generated at K=4 with the same frozen decoding controls as the compact study.
+  A0 reuses the deterministic first four samples from its validated K=16 source; A1 teacher
+  modes use the first four samples from their validated K=16 source; every trained method uses
+  four student samples. All extension contrasts are sampling-budget matched at K=4.
+extension_note: >-
+  These contrasts were declared before B2a held-out generations existed. B2a versus A0 measures
+  random-1 sequence-KD behavior; B2b versus B2a isolates best-of-eight Qwen-judge target selection
+  within sequence KD; C1-best1 versus B2a compares token-distribution KD to random-target hard KD.
+  Results remain single-training-seed, Qwen-judge operational evidence, not human-validated quality
+  or scientific novelty.
+bootstrap_samples: 10000
+seed: 17
+metrics:
+  - student_feasibility_mean
+  - student_soundness_mean
+descriptive_metrics:
+  - student_quality_mean
+  - student_relevance_mean
+  - student_feasibility_mean
+  - student_soundness_mean
+  - student_clarity_mean
+  - student_instruction_compliance_mean
+  - student_semantic_clusters
+  - teacher_mode_recall
+  - teacher_mode_precision
+  - cluster_jsd
+  - quality_adjusted_coverage
+  - quality_qualified_semantic_yield
+  - nearest_training_target_similarity_mean
+  - length_stop_rate
+  - completion_tokens_mean
+threshold_metric_directions:
+  student_semantic_clusters: higher
+  teacher_mode_recall: higher
+  teacher_mode_precision: higher
+  cluster_jsd: lower
+  quality_adjusted_coverage: higher
+  quality_qualified_semantic_yield: higher
+contrasts:
+  - {id: B2a-vs-A0, reference: A0, treatment: B2a}
+  - {id: B2b-vs-B2a, reference: B2a, treatment: B2b}
+  - {id: C1-best1-vs-B2a, reference: B2a, treatment: C1-best1}
+artifact_bundle:
+  method_order: [A0, B2a, B2b, C1-best1]
+  table_metrics:
+    - student_feasibility_mean
+    - student_soundness_mean
+    - teacher_mode_recall
+    - quality_qualified_semantic_yield
+    - nearest_training_target_similarity_mean
+    - length_stop_rate
+  plots:
+    - filename: quality.svg
+      title: Operational quality at matched K=4 with random-1 sequence KD
+      panels:
+        - {metric: student_feasibility_mean, label: Feasibility (1-5), maximum: 5}
+        - {metric: student_soundness_mean, label: Soundness (1-5), maximum: 5}
+    - filename: breadth.svg
+      title: Provisional semantic threshold diagnostics at matched K=4
+      panels:
+        - {metric: teacher_mode_recall, label: Teacher mode recall, maximum: 1}
+        - {metric: quality_qualified_semantic_yield, label: Quality-qualified semantic yield, maximum: 4}
