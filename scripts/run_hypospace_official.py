@@ -2,6 +2,7 @@
 """Run pinned official HypoSpace with its OpenRouter client pointed at SGLang."""
 
 import argparse
+import shutil
 from pathlib import Path
 
 from novelty_distill.evaluation.hypospace_adapter import (
@@ -41,6 +42,12 @@ def main() -> None:
         if not candidates:
             raise FileNotFoundError("official Boolean HypoSpace result was not created")
         result_path = max(candidates, key=lambda path: path.stat().st_mtime_ns)
+        # The pinned Boolean CLI ignores its output flag and writes below
+        # ./results. Keep the wrapper contract uniform across all domains by
+        # copying that validated artifact to the requested job-specific path.
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(result_path, args.output)
+        result_path = args.output
     validate_hypospace_result(result_path)
 
 
