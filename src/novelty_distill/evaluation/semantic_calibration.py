@@ -169,7 +169,15 @@ def build_semantic_calibration_sample(
                 item["right_index"],
             ),
         )
-        chosen = [item for item in ordered if item["prompt_id"] not in used_prompts][:pairs_per_bin]
+        chosen: list[dict[str, Any]] = []
+        chosen_prompts: set[str] = set()
+        for item in ordered:
+            prompt_id = item["prompt_id"]
+            if prompt_id not in used_prompts and prompt_id not in chosen_prompts:
+                chosen.append(item)
+                chosen_prompts.add(prompt_id)
+                if len(chosen) == pairs_per_bin:
+                    break
         if len(chosen) != pairs_per_bin:
             raise ValueError(
                 f"similarity bin {bin_index} has only {len(chosen)} globally unique prompts; "

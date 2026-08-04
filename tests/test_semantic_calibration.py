@@ -23,6 +23,16 @@ def _pairs() -> list[dict]:
                     "similarity": similarity,
                 }
             )
+            pairs.append(
+                {
+                    "prompt_id": f"p-{bin_index}-{index}",
+                    "left_index": 0,
+                    "right_index": 2,
+                    "left_text": f"left answer {bin_index} {index}",
+                    "right_text": f"alternate answer {bin_index} {index}",
+                    "similarity": similarity + min((upper - similarity) / 2, 0.001),
+                }
+            )
     return pairs
 
 
