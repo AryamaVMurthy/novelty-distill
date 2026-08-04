@@ -32,7 +32,8 @@ num_generations="${NUM_GENERATIONS:-2}"
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
-inference_venv="${scratch_root}/venvs/inference"
+inference_venv="${scratch_root}/venvs/inference-${SLURM_JOB_ID}"
+export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"
 if [[ "${model_path}" == checkpoints/* ]]; then
   model_path="${scratch_root}/${model_path}"
 fi
@@ -90,11 +91,13 @@ export UV_LINK_MODE=copy
 export HF_HOME="${scratch_root}/cache/huggingface"
 export FLASHINFER_WORKSPACE_BASE="${scratch_root}/cache/flashinfer-workspace"
 export XDG_CACHE_HOME="${scratch_root}/cache/xdg"
+export XDG_DATA_HOME="${scratch_root}/data/xdg"
 export TORCH_EXTENSIONS_DIR="${scratch_root}/cache/torch-extensions"
 export TRITON_CACHE_DIR="${scratch_root}/cache/triton"
 export TVM_FFI_CACHE_DIR="${scratch_root}/cache/tvm-ffi"
 export CUDA_CACHE_PATH="${scratch_root}/cache/cuda"
 export TMPDIR="${scratch_root}/tmp"
+export INSPECT_TRACE_FILE="${scratch_root}/logs/inspect-trace-${SLURM_JOB_ID}.log"
 
 cleanup() {
   if [[ -n "${server_pid}" ]] && kill -0 "${server_pid}" 2>/dev/null; then
@@ -112,6 +115,7 @@ trap cleanup EXIT
 mkdir -p \
   "${scratch_root}/logs" \
   "${scratch_root}/tmp" \
+  "${XDG_DATA_HOME}" \
   "${scratch_root}/evaluations" \
   "${TVM_FFI_CACHE_DIR}"
 mkdir -p "${scratch_root}/locks"
@@ -119,11 +123,8 @@ exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
 "${repo_dir}/scripts/sync_repository.sh" "${repo_dir}" "${repo_ref}"
 flock -u 9
-exec 8>"${scratch_root}/locks/venv-inference.lock"
-flock -x 8
+uv venv --python 3.12 "${inference_venv}"
 uv pip sync --python "${inference_venv}/bin/python" "${repo_dir}/environments/inference.lock"
-uv pip install --python "${inference_venv}/bin/python" --no-deps -e "${repo_dir}"
-flock -u 8
 
 artifact_path=""
 if [[ -n "${lora_path}" ]]; then
@@ -132,7 +133,7 @@ elif [[ -d "${model_path}" ]]; then
   artifact_path="${model_path}"
 fi
 if [[ -n "${artifact_path}" ]]; then
-  model_identity="sha256:$(${inference_venv}/bin/python "${repo_dir}/scripts/hash_model_artifact.py" --path "${artifact_path}")"
+  model_identity="$(${inference_venv}/bin/python "${repo_dir}/scripts/hash_model_artifact.py" --path "${artifact_path}")"
 else
   model_identity="hf:${model_path}@${model_revision}"
 fi
@@ -213,17 +214,15 @@ case "${eval_suite}" in
       "6a35510e530f236fd1dbcd9df888f01937c8494a"
     evaluation_dir="${result_root}/noveltybench"
     mkdir -p "${evaluation_dir}"
-    export UV_PROJECT_ENVIRONMENT="${scratch_root}/venvs/noveltybench"
+    export UV_PROJECT_ENVIRONMENT="${scratch_root}/venvs/noveltybench-${SLURM_JOB_ID}"
     export SGLANG_BASE_URL="http://127.0.0.1:${port}/v1"
     export SGLANG_API_KEY=local
     (
       cd "${package_dir}"
-      exec 7>"${scratch_root}/locks/venv-noveltybench.lock"
-      flock -x 7
+      uv venv --python 3.12 "${UV_PROJECT_ENVIRONMENT}"
       uv sync --frozen
-      uv pip install --python "${scratch_root}/venvs/noveltybench/bin/python" \
+      uv pip install --python "${UV_PROJECT_ENVIRONMENT}/bin/python" \
         openai==2.26.0 distro==1.9.0 jiter==0.13.0 torch==2.9.1
-      flock -u 7
       uv run --frozen --no-sync inspect eval inspect_evals/novelty_bench \
         --model "sglang/${served_model}" \
         --model-base-url "${SGLANG_BASE_URL}" \
@@ -243,7 +242,7 @@ case "${eval_suite}" in
         --max-tokens "${MAX_TOKENS:-512}" \
         --log-dir "${evaluation_dir}"
       PYTHONPATH="${repo_dir}/src" \
-        "${scratch_root}/venvs/noveltybench/bin/python" \
+        "${UV_PROJECT_ENVIRONMENT}/bin/python" \
         "${repo_dir}/scripts/summarize_noveltybench.py" \
           --log-dir "${evaluation_dir}" \
           --output "${summary_path}" \
@@ -255,16 +254,13 @@ case "${eval_suite}" in
     ;;
   hypospace)
     official_root="${scratch_root}/official/hypospace"
-    hypospace_venv="${scratch_root}/venvs/hypospace"
+    hypospace_venv="${scratch_root}/venvs/hypospace-${SLURM_JOB_ID}"
     evaluation_dir="${result_root}/hypospace/${domain}"
     test "$(git -C "${official_root}" rev-parse HEAD)" = \
       "c69e9318577b34b5b896996571aefd4ba6053f58"
-    exec 7>"${scratch_root}/locks/venv-hypospace.lock"
-    flock -x 7
+    uv venv --python 3.12 "${hypospace_venv}"
     uv pip sync --python "${hypospace_venv}/bin/python" \
       "${repo_dir}/environments/hypospace.lock"
-    uv pip install --python "${hypospace_venv}/bin/python" --no-deps -e "${repo_dir}"
-    flock -u 7
     case "${domain}" in
       causal) dataset="${official_root}/causal/datasets/node03/n3_all_observations.json" ;;
       3d) dataset="${official_root}/3d/datasets/3d_grid3_h3.json" ;;

@@ -66,8 +66,17 @@ def test_official_evaluation_supports_scratch_cached_dtype_override() -> None:
     assert '--lora-paths "${lora_name}=${lora_path}"' in script
     assert 'base_served_model="novelty-base"' in script
     assert 'result_root="${scratch_root}/evaluations/official/${eval_id}"' in script
+    assert 'INSPECT_TRACE_FILE="${scratch_root}/logs/inspect-trace-${SLURM_JOB_ID}.log"' in script
+    assert 'XDG_DATA_HOME="${scratch_root}/data/xdg"' in script
     assert 'model_path="${scratch_root}/${model_path}"' in script
     assert 'lora_path="${scratch_root}/${lora_path}"' in script
+
+
+def test_official_evaluation_does_not_mutate_project_install_between_workers() -> None:
+    for path in ("slurm/evaluate_official.sbatch", "slurm/combine_official_results.sbatch"):
+        script = Path(path).read_text(encoding="utf-8")
+        assert 'export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"' in script
+        assert '--no-deps -e "${repo_dir}"' not in script
 
 
 def test_research_taste_job_is_resumable_and_uses_the_pinned_annotator() -> None:

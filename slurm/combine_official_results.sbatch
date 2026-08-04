@@ -26,6 +26,7 @@ scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
 venv_dir="${scratch_root}/venvs/inference"
 result_root="${scratch_root}/evaluations/official/${eval_id}"
+export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
 export UV_LINK_MODE=copy
@@ -35,11 +36,6 @@ exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
 "${repo_dir}/scripts/sync_repository.sh" "${repo_dir}" "${repo_ref}"
 flock -u 9
-exec 8>"${scratch_root}/locks/venv-inference.lock"
-flock -x 8
-uv pip install --python "${venv_dir}/bin/python" --no-deps -e "${repo_dir}"
-flock -u 8
-
 "${venv_dir}/bin/python" "${repo_dir}/scripts/combine_official_results.py" \
   --eval-id "${eval_id}" \
   --input "${result_root}/noveltybench/summary.json" \
