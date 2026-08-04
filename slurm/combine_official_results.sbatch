@@ -24,18 +24,21 @@ fi
 repo_ref="${REPO_REF:-codex/implementation}"
 scratch_root="/scratch/${USER}/novelty-distill"
 repo_dir="${scratch_root}/repo"
-venv_dir="${scratch_root}/venvs/inference"
+venv_dir="${scratch_root}/venvs/inference-${SLURM_JOB_ID}"
 result_root="${scratch_root}/evaluations/official/${eval_id}"
 export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"
 export UV_CACHE_DIR="${scratch_root}/cache/uv"
 export UV_PYTHON_INSTALL_DIR="${scratch_root}/python"
 export UV_LINK_MODE=copy
+export UV_CONCURRENT_DOWNLOADS=1
 
 mkdir -p "${scratch_root}/locks"
 exec 9>"${repo_dir}/.git/novelty-distill-sync.lock"
 flock -x 9
 "${repo_dir}/scripts/sync_repository.sh" "${repo_dir}" "${repo_ref}"
 flock -u 9
+uv venv --python 3.12 "${venv_dir}"
+uv pip sync --python "${venv_dir}/bin/python" "${repo_dir}/environments/inference.lock"
 "${venv_dir}/bin/python" "${repo_dir}/scripts/combine_official_results.py" \
   --eval-id "${eval_id}" \
   --input "${result_root}/noveltybench/summary.json" \
