@@ -27,6 +27,10 @@ on-policy runs also used only a small fraction of their 128 GiB reservation.
   resume the same bounded trainer under the checkpoint lock.
 - The pending B2a NoveltyBench job was reduced from 96 GiB to 64,000 MiB. The
   completed matched A0 NoveltyBench job used about 25.2 GiB maximum RSS.
+- Pending D1 and D2 NoveltyBench jobs on node02 were likewise reduced from
+  96 GiB to 64,000 MiB. This allowed D1 to occupy the fourth otherwise-idle
+  node02 GPU while B2b, C1-best1, and C2-best1 continued. D2 retains its
+  original dependency on B2b and will replace it when that run terminates.
 
 Slurm splits individually updated array elements into new concrete job IDs;
 their stable identities remain the original array/task pairs (`19111_*`,
