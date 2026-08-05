@@ -730,6 +730,62 @@ a quality tie with static forward KL. Qualified yield changes by -0.022115
 (interval [-0.035505, -0.004436]), a stable but still-quarantined embedding
 diagnostic pending two-human calibration.
 
+Seed-43 D2 generation shards 0--3 completed with exit 0 at 15:45:21,
+15:53:24, 16:16:40, and 16:18:03; gate 19173 validated exactly 1,658 prompts
+in three seconds. Score shards 0--3 completed with exit 0 at 16:47:08,
+16:50:28, 17:16:11, and 17:15:59 after 29:00, 28:28, 29:32, and 28:51.
+Gate 19175 validated the complete score set in two seconds, and evaluator
+19176 ran from 17:16:14 to 17:23:07, exiting 0 after 6:53.
+
+The checksum-matched local seed-43 D2 artifact is 13,269,182 bytes with
+SHA-256
+`d2dd5908d918b4491741d2326471a6fd443a8fb014aaddd874649b4c541740c2`.
+It has 1,658 prompts, K=4, all eight threshold views, the common prompt
+fingerprint
+`b249121a0312fc9060de57d1d2a95852e4279fc0f075fe426503582d7b14b20c`,
+and zero length stops. Feasibility/soundness are 4.228136/4.652141;
+qualified yield is 1.717732 and teacher-mode recall is 0.119019.
+
+D2 is complete over seeds 17/29/43. Its across-seed feasibility/soundness
+means are 4.228337/4.642843. Relative to seed-matched C2, mean changes are
+-0.010404 feasibility (seed SD 0.001834; descriptive df=2 t interval
+[-0.014961, -0.005847]) and -0.011761 soundness (seed SD 0.009801; interval
+[-0.036108, 0.012586]). Relative to D1, mean changes are -0.010706
+feasibility (interval [-0.039106, 0.017695]) and -0.022819 soundness (seed SD
+0.002238; interval [-0.028379, -0.017259]). No current on-policy objective
+improves its corresponding static-KL quality baseline.
+
+Repatriation job 19261 began after both node02 evaluators completed. It copied
+the ten declared seed-29/43 artifacts to node01, verified every source and
+destination SHA-256, and exited 0 in six seconds at 17:23:14. The originally
+released aggregate job 19177 then failed closed before statistics because the
+generic prompt collector detected that `teacher_semantic_clusters` differed
+for one prompt across independently evaluated artifacts. That field is an
+unrequested semantic diagnostic; the frozen analysis config declares only
+feasibility and soundness.
+
+A regression test first reproduced the failure. The checkpoint-seed analyzer
+was then changed to project prompt rows to only the explicitly declared
+metrics, while the general semantic collector retains its strict
+teacher-partition check. The focused 12-test suite and full 334-test suite
+pass; Ruff and whitespace checks pass. Commit
+`b053448ca769d827375ce2685aedca063183c27b` contains the fix. Retry 19371
+was killed by Slurm before script start with real-time signal 53. Retry 19372
+correctly failed its frozen-seed guard because comma-valued variables were
+split by the `sbatch --export` wrapper. Neither executed statistics or changed
+an input. Final retry 19373 used the script's frozen defaults and completed
+with exit 0 in ten seconds at 17:28:13.
+
+The final analysis artifacts are `checkpoint-seed-contrasts.json` (31,933
+bytes; SHA-256
+`5354aa5dd6e695b94d11935f4dd0e96db29d5e7f7ff4188fb364fde53d3ee8ad`)
+and `findings.md` (SHA-256
+`bf02b894725a1939eaacfd815f963be35d6009d9778b5d0d4749ca2cb3e9deb9`).
+They identify commit `b053448ca769d827375ce2685aedca063183c27b`, frozen config SHA-256
+`a068a01ec2a8049a9d97c06df7032d9678df3a04498c81b439a13645ab0b063c`,
+seeds 17/29/43, checkpoint seed as the replication unit, and all seven
+preregistered contrasts.
+
 ## Invariants
 
 The GPU count, node placement, time limits, repository commit, dataset, ordered

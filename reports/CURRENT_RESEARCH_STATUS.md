@@ -17,29 +17,27 @@ paper-path report is
 
 ## Current corrected snapshot
 
-The clean three-seed replication is actively evaluating final checkpoints.
-B2a random-1 and B2b best-1 SeqKD are both complete over training seeds
+The clean three-seed replication and preregistered checkpoint-seed analysis
+are complete. B2a random-1 and B2b best-1 SeqKD are complete over training seeds
 17/29/43. Their mean feasibility/soundness are 3.3853/3.1662 and
 3.4068/3.1897; seed-matched best-1 minus random-1 changes are only +0.0216
 feasibility and +0.0235 soundness, with both descriptive df=2 intervals
 crossing zero. Thus best-of-eight target selection does not repair the stable
 hard single-output KD failure. All four D1/D2 seed-29/43 on-policy trainings
-have reached validated step 125, and held-out evaluation is running only from
-their final adapters. C1 and C2 are now complete over all three seeds with
+reached validated step 125, and held-out evaluation ran only from their final
+adapters. C1 and C2 are complete over all three seeds with
 mean feasibility/soundness 4.2447/4.6625 and 4.2387/4.6546. C1's recovery
 over B2b is +0.8379/+1.4729; C2 minus C1 is only -0.0059/-0.0079, with both
 descriptive df=2 intervals crossing zero. C2's strict-threshold qualified
 yield is 0.4349 lower, but that embedding-defined result remains quarantined
-until two humans calibrate the semantic boundary. Seed-29 D2 is also complete
-at 4.2262/4.6384, only -0.0125/-0.0170 below seed-matched C2; the seed-43
-checkpoint is still needed for the declared contrast. Seed-43 D1 is complete
-at 4.2520/4.6755, only -0.0030/+0.0045 versus seed-matched C1; seed 29 is
-now also complete. Across all three seeds, D1 minus C1 is -0.0056
-feasibility/+0.0031 soundness, with both descriptive intervals crossing zero:
-there is no observed on-policy forward-KL quality advantage. Until the one
-remaining D2 seed-43 evaluation and the preregistered
-aggregate finish, seed-17 values below remain pilot results rather than the
-final replicated matrix.
+until two humans calibrate the semantic boundary. Across all three seeds, D1
+minus C1 is -0.0056 feasibility/+0.0031 soundness, with both descriptive
+intervals crossing zero:
+there is no observed on-policy forward-KL quality advantage. D2 averages
+4.2283/4.6428; versus C2 it is -0.0104 feasibility (interval below zero) and
+-0.0118 soundness (interval crosses zero), so there is no on-policy
+reverse-KL advantage either. The final table is
+[`compact-k4-three-seed-corrected-v2/findings.md`](compact-k4-three-seed-corrected-v2/findings.md).
 
 Jobs 19055--19062 completed the feasibility-inclusive K=4 recomputation for
 A0, A1, B1, B2b, C1, C2, D1, and D2. The content-bound summary is

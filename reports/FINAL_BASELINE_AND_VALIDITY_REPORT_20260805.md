@@ -2,10 +2,9 @@
 
 Date: 2026-08-05 (Asia/Kolkata)
 
-Status: seed-17 baseline evidence and the different-family judge audit are
-complete. Seed-29/43 replication is running under frozen contracts. This file
-will receive the final checkpoint-seed table when the dependency-gated matrix
-finishes.
+Status: the seed-17 baseline, seed-29/43 replication, different-family judge
+audit, and preregistered checkpoint-seed analysis are complete. Semantic
+threshold claims remain quarantined pending two genuine human raters.
 
 ## Executive summary
 
@@ -14,7 +13,7 @@ claim. It asks how supervision type, KL direction, and static versus on-policy
 trajectories affect a Qwen3-4B student's ability to produce feasible, sound,
 and non-collapsed scientific hypotheses from a Qwen3-14B teacher.
 
-The defensible seed-17 result is:
+The defensible three-seed result is:
 
 1. The untouched 4B model (`A0`) is already strong.
 2. Hard single-output sequence KD fails badly (`B2a`, `B2b`), regardless of
@@ -36,9 +35,10 @@ random-1 and best-1 hard KD remain far below A0, while best-1 minus random-1
 changes only +0.0216 feasibility and +0.0235 soundness on average. The
 three-seed C1/C2 replication also supports items 3--4: their judged quality
 is tied, while C2 has lower strict-threshold embedding-defined breadth. The
-The three-seed D1 result is also a quality tie with C1 and shows no on-policy
-forward-KL advantage. D2's conclusion remains pending until its last active
-seed-43 checkpoint evaluation finishes.
+three-seed D1 result is also a quality tie with C1 and shows no on-policy
+forward-KL advantage. D2 is slightly lower than C2 in feasibility and lower
+than D1 in soundness, so the current on-policy reverse-KL recipe also provides
+no advantage.
 
 The correct research use of these results is to select controls for a later
 new method: A0, B2a/B2b, C1, C2, D1, and D2. The new method should first beat
@@ -330,16 +330,16 @@ The final adapter SHA-256 values are
 (seed-43 D2). Cross-node staging jobs copied seed-29 D1 and seed-43 D2
 byte-identically and released
 their held evaluation arrays only after complete-tree identity checks passed.
-Held-out D1/D2 evaluation is now running from these final adapters; no
-intermediate checkpoint is an evaluation model.
+Held-out D1/D2 evaluation ran only from these final adapters; no intermediate
+checkpoint was an evaluation model.
 
-The first eleven new held-out checkpoint results are complete. Seed-29 B2a
+All twelve new held-out checkpoint results are complete. Seed-29 B2a
 produced feasibility 3.3602 and soundness 3.1530 over all 1,658 prompts after
 its global generation and score gates passed. Its corrected evaluation
 artifact is 13,276,716 bytes with SHA-256
 `8cd184a5aa40e7a9f847e0a1394d9d1f8db2cbb8da42c93127c3910c6d526e90`.
-This closely matches seed 17 (3.3976/3.1654) and is early replication evidence
-for the hard-KD failure, but it is not the declared three-seed conclusion.
+This closely matches seed 17 (3.3976/3.1654) and was early replication
+evidence for the hard-KD failure, later confirmed by the final table below.
 A checksum-matched local backup is retained at
 [`artifacts/compact-k4-three-seed-raw/B2a-tomato1k-seed29-temporal-k4-corrected-v2.json`](../artifacts/compact-k4-three-seed-raw/B2a-tomato1k-seed29-temporal-k4-corrected-v2.json);
 the directory is intentionally gitignored because it will contain the complete
@@ -349,8 +349,8 @@ Seed-29 B2b produced feasibility 3.4095 and soundness 3.1975 over the same
 1,658 prompts. This also closely matches seed 17 (3.3984/3.1761). Within seed
 29, best-1 selection improves only +0.0493 feasibility and +0.0445 soundness
 over random-1 B2a, so the second seed continues to suggest that target
-selection alone does not repair hard single-output sequence KD. This paired
-checkpoint comparison remains preliminary until seed 43 completes. The B2b
+selection alone does not repair hard single-output sequence KD. The seed-43
+result and final contrast below confirm this pattern. The B2b
 artifact is 13,284,916 bytes with SHA-256
 `b03bbc6c32e83ef32f2d84319f3aa09414c8ab2f599843479196e944b3d78a65`,
 with a checksum-matched local backup at
@@ -360,8 +360,8 @@ Seed-29 C1 is also complete: feasibility is 4.2405 and soundness is 4.6592,
 nearly identical to seed 17 (4.2385/4.6574). Within seed 29, forward KL is
 +0.8803 feasibility and +1.5062 soundness above random-1 B2a, and +0.8310
 feasibility and +1.4617 soundness above best-1 B2b. This is strong second-seed
-replication of the hard-KD recovery, while the three-seed interval remains
-pending. Its descriptive strict-threshold qualified yield is 2.1785, but that
+replication of the hard-KD recovery, later confirmed across all three seeds.
+Its descriptive strict-threshold qualified yield is 2.1785, but that
 quantity remains quarantined until human boundary calibration. The C1 raw
 artifact is 13,274,613 bytes with SHA-256
 `ac2db25f89ec3b6bd8c58aac4ac71fca479fcad87da771b07d39c082e7a1ad1a`,
@@ -460,9 +460,9 @@ strict-threshold qualified yield is 1.7310, teacher-mode recall is 0.12485,
 and two of 6,632 outputs ended by length limit. Relative to the seed-matched
 static reverse-KL C2 checkpoint, the changes are -0.0125 feasibility, -0.0170
 soundness, -0.0103 qualified yield, and -0.00960 recall. This second
-checkpoint remains consistent with no large benefit from the current
-on-policy reverse-KL recipe, but the declared three-seed conclusion still
-awaits seed 43. The 13,273,929-byte raw artifact has SHA-256
+checkpoint is consistent with no large benefit from the current on-policy
+reverse-KL recipe, as the final three-seed result below confirms. The
+13,273,929-byte raw artifact has SHA-256
 `2158a02b3017e9f17385a57683f2f59b46a52c09afc15930f2c6e9a0be59bd7e`,
 with a checksum-matched local backup at
 [`artifacts/compact-k4-three-seed-raw/D2-tomato1k-seed29-temporal-k4-corrected-v2.json`](../artifacts/compact-k4-three-seed-raw/D2-tomato1k-seed29-temporal-k4-corrected-v2.json).
@@ -473,8 +473,8 @@ and one of 6,632 outputs ended by length limit. Relative to seed-matched
 static forward-KL C1, the changes are -0.0030 feasibility, +0.0045 soundness,
 -0.0290 qualified yield, and -0.02719 recall. This checkpoint therefore
 repeats the seed-17 pattern of an operational-quality tie without an
-on-policy gain; D1 seed 29 remains necessary for the declared three-seed
-contrast. The 13,272,191-byte artifact has SHA-256
+on-policy gain; the seed-29 result below completes the declared contrast. The
+13,272,191-byte artifact has SHA-256
 `7bb7806cbd50dc88a1ccac98b381404b7f6d453a5f82f348ea919fade51331e3`,
 with a checksum-matched local backup at
 [`artifacts/compact-k4-three-seed-raw/D1-tomato1k-seed43-temporal-k4-corrected-v2.json`](../artifacts/compact-k4-three-seed-raw/D1-tomato1k-seed43-temporal-k4-corrected-v2.json).
@@ -497,6 +497,54 @@ calibration. The 13,277,773-byte artifact has SHA-256
 `95c3bc81d007555aca7ed1b232e23d47a057c549539fac5482e8b26c053f0f4b`,
 with a checksum-matched local backup at
 [`artifacts/compact-k4-three-seed-raw/D1-tomato1k-seed29-temporal-k4-corrected-v2.json`](../artifacts/compact-k4-three-seed-raw/D1-tomato1k-seed29-temporal-k4-corrected-v2.json).
+
+Seed-43 D2 is complete: feasibility is 4.2281, soundness is 4.6521,
+strict-threshold qualified yield is 1.7177, teacher-mode recall is 0.11902,
+and none of the 6,632 outputs ended by length limit. D2 is therefore complete
+over all three checkpoint seeds. Its across-seed feasibility/soundness means
+are 4.2283/4.6428. Relative to seed-matched static C2, feasibility changes by
+-0.0104 (seed SD 0.0018; descriptive df=2 t interval [-0.0150, -0.0058]) and
+soundness by -0.0118 (seed SD 0.0098; interval [-0.0361, 0.0126]). The effect
+is a small, consistent operational-feasibility decrease with no soundness
+gain—not an on-policy reverse-KL benefit.
+
+Relative to D1, D2 changes feasibility by -0.0107 (interval [-0.0391,
+0.0177]) and soundness by -0.0228 (seed SD 0.0022; interval [-0.0284,
+-0.0173]). Its strict-threshold qualified yield is -0.4449 lower than D1
+(interval [-0.5183, -0.3716]), while teacher-mode recall is +0.0084 (interval
+[0.0039, 0.0129]); these semantic quantities remain quarantined. The
+13,269,182-byte artifact has SHA-256
+`d2dd5908d918b4491741d2326471a6fd443a8fb014aaddd874649b4c541740c2`,
+with a checksum-matched local backup at
+[`artifacts/compact-k4-three-seed-raw/D2-tomato1k-seed43-temporal-k4-corrected-v2.json`](../artifacts/compact-k4-three-seed-raw/D2-tomato1k-seed43-temporal-k4-corrected-v2.json).
+
+### Final replicated quality table
+
+| Method | Feasibility mean | Soundness mean | Primary interpretation |
+|---|---:|---:|---|
+| A0 | 4.2176 | 4.6025 | fixed untouched-model realization |
+| B2a | 3.3853 | 3.1662 | random-1 hard-KD failure |
+| B2b | 3.4068 | 3.1897 | best-1 selection does not repair hard KD |
+| C1 | 4.2447 | 4.6625 | strongest simple trained baseline |
+| C2 | 4.2387 | 4.6546 | static reverse-KL quality tie with C1 |
+| D1 | 4.2390 | 4.6657 | no on-policy forward-KL gain over C1 |
+| D2 | 4.2283 | 4.6428 | no on-policy reverse-KL gain over C2 |
+
+Trained-method rows are means over checkpoint seeds 17/29/43. A0 is the one
+frozen K=4 generation realization reused as the fixed control, so its row is
+not a three-seed generation mean.
+
+The preregistered quality contrasts are fully recorded in
+[`compact-k4-three-seed-corrected-v2/findings.md`](compact-k4-three-seed-corrected-v2/findings.md)
+and the provenance-bearing
+[`checkpoint-seed-contrasts.json`](compact-k4-three-seed-corrected-v2/checkpoint-seed-contrasts.json).
+The largest replicated effects are B2a minus fixed A0 (-0.8323 feasibility,
+-1.4364 soundness) and C1 minus B2b (+0.8379/+1.4729). B2b minus B2a,
+C2 minus C1, and D1 minus C1 all have df=2 intervals crossing zero for both
+quality metrics. D2 minus C2 is -0.0104 feasibility with an interval below
+zero but tied on soundness; D2 minus D1 is tied on feasibility and -0.0228
+soundness with an interval below zero. These are small absolute judge-scale
+effects compared with the hard-KD collapse.
 
 The analysis unit is the independently trained checkpoint seed. Within each
 seed, 1,658 prompts are paired and bootstrapped; then the three checkpoint
@@ -536,7 +584,7 @@ Not supported:
 - a single-threshold semantic effect before human equivalence calibration;
 - strict temporal generalization;
 - evidence from B1 or any historical/privileged-target method;
-- paper-level seed stability until seeds 29/43 finish.
+- human-validated semantic novelty or diversity before the two-rater study.
 
 ## ICLR research path
 
@@ -574,12 +622,12 @@ entropy check proving the label still depends on the generated response.
 
 ## Current software and artifact verification
 
-- The complete local test suite passes: 333 passed and two Torch-dependent
+- The complete local test suite passes: 334 passed and two Torch-dependent
   tests were explicitly skipped because the lightweight local test environment
   does not install Torch. GPU jobs import and exercise their pinned Torch
   environments separately.
-- Repository-wide Ruff checks pass, and all nine modified/new Python files are
-  already Ruff-formatted.
+- Repository-wide Ruff checks pass, and all modified/new Python files are
+  Ruff-formatted.
 - `git diff --check` reports no whitespace errors.
 - The four new on-policy final adapters passed metadata, ordered-example,
   checkpoint-byte-identity, safetensors-header, and cross-node staging checks
@@ -608,6 +656,10 @@ for human validation of the scientific rubric or semantic-equivalence boundary.
   [`DEEPINFRA_INDEPENDENT_JUDGE_FINDINGS_20260805.md`](DEEPINFRA_INDEPENDENT_JUDGE_FINDINGS_20260805.md)
 - DeepInfra immutable manifest:
   [`audits/deepinfra-calibration-packet-20260805-v5.manifest.json`](audits/deepinfra-calibration-packet-20260805-v5.manifest.json)
+- Final three-seed contrast table and machine-readable analysis:
+  [`compact-k4-three-seed-corrected-v2/findings.md`](compact-k4-three-seed-corrected-v2/findings.md)
+  and
+  [`compact-k4-three-seed-corrected-v2/checkpoint-seed-contrasts.json`](compact-k4-three-seed-corrected-v2/checkpoint-seed-contrasts.json)
 - Target and temporal audit artifacts:
   [`audits/README.md`](audits/README.md)
 - Literature claims and applicability limits:
