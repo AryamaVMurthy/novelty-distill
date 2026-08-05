@@ -35,6 +35,8 @@ The consolidated interpretation and ICLR research path are in
   packet was superseded before labeling after its within-bin unique-prompt bug was detected.
 - `semantic-equivalence-rater-ui-20260805.md`: hashes and handling instructions for the two
   source-blinded local browser raters generated from that frozen packet.
+- `COMPACT_SCOPE_TRACEABILITY_20260805.md`: disposition of the old 24-entry experiment graph
+  after the compact baseline scope reset, including the sole remaining human-calibration gate.
 - `compact-4b-1k-three-seed-training-submission-20260805.json`: exact Slurm dependency graph
   for the clean six-method 4B replication at seeds 17/29/43 and 1,000 exposures.
 - `compact-k4-three-seed-evaluation-submission-20260805.json`: exact matched-K=4 generation,

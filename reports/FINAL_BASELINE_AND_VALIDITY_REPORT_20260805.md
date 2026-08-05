@@ -644,6 +644,8 @@ for human validation of the scientific rubric or semantic-equivalence boundary.
 
 ## Canonical artifact index
 
+- Historical-plan versus compact-scope disposition and exact remaining gate:
+  [`audits/COMPACT_SCOPE_TRACEABILITY_20260805.md`](audits/COMPACT_SCOPE_TRACEABILITY_20260805.md)
 - Full validity audit and research path:
   [`EVALUATION_VALIDITY_AUDIT_20260805.md`](EVALUATION_VALIDITY_AUDIT_20260805.md)
 - Seed-17 corrected machine summary:
