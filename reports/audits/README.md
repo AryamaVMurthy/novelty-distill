@@ -14,6 +14,9 @@ The consolidated interpretation and ICLR research path are in
   the canonical summary and raw Inspect log. It passed and released the trained baseline runs.
 - `noveltybench-corrected-seed17-submission-20260805.json`: job identities and concurrency
   contract for the corrected A0 plus six-method seed-17 NoveltyBench matrix.
+- `noveltybench-corrected-seed17-v2/`: completed corrected matrix for A0 plus the six clean
+  trained seed-17 baselines. It contains raw Inspect logs, content-bound summaries,
+  prompt-paired deltas, matched family contrasts, and the construct-validity interpretation.
 - `deepinfra-calibration-packet-20260805.manifest.json`: immutable identity of the first
   independent-judge packet. It is retained only for provenance and was superseded before paid
   use; see `deepinfra-calibration-packet-20260805.SUPERSEDED.md`.

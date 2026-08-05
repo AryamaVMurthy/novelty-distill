@@ -1,0 +1,81 @@
+{
+  "baseline": "B2a",
+  "benchmark": "yimingzhang/novelty-bench",
+  "claim_boundary": "Measures generic functional response diversity and benchmark utility; it does not establish scientific-idea novelty.",
+  "methods": {
+    "B2a": {
+      "artifact": "2026-08-04T23-13-50-00-00_novelty-bench-independent_9SehnmLiTkLq38XaBDHzfs.eval",
+      "artifact_sha256": "ac7a56ea5fbce0061315356aafa243269c730117c6944d00b8b6e8791d91ac32",
+      "eval_id": "official-corrected-full-B2a-k10-seed17-v2",
+      "metrics": {
+        "distinct_k_mean": 5.32,
+        "distinct_k_stderr": 0.27739043701154253,
+        "utility_k_mean": 4.720244211085656,
+        "utility_k_stderr": 0.21625541303076118
+      },
+      "model_identity": "sha256:812cb0cbb2b8bc6efbd5163aeb5c54b2c74b0cd4f400ba8b703cd7a62b2aa7f5",
+      "sampling_diagnostics": {
+        "duplicate_completion_prompt_count": 17,
+        "mean_unique_completions": 9.46,
+        "minimum_unique_completions": 4,
+        "sampling_base_seed": 17,
+        "sampling_seed_stride": 1
+      },
+      "summary_path": "reports/audits/noveltybench-corrected-seed17-v2/B2a/summary.json",
+      "summary_sha256": "f3760523fbf69aff6d11b59850f30bb50f0366adcaf0899bc88f107195f7e417"
+    },
+    "B2b": {
+      "artifact": "2026-08-04T22-34-01-00-00_novelty-bench-independent_VfMUnZqRDLnjj8H6Jnbpy8.eval",
+      "artifact_sha256": "c15514004be7b9366b3ad5cb92bdd14cc260cca4827f3f9a178769016d955c81",
+      "eval_id": "official-corrected-full-B2b-k10-seed17-v2",
+      "metrics": {
+        "distinct_k_mean": 5.52,
+        "distinct_k_stderr": 0.27797245703250323,
+        "utility_k_mean": 4.95607818425708,
+        "utility_k_stderr": 0.2210601668251017
+      },
+      "model_identity": "sha256:ee15f4037d9b0e92b79cb5b6291616f9d618a925d597e91938d7387e0ac6f2a8",
+      "sampling_diagnostics": {
+        "duplicate_completion_prompt_count": 16,
+        "mean_unique_completions": 9.49,
+        "minimum_unique_completions": 4,
+        "sampling_base_seed": 17,
+        "sampling_seed_stride": 1
+      },
+      "summary_path": "reports/audits/noveltybench-corrected-seed17-v2/B2b/summary.json",
+      "summary_sha256": "f7bea2978af0b953d923d626e133a8685060718fab85a77622fe281ac9f42412"
+    }
+  },
+  "paired_contrasts": {
+    "B2b": {
+      "distinct_k": {
+        "baseline_mean": 5.32,
+        "delta_stderr": 0.12792042981336627,
+        "improved_prompt_fraction": 0.34,
+        "mean_delta": 0.2,
+        "method_mean": 5.52,
+        "n_prompts": 100,
+        "tied_prompt_fraction": 0.44,
+        "worsened_prompt_fraction": 0.22
+      },
+      "utility_k": {
+        "baseline_mean": 4.720244211085655,
+        "delta_stderr": 0.116404134274864,
+        "improved_prompt_fraction": 0.51,
+        "mean_delta": 0.23583397317142527,
+        "method_mean": 4.9560781842570805,
+        "n_prompts": 100,
+        "tied_prompt_fraction": 0.11,
+        "worsened_prompt_fraction": 0.38
+      }
+    }
+  },
+  "protocol": {
+    "base_seed": 17,
+    "name": "independent-per-generation-seed-v1",
+    "seed_stride": 1,
+    "temperature": 1.0,
+    "top_p": 1.0
+  },
+  "schema_version": 1
+}

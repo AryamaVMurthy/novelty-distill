@@ -1,0 +1,31 @@
+{
+  "artifact": "2026-08-04T22-34-01-00-00_novelty-bench-independent_VfMUnZqRDLnjj8H6Jnbpy8.eval",
+  "artifact_sha256": "c15514004be7b9366b3ad5cb92bdd14cc260cca4827f3f9a178769016d955c81",
+  "domain": null,
+  "eval_id": "official-corrected-full-B2b-k10-seed17-v2",
+  "expected_samples": 100,
+  "metrics": {
+    "distinct_k_mean": 5.52,
+    "distinct_k_stderr": 0.27797245703250323,
+    "utility_k_mean": 4.95607818425708,
+    "utility_k_stderr": 0.2210601668251017
+  },
+  "model_identity": "sha256:ee15f4037d9b0e92b79cb5b6291616f9d618a925d597e91938d7387e0ac6f2a8",
+  "num_generations": 10,
+  "sampling_diagnostics": {
+    "duplicate_completion_prompt_count": 16,
+    "mean_unique_completions": 9.49,
+    "minimum_unique_completions": 4,
+    "sampling_base_seed": 17,
+    "sampling_seed_stride": 1
+  },
+  "sampling_protocol": {
+    "base_seed": 17,
+    "name": "independent-per-generation-seed-v1",
+    "seed_stride": 1,
+    "temperature": 1.0,
+    "top_p": 1.0
+  },
+  "schema_version": 1,
+  "suite": "noveltybench"
+}

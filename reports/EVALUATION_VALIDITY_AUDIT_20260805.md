@@ -210,6 +210,26 @@ was 3.319. This proves the implementation path only; two prompts cannot compare
 models. The frozen artifact is
 [`noveltybench-corrected-smoke-A0-k10-seed17-v2/`](audits/noveltybench-corrected-smoke-A0-k10-seed17-v2/).
 
+The full corrected seed-17 matrix is now complete for A0 and the six clean
+trained baselines. All seven runs contain 100 scored prompts, ten observed
+independent request seeds per prompt, and no unscored samples. C1 and D1 lead:
+C1 has Distinct@10 5.580 and Utility@10 5.152, while D1 has 5.500 and
+5.121. Their prompt-paired D1-minus-C1 differences are only -0.080 (SE 0.128)
+and -0.030 (SE 0.116), so on-policy forward KL shows no transfer advantage.
+The reverse-KL pair is lower and also tied: C2 has 4.600/4.624 and D2 has
+4.510/4.507; D2-minus-C2 is -0.090 (SE 0.132) diversity and -0.117 (SE
+0.110) utility. B2a and B2b sit between those groups at 5.320/4.720 and
+5.520/4.956. The full content-bound evidence is in
+[`noveltybench-corrected-seed17-v2/`](audits/noveltybench-corrected-seed17-v2/).
+
+Every trained checkpoint improves the generic benchmark aggregates over A0 at
+this one training seed, but this does not rescue a model on TOMATO: B2a/B2b
+perform reasonably on NoveltyBench while having much lower judged scientific
+feasibility and soundness. The disagreement is substantive evidence that
+functional response diversity and scientific-idea quality are different
+constructs. These seed-17 transfer results are descriptive, not a substitute
+for the ongoing multi-seed TOMATO replication.
+
 The historical HypoSpace component files were not affected by that exact
 Inspect seed bug, but the combined matrix remains withdrawn because one of its
 four components is invalid. A separate artifact audit verified matched task

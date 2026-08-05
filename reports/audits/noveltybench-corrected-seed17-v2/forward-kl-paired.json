@@ -1,0 +1,81 @@
+{
+  "baseline": "C1",
+  "benchmark": "yimingzhang/novelty-bench",
+  "claim_boundary": "Measures generic functional response diversity and benchmark utility; it does not establish scientific-idea novelty.",
+  "methods": {
+    "C1": {
+      "artifact": "2026-08-04T22-34-01-00-00_novelty-bench-independent_DD6kf9yS4ZQX5yFLsGiTTi.eval",
+      "artifact_sha256": "21e0c0107baf477d2c92cfa6a07a1d75dc155da726961fe2a8d5b9f060bbf984",
+      "eval_id": "official-corrected-full-C1-best1-k10-seed17-v2",
+      "metrics": {
+        "distinct_k_mean": 5.58,
+        "distinct_k_stderr": 0.29273354657935824,
+        "utility_k_mean": 5.1517457100447634,
+        "utility_k_stderr": 0.2273049889159083
+      },
+      "model_identity": "sha256:7fc74fcd56d0150faf987eb5234536cac649cd24882a4e35716ff2aedc1b50f8",
+      "sampling_diagnostics": {
+        "duplicate_completion_prompt_count": 11,
+        "mean_unique_completions": 9.69,
+        "minimum_unique_completions": 3,
+        "sampling_base_seed": 17,
+        "sampling_seed_stride": 1
+      },
+      "summary_path": "reports/audits/noveltybench-corrected-seed17-v2/C1/summary.json",
+      "summary_sha256": "f9f7799d6f6a604be5ce57efecda8091d3fce5dd1d457fd08ae8703041d38303"
+    },
+    "D1": {
+      "artifact": "2026-08-04T22-55-35-00-00_novelty-bench-independent_Bb8uhjXKG7UEThDuh9dDhW.eval",
+      "artifact_sha256": "358fd5abf8e317c2977e6729984dcc567fa09f1cdc786bb4415911f696654b12",
+      "eval_id": "official-corrected-full-D1-k10-seed17-v2",
+      "metrics": {
+        "distinct_k_mean": 5.5,
+        "distinct_k_stderr": 0.29180732539042803,
+        "utility_k_mean": 5.121320054527628,
+        "utility_k_stderr": 0.23431761303235793
+      },
+      "model_identity": "sha256:47a46794c06fdfdbe9b9109171de22c7588c00b5eb67d2e2ee2ed2f4d9ddd216",
+      "sampling_diagnostics": {
+        "duplicate_completion_prompt_count": 8,
+        "mean_unique_completions": 9.71,
+        "minimum_unique_completions": 3,
+        "sampling_base_seed": 17,
+        "sampling_seed_stride": 1
+      },
+      "summary_path": "reports/audits/noveltybench-corrected-seed17-v2/D1/summary.json",
+      "summary_sha256": "987aabb996cc3259fea27948198ad92fbd6f63a71d03717355648695e6881a77"
+    }
+  },
+  "paired_contrasts": {
+    "D1": {
+      "distinct_k": {
+        "baseline_mean": 5.58,
+        "delta_stderr": 0.12845625753932777,
+        "improved_prompt_fraction": 0.32,
+        "mean_delta": -0.08,
+        "method_mean": 5.5,
+        "n_prompts": 100,
+        "tied_prompt_fraction": 0.33,
+        "worsened_prompt_fraction": 0.35
+      },
+      "utility_k": {
+        "baseline_mean": 5.151745710044764,
+        "delta_stderr": 0.1164049079612914,
+        "improved_prompt_fraction": 0.49,
+        "mean_delta": -0.030425655517136527,
+        "method_mean": 5.121320054527628,
+        "n_prompts": 100,
+        "tied_prompt_fraction": 0.04,
+        "worsened_prompt_fraction": 0.47
+      }
+    }
+  },
+  "protocol": {
+    "base_seed": 17,
+    "name": "independent-per-generation-seed-v1",
+    "seed_stride": 1,
+    "temperature": 1.0,
+    "top_p": 1.0
+  },
+  "schema_version": 1
+}

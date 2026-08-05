@@ -1,0 +1,31 @@
+{
+  "artifact": "2026-08-04T22-55-35-00-00_novelty-bench-independent_Bb8uhjXKG7UEThDuh9dDhW.eval",
+  "artifact_sha256": "358fd5abf8e317c2977e6729984dcc567fa09f1cdc786bb4415911f696654b12",
+  "domain": null,
+  "eval_id": "official-corrected-full-D1-k10-seed17-v2",
+  "expected_samples": 100,
+  "metrics": {
+    "distinct_k_mean": 5.5,
+    "distinct_k_stderr": 0.29180732539042803,
+    "utility_k_mean": 5.121320054527628,
+    "utility_k_stderr": 0.23431761303235793
+  },
+  "model_identity": "sha256:47a46794c06fdfdbe9b9109171de22c7588c00b5eb67d2e2ee2ed2f4d9ddd216",
+  "num_generations": 10,
+  "sampling_diagnostics": {
+    "duplicate_completion_prompt_count": 8,
+    "mean_unique_completions": 9.71,
+    "minimum_unique_completions": 3,
+    "sampling_base_seed": 17,
+    "sampling_seed_stride": 1
+  },
+  "sampling_protocol": {
+    "base_seed": 17,
+    "name": "independent-per-generation-seed-v1",
+    "seed_stride": 1,
+    "temperature": 1.0,
+    "top_p": 1.0
+  },
+  "schema_version": 1,
+  "suite": "noveltybench"
+}

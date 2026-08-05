@@ -38,12 +38,15 @@ similarity strata, and 26 hidden repeats per rater. It awaits two blinded human
 raters and is audited in
 [`audits/semantic-equivalence-calibration-20260805-v2.manifest.json`](audits/semantic-equivalence-calibration-20260805-v2.manifest.json).
 
-The corrected full A0 NoveltyBench gate also passed: Distinct@10 4.080 and
-Utility@10 4.066 over 100 prompts, with the full seed 17--26 schedule observed.
-The exact duplicates on 18 prompts are concentrated in constrained factual
-questions and are not the old repeated-seed bug. The six clean trained
-seed-17 methods are now running on the same corrected protocol. See
-[`audits/noveltybench-corrected-full-A0-k10-seed17-v2/README.md`](audits/noveltybench-corrected-full-A0-k10-seed17-v2/README.md).
+The corrected full NoveltyBench seed-17 matrix is complete. A0 is
+4.080/4.066 Distinct@10/Utility@10; C1 and D1 lead at 5.580/5.152 and
+5.500/5.121 and are prompt-paired ties. C2 and D2 are lower at 4.600/4.624 and
+4.510/4.507 and are also tied. B2a/B2b are 5.320/4.720 and 5.520/4.956.
+Every run observed the full seed 17--26 schedule on all 100 prompts. These are
+generic response-diversity transfer results, not scientific-novelty scores;
+the good B2a/B2b transfer numbers despite poor TOMATO quality demonstrate that
+construct difference. See
+[`audits/noveltybench-corrected-seed17-v2/README.md`](audits/noveltybench-corrected-seed17-v2/README.md).
 
 ## Historical 2026-08-04 snapshot
 
