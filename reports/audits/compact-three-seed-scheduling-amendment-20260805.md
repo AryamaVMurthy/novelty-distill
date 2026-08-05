@@ -79,6 +79,31 @@ evaluation job remained pending behind its original dependency. Only
 chains, seed-29 D1 and seed-43 D2, cannot be staged until their on-policy final
 adapters exist.
 
+### On-policy checkpoint gate
+
+At approximately 06:16 IST, all four long on-policy tasks had crossed and
+durably written checkpoint step 25 of 125. Each checkpoint contained adapter
+weights, optimizer and scheduler state, RNG state, adapter configuration, and
+trainer state recording `global_step: 25`, `max_steps: 125`, and `epoch: 0.2`.
+The jobs then continued from step 26. These are recovery checkpoints only:
+downstream evaluation remains gated on the final adapter and will not consume
+an intermediate checkpoint.
+
+### Final-adapter and result-repatriation holds
+
+Two release races were closed while every affected job was still pending:
+
+- generation roots 19137 (seed-29 D1) and 19172 (seed-43 D2) were user-held;
+  each complete five-job chain was pinned to node02. A root will be released
+  only after the corresponding final adapter is copied from node01 into its
+  exact declared path on node02 and its inference-artifact hash matches;
+- aggregate analysis job 19177 was user-held on node01. It will be released
+  only after all node02 evaluation JSON files are copied into the exact paths
+  expected on node01 and their byte hashes match.
+
+These holds impose storage-availability gates only. Dependencies, commands,
+seeds, checkpoints, samples, judge, and statistical analysis remain frozen.
+
 ## Invariants
 
 The GPU count, node placement, time limits, repository commit, dataset, ordered
