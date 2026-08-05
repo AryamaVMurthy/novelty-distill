@@ -29,15 +29,23 @@ adapters. C1 and C2 are complete over all three seeds with
 mean feasibility/soundness 4.2447/4.6625 and 4.2387/4.6546. C1's recovery
 over B2b is +0.8379/+1.4729; C2 minus C1 is only -0.0059/-0.0079, with both
 descriptive df=2 intervals crossing zero. C2's strict-threshold qualified
-yield is 0.4349 lower, but that embedding-defined result remains quarantined
-until two humans calibrate the semantic boundary. Across all three seeds, D1
-minus C1 is -0.0056 feasibility/+0.0031 soundness, with both descriptive
+yield is 0.4349 lower, but that embedding-defined result remains quarantined;
+the user deferred two-human semantic-boundary calibration. Across all three
+seeds, D1 minus C1 is -0.0056 feasibility/+0.0031 soundness, with both descriptive
 intervals crossing zero:
 there is no observed on-policy forward-KL quality advantage. D2 averages
 4.2283/4.6428; versus C2 it is -0.0104 feasibility (interval below zero) and
 -0.0118 soundness (interval crosses zero), so there is no on-policy
 reverse-KL advantage either. The final table is
 [`compact-k4-three-seed-corrected-v2/findings.md`](compact-k4-three-seed-corrected-v2/findings.md).
+
+The subsequent automatic audit covers all eight frozen cosine thresholds.
+B2a has more raw clusters than A0 but lower quality-qualified yield at all
+eight; C2 has lower raw clusters and qualified yield than C1 at all eight;
+D1 versus C1 is mixed rather than consistently favorable; and D2 is below D1
+on qualified yield at all eight. The audit also measures score ceilings and
+shows that length does not explain the hard-KD failure. Full results are in
+[`compact-k4-three-seed-descriptive-v1/findings.md`](compact-k4-three-seed-descriptive-v1/findings.md).
 
 Jobs 19055--19062 completed the feasibility-inclusive K=4 recomputation for
 A0, A1, B1, B2b, C1, C2, D1, and D2. The content-bound summary is
@@ -68,7 +76,8 @@ and the immutable
 The separate semantic-equivalence v2 packet is also prepared from 28,000 clean
 teacher-pair candidates: 256 unique-prompt originals, 32 in each of eight
 similarity strata, and 26 hidden repeats per rater. It awaits two blinded human
-raters and is audited in
+raters if this optional calibration is later revived; it is currently deferred
+and is audited in
 [`audits/semantic-equivalence-calibration-20260805-v2.manifest.json`](audits/semantic-equivalence-calibration-20260805-v2.manifest.json).
 
 The corrected full NoveltyBench seed-17 matrix is complete. A0 is

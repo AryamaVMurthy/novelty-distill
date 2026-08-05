@@ -13,9 +13,11 @@ the compact study.
 
 The current computational scope is complete: A0 plus B2a, B2b, C1-best1,
 C2-best1, D1, and D2 have the required held-out results; all six trained
-methods have independent checkpoint seeds 17, 29, and 43. The only open gate
-inside the frozen compact protocol is the two-human semantic-equivalence
-calibration. No GPU run is waiting on that gate.
+methods have independent checkpoint seeds 17, 29, and 43. The only gate for
+promoting semantic-threshold diagnostics to human-anchored claims would be the
+two-human semantic-equivalence calibration. The user deferred that work; the
+automatic compact baseline is complete with those metrics quarantined. No GPU
+run is waiting on the deferred gate.
 
 ## Why the historical ledger looks larger
 
@@ -63,15 +65,19 @@ run ledger and historical handoff for reproducibility.
 |---|---|---|
 | TOMATO issue-month holdout, K=4 | Complete for A0/A1 and seed-17 clean methods; complete for seeds 29/43 of all six trained methods | Main operational baseline evidence; call it an issue-month holdout, not strict temporal OOD |
 | Qwen3-32B rubric judge | Complete | Feasibility and soundness are operational proxy outcomes; saturated axes are secondary |
-| Qwen3 embedding threshold curves | Complete | Descriptive and quarantined until the two-human boundary calibration finishes |
+| Qwen3 embedding threshold curves | Complete, including all-threshold three-seed diagnostics | Descriptive and quarantined; human boundary calibration was deferred |
 | DeepInfra Llama-3.3-70B audit | Complete: 528/528 valid calls, including 48 repeats | Different-family sensitivity check; confirms hard-KD failure but is too compressed to be ground truth |
 | Original NoveltyBench matrix | Executed but invalid because ten calls repeated one seed | Withdrawn; never cite |
 | Corrected NoveltyBench | Complete for A0 and the six clean trained methods, 100 prompts x 10 independent seeds | Generic functional diversity/utility transfer only, not scientific novelty |
 | HypoSpace | Historical seven-model matrix audited | Secondary domain-specific constraint-search diagnostic; parser failures confound several rows |
-| Human semantic equivalence | Packet and UI complete; labels absent | Only active protocol gate; two independent domain-aware humans are required |
+| Human semantic equivalence | Packet and UI complete; labels absent | Deferred by the user; optional only if semantic metrics are later promoted to human-anchored claims |
 | Literature-grounded global novelty | Not run | Intentionally outside the compact baseline study; would require retrieval and expert review |
 
-## Remaining work in the frozen compact protocol
+## Deferred optional human calibration
+
+This workflow is preserved for a future claim-bearing semantic analysis, but
+it is not active work for the automatic compact baseline. Until it is revived
+and completed, no embedding threshold is a human-calibrated boundary.
 
 Two independent, domain-aware human raters must complete these local,
 source-blinded browser files without seeing the private key, similarities,
@@ -118,9 +124,11 @@ scientific novelty.
 
 ## Completion rule
 
-Do not start additional GPU training under the old graph. After the two human
-exports and adjudication are available, run the frozen analyzer, rerun the
-semantic summaries at the selected boundary, update the canonical report, and
-freeze those outputs with content hashes. Any new loss, scale, dataset, or
-model size is a new study and requires a new preregistered plan rather than an
-implicit continuation of the superseded ledger.
+The automatic compact baseline is computationally and analytically complete;
+do not start additional GPU training under the old graph. If human calibration
+is explicitly revived, then after the two exports and adjudication are
+available, run the frozen analyzer, rerun semantic summaries at the selected
+boundary, update the canonical report, and freeze those outputs with content
+hashes. Any new loss, scale, dataset, or model size is a new study and requires
+a new preregistered plan rather than an implicit continuation of the superseded
+ledger.

@@ -3,8 +3,9 @@
 Date: 2026-08-05 (Asia/Kolkata)
 
 Status: the seed-17 baseline, seed-29/43 replication, different-family judge
-audit, and preregistered checkpoint-seed analysis are complete. Semantic
-threshold claims remain quarantined pending two genuine human raters.
+audit, preregistered checkpoint-seed analysis, and automatic eight-threshold
+diagnostics are complete. Human calibration was deferred by the user, so
+semantic threshold results remain descriptive and quarantined from claims.
 
 ## Executive summary
 
@@ -27,8 +28,9 @@ The defensible three-seed result is:
 6. A different-family Llama judge independently confirms the large hard-KD
    soundness failure, but is too generous and compressed to validate absolute
    quality. It does not measure novelty.
-7. The semantic boundary is highly threshold-sensitive and remains
-   uncalibrated until two humans label the frozen equivalence packet.
+7. The semantic boundary is highly threshold-sensitive. The prepared
+   two-rater calibration was deferred, so no threshold is treated as a
+   human-calibrated equivalence boundary.
 
 The completed three-seed B2a/B2b replication now strengthens item 2: both
 random-1 and best-1 hard KD remain far below A0, while best-1 minus random-1
@@ -39,6 +41,13 @@ three-seed D1 result is also a quality tie with C1 and shows no on-policy
 forward-KL advantage. D2 is slightly lower than C2 in feasibility and lower
 than D1 in soundness, so the current on-policy reverse-KL recipe also provides
 no advantage.
+
+An automatic audit across all eight frozen embedding thresholds strengthens
+the interpretation without relaxing that boundary: C2 has lower raw clusters
+and lower quality-qualified yield than C1 at every threshold, while D1 versus
+C1 has no stable semantic-diagnostic advantage. Raw clusters can also be
+misleading: B2a exceeds A0 on raw cluster count at every threshold but is far
+worse on quality-qualified yield at every threshold.
 
 The correct research use of these results is to select controls for a later
 new method: A0, B2a/B2b, C1, C2, D1, and D2. The new method should first beat
@@ -197,8 +206,9 @@ core baseline comparison. They remain judge-relative, not human truth.
 These are threshold curves, not calibrated novelty. At similarity 0.90 A0
 teacher recall is 0.628; at 0.94 it is 0.120. A stricter threshold can
 simultaneously lower recall and increase “distinct” yield, so the 0.94 number
-must never be interpreted alone. The frozen two-human equivalence packet is
-the required boundary-selection gate.
+must never be interpreted alone. A frozen two-human equivalence packet is
+available, but that calibration was deferred; this report therefore keeps the
+entire semantic family descriptive rather than selecting a boundary.
 
 ### External transfer
 
@@ -221,8 +231,8 @@ failures confound several historical results.
 | D1 | 4.2336 | 4.6583 | 2.1972 | 0.1173 | 0.0000% |
 | D2 | 4.2307 | 4.6380 | 1.7195 | 0.1254 | 0.0151% |
 
-`*` Threshold-dependent descriptive metrics pending human equivalence
-calibration.
+`*` Threshold-dependent descriptive metrics; human equivalence calibration is
+deferred and these values are not claim-bearing.
 
 Interpretation:
 
@@ -564,6 +574,54 @@ The scheduler recovery, cross-node artifact hashes, evaluator OOM diagnosis,
 replacement jobs, and fail-closed release gates are in
 [`audits/compact-three-seed-scheduling-amendment-20260805.md`](audits/compact-three-seed-scheduling-amendment-20260805.md).
 
+## Automatic threshold and judge-distribution audit
+
+The complete raw matrix was re-aggregated across all 1,658 prompts, the three
+trained checkpoint seeds, and the eight frozen cosine thresholds from 0.70 to
+0.95. All 20 inputs were accepted only after their SHA-256 values matched the
+existing three-seed manifest and seed-17 summary. The full tables and
+machine-readable per-seed deltas are in
+[`compact-k4-three-seed-descriptive-v1/findings.md`](compact-k4-three-seed-descriptive-v1/findings.md)
+and
+[`automatic-diagnostics.json`](compact-k4-three-seed-descriptive-v1/automatic-diagnostics.json).
+
+The threshold-stable automatic patterns are:
+
+- B2a has more raw student embedding clusters than fixed A0 at all 8/8
+  thresholds, but lower quality-qualified semantic yield at all 8/8. More raw
+  clusters therefore do not imply useful scientific breadth.
+- B2b improves qualified yield over B2a at 8/8 thresholds, but only by
+  0.0187--0.0400 modes per prompt on average. Target selection does not repair
+  the large hard-KD quality failure.
+- C1 has fewer raw clusters than B2b at 8/8 thresholds but much higher
+  qualified yield at 8/8. The hard-KD failure is primarily poor answer
+  quality, not a simple lack of embedding variation.
+- C2 is below C1 on raw clusters and qualified yield at 8/8 thresholds, while
+  its teacher-mode precision is higher and ClusterJSD lower at 8/8. Under this
+  embedding geometry, static reverse KL is more teacher-concentrated and less
+  broad than static forward KL.
+- Every D1-versus-C1 semantic diagnostic has mixed threshold direction; no
+  stable on-policy forward-KL benefit appears. D2 does not improve C2's
+  teacher fidelity: its teacher-mode precision is lower and ClusterJSD higher
+  at 8/8 thresholds. D2 is also below D1 in qualified yield and
+  quality-adjusted coverage at 8/8.
+
+The audit also quantifies judge compression. For A0, C1, C2, D1, and D2,
+93.5%--95.7% of prompt-level K=4 relevance means and 97.1%--98.1% of clarity
+means are at least 4.75/5; instruction compliance is effectively at ceiling.
+These axes have little separation headroom. Feasibility and soundness do
+separate the hard-KD failure: 33.1%--35.3% of B2a/B2b prompt means are at or
+below 3 for feasibility and 58.1%--60.6% for soundness, versus below 0.7% for
+every KL model. Prompt-level soundness--length correlations are near zero for
+all trained methods, and feasibility--length correlations range from -0.006
+to 0.151, so response length alone does not explain the collapse. Length-stop
+rates are at most 0.0151%.
+
+These are more robust automatic diagnostics than quoting threshold 0.94 in
+isolation. They still do not establish human semantic equivalence, scientific
+diversity, or literature-grounded novelty; the human gate was left aside, not
+silently replaced by an embedding threshold.
+
 ## What is valid now
 
 Supported as operational baseline evidence:
@@ -573,18 +631,22 @@ Supported as operational baseline evidence:
   17, 29, and 43; best-of-eight selection does not repair it;
 - token-level KL training avoids that collapse;
 - current on-policy GKD has no observed quality advantage over static GKD;
-- reverse-KL variants show lower strict-threshold breadth than forward-KL
-  variants under the current embedding geometry;
+- static reverse KL shows lower embedding-defined breadth than static forward
+  KL at all eight frozen thresholds; the current on-policy reverse recipe is
+  also below on-policy forward KL on qualified yield at all eight thresholds;
+- raw embedding-cluster count can move opposite to quality-qualified breadth,
+  especially for the failed hard-KD models;
 - generic NoveltyBench diversity does not substitute for TOMATO quality.
 
 Not supported:
 
 - any claim that a model's ideas are globally novel;
 - any human-quality claim from Qwen/Llama agreement;
-- a single-threshold semantic effect before human equivalence calibration;
+- any human-semantic interpretation of an automatic threshold effect while
+  equivalence calibration remains deferred;
 - strict temporal generalization;
 - evidence from B1 or any historical/privileged-target method;
-- human-validated semantic novelty or diversity before the two-rater study.
+- human-validated semantic novelty or diversity without the two-rater study.
 
 ## ICLR research path
 
@@ -622,7 +684,7 @@ entropy check proving the label still depends on the generated response.
 
 ## Current software and artifact verification
 
-- The complete local test suite passes: 334 passed and two Torch-dependent
+- The complete local test suite passes: 340 passed and two Torch-dependent
   tests were explicitly skipped because the lightweight local test environment
   does not install Torch. GPU jobs import and exercise their pinned Torch
   environments separately.
@@ -666,6 +728,12 @@ for human validation of the scientific rubric or semantic-equivalence boundary.
   [`compact-k4-three-seed-corrected-v2/findings.md`](compact-k4-three-seed-corrected-v2/findings.md)
   and
   [`compact-k4-three-seed-corrected-v2/checkpoint-seed-contrasts.json`](compact-k4-three-seed-corrected-v2/checkpoint-seed-contrasts.json)
+- Complete eight-threshold and judge-distribution diagnostics:
+  [`compact-k4-three-seed-descriptive-v1/findings.md`](compact-k4-three-seed-descriptive-v1/findings.md)
+  and
+  [`compact-k4-three-seed-descriptive-v1/automatic-diagnostics.json`](compact-k4-three-seed-descriptive-v1/automatic-diagnostics.json),
+  with frozen hashes in
+  [`compact-k4-three-seed-descriptive-v1/MANIFEST.sha256`](compact-k4-three-seed-descriptive-v1/MANIFEST.sha256)
 - Target and temporal audit artifacts:
   [`audits/README.md`](audits/README.md)
 - Literature claims and applicability limits:
