@@ -82,8 +82,21 @@ repeat identities, or each other's labels:
 
 Each rater labels 282 pairs: 256 unique-prompt originals plus 26 hidden
 reversed repeats. The exported JSONL files replace copies of the blank local
-templates. Every disagreement or `uncertain` original must then be adjudicated
-in a separate JSONL file. The analyzer is deliberately fail-closed:
+templates. Build the source-blinded adjudication UI only after both exports
+are complete:
+
+```bash
+uv run python scripts/build_semantic_equivalence_adjudicator.py \
+  --packet artifacts/semantic-equivalence-calibration-20260805-v2/semantic-equivalence-public.json \
+  --private-key artifacts/semantic-equivalence-calibration-20260805-v2/semantic-equivalence-private-key.json \
+  --rater-one artifacts/semantic-equivalence-calibration-20260805-v2/labels-rater-one.jsonl \
+  --rater-two artifacts/semantic-equivalence-calibration-20260805-v2/labels-rater-two.jsonl \
+  --output artifacts/semantic-equivalence-calibration-20260805-v2/adjudicator.html
+```
+
+That UI contains only original disagreements or `uncertain` labels and exports
+`adjudication.jsonl`. It excludes hidden repeats, similarities, private source
+metadata, and the two initial labels. Then run the fail-closed analyzer:
 
 ```bash
 uv run python scripts/analyze_semantic_equivalence_calibration.py \
@@ -96,9 +109,12 @@ uv run python scripts/analyze_semantic_equivalence_calibration.py \
 
 The adjudication argument is omitted only when the two label files contain no
 disagreement or uncertainty. Passing the gate requires Cohen's kappa at least
-0.60 and adjudication of every flagged original. The selected 0.80--0.99
-embedding threshold calibrates pairwise semantic equivalence only. It does not
-turn the metric into a measure of global scientific novelty.
+0.60 and adjudication of every flagged original. If kappa fails, the analyzer
+writes an audit with `status: failed_inter_rater_gate`, records the diagnostic
+`candidate_threshold`, leaves `selected_threshold` null, and exits nonzero.
+The selected 0.80--0.99 embedding threshold calibrates pairwise semantic
+equivalence only. It does not turn the metric into a measure of global
+scientific novelty.
 
 ## Completion rule
 

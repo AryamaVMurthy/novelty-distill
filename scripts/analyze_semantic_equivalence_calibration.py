@@ -117,6 +117,8 @@ def main() -> None:
             sort_keys=True,
         )
     )
+    if not summary["inter_rater"]["passed"]:
+        raise SystemExit(2)
 
 
 if __name__ == "__main__":

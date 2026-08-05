@@ -638,6 +638,10 @@ entropy check proving the label still depends on the generated response.
 - The semantic-calibration analyzer rejects the untouched label templates and
   writes no result: blank labels and null confidence values cannot be mistaken
   for human judgments.
+- The source-blinded adjudication builder accepts only two complete rater
+  exports, excludes hidden repeats and private similarity metadata, and emits
+  only flagged original pairs. The analyzer records but does not select a
+  candidate boundary when the Cohen-kappa gate fails, and exits nonzero.
 
 These checks establish software and artifact integrity. They do not substitute
 for human validation of the scientific rubric or semantic-equivalence boundary.

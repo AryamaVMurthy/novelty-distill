@@ -130,3 +130,50 @@ def test_semantic_calibration_analysis_requires_adjudication_and_selects_thresho
             adjudicated={},
             threshold_grid=(0.90, 0.92, 0.94),
         )
+
+
+def test_semantic_calibration_does_not_select_boundary_when_agreement_gate_fails() -> None:
+    sample = build_semantic_calibration_sample(
+        pairs=_pairs(),
+        prompts={pair["prompt_id"]: f"prompt {pair['prompt_id']}" for pair in _pairs()},
+        similarity_bins=((0.74, 0.84), (0.84, 0.90), (0.90, 0.94), (0.94, 1.001)),
+        pairs_per_bin=4,
+        repeat_fraction=0.25,
+        seed=29,
+    )
+    rater_one = {}
+    rater_two = {}
+    adjudicated = {}
+    for entry in sample.private_entries:
+        source = (
+            next(item for item in sample.private_entries if item.blind_id == entry.repeat_of)
+            if entry.repeat_of
+            else entry
+        )
+        first_label = "equivalent" if source.similarity >= 0.92 else "not_equivalent"
+        second_label = "not_equivalent" if first_label == "equivalent" else "equivalent"
+        rater_one[entry.blind_id] = HumanEquivalenceLabel(
+            blind_id=entry.blind_id,
+            label=first_label,
+            confidence=3,
+        )
+        rater_two[entry.blind_id] = HumanEquivalenceLabel(
+            blind_id=entry.blind_id,
+            label=second_label,
+            confidence=3,
+        )
+        if entry.repeat_of is None:
+            adjudicated[entry.blind_id] = first_label
+
+    summary = analyze_semantic_calibration(
+        entries=sample.private_entries,
+        rater_one=rater_one,
+        rater_two=rater_two,
+        adjudicated=adjudicated,
+        threshold_grid=(0.88, 0.90, 0.92, 0.94, 0.96),
+    )
+
+    assert summary["inter_rater"]["passed"] is False
+    assert summary["status"] == "failed_inter_rater_gate"
+    assert summary["selected_threshold"] is None
+    assert summary["candidate_threshold"] == 0.92

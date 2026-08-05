@@ -354,7 +354,7 @@ def analyze_semantic_calibration(
             "balanced_accuracy": (sensitivity + specificity) / 2,
             "precision": precision,
         }
-    selected = max(
+    candidate = max(
         threshold_grid,
         key=lambda threshold: (
             threshold_metrics[f"{threshold:.3f}"]["balanced_accuracy"],
@@ -362,8 +362,10 @@ def analyze_semantic_calibration(
         ),
     )
     kappa = _cohen_kappa(left_labels, right_labels)
+    gate_passed = kappa is not None and kappa >= 0.6
     return {
         "schema_version": 1,
+        "status": "passed" if gate_passed else "failed_inter_rater_gate",
         "counts": {
             "originals": len(originals),
             "repeats": len(repeats),
@@ -374,11 +376,12 @@ def analyze_semantic_calibration(
         "inter_rater": {
             "cohen_kappa": kappa,
             "minimum_kappa_gate": 0.6,
-            "passed": kappa is not None and kappa >= 0.6,
+            "passed": gate_passed,
         },
         "repeat_reliability": repeat_reliability,
         "selection_rule": "maximize_balanced_accuracy_ties_choose_higher_threshold",
-        "selected_threshold": selected,
+        "candidate_threshold": candidate,
+        "selected_threshold": candidate if gate_passed else None,
         "threshold_metrics": threshold_metrics,
         "claim_boundary": (
             "The selected boundary estimates pairwise semantic equivalence for this task and "

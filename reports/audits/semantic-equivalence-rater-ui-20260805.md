@@ -14,9 +14,22 @@ Each file contains 282 judgments: 256 unique-prompt originals and 26 hidden
 repeats. The two raters must work independently and must not receive the private
 key, similarity values, bins, source identities, or each other's labels.
 
-The committed generator is `scripts/build_semantic_equivalence_rater.py`.
-Generated HTML remains ignored because it embeds the full public annotation
-packet. The exported files should replace the empty local templates
-`labels-rater-one.jsonl` and `labels-rater-two.jsonl` only after a copy has been
-preserved. Run `scripts/analyze_semantic_equivalence_calibration.py` after both
-exports and any required adjudication are complete.
+The committed rater generator is
+`scripts/build_semantic_equivalence_rater.py`. Generated HTML remains ignored
+because it embeds the full public annotation packet. The exported files should
+replace the empty local templates `labels-rater-one.jsonl` and
+`labels-rater-two.jsonl` only after a copy has been preserved.
+
+After both exports exist,
+`scripts/build_semantic_equivalence_adjudicator.py` validates exact coverage,
+uses the private key only to remove hidden repeats, and creates a second
+self-contained browser UI containing only original disagreements or
+uncertainties. It does not embed similarities, bins, prompt IDs, source
+indices, repeat identities, or either rater's labels. The adjudicator exports
+`adjudication.jsonl`. If there are no flagged originals, run the analyzer
+without `--adjudication`.
+
+The final analyzer now records a candidate threshold for audit but returns a
+nonzero exit and leaves `selected_threshold` null when Cohen's kappa is below
+0.60. A boundary is selected only after the preregistered agreement gate
+passes.
