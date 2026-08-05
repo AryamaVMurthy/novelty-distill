@@ -3,8 +3,11 @@ import os
 import subprocess
 import sys
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+
+import pytest
 
 from novelty_distill.evaluation.independent_judge import (
     build_blinded_calibration_sample,
@@ -78,8 +81,18 @@ def test_deepinfra_runner_is_blinded_resumable_and_analyzable(tmp_path: Path) ->
                 {
                     "id": f"mock-request-{request_index}",
                     "model": "mock-independent-model-revision",
-                    "choices": [{"message": {"content": json.dumps(content)}}],
-                    "usage": {"prompt_tokens": 100, "completion_tokens": 30},
+                    "choices": [
+                        {
+                            "finish_reason": "stop",
+                            "message": {"content": json.dumps(content)},
+                        }
+                    ],
+                    "usage": {
+                        "prompt_tokens": 100,
+                        "completion_tokens": 30,
+                        "total_tokens": 130,
+                        "estimated_cost": 0.000123,
+                    },
                 }
             ).encode()
             self.send_response(200)
@@ -165,4 +178,115 @@ def test_deepinfra_runner_is_blinded_resumable_and_analyzable(tmp_path: Path) ->
     assert summary["counts"] == {"originals": 8, "repeats": 2, "total": 10}
     assert summary["repeat_reliability"]["feasibility"]["exact_rate"] == 1
     assert summary["provenance"]["provider_models"] == ["mock-independent-model-revision"]
+    assert summary["provenance"]["provider_transport"] == {
+        "unique_request_ids": 10,
+        "finish_reason_counts": {"stop": 10},
+        "length_stop_rate": 0,
+        "output_wrapper_counts": {"raw_json": 10},
+    }
+    assert summary["provenance"]["provider_usage"] == {
+        "responses": 10,
+        "responses_with_usage": 10,
+        "prompt_tokens": 1000,
+        "completion_tokens": 300,
+        "total_tokens": 1300,
+        "responses_with_estimated_cost": 10,
+        "estimated_cost_usd": pytest.approx(0.00123),
+    }
     assert set(summary["paired_contrasts"]) == {"C1-best1_minus_A0"}
+
+
+def test_deepinfra_runner_does_not_launch_queued_calls_after_failure(tmp_path: Path) -> None:
+    prompts = {f"p-{index}": f"Research task {index}" for index in range(20)}
+    entries = build_blinded_calibration_sample(
+        candidates_by_method={"A0": [_candidate(prompt_index, 0) for prompt_index in range(20)]},
+        prompts=prompts,
+        samples_per_method=20,
+        repeat_fraction=0,
+        seed=29,
+    )
+    packet = tmp_path / "packet.json"
+    packet.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "protocol_hash": independent_judge_protocol_hash(),
+                "entries": [entry.model_dump(mode="json") for entry in entries],
+            }
+        ),
+        encoding="utf-8",
+    )
+    received = 0
+    lock = threading.Lock()
+
+    class Handler(BaseHTTPRequestHandler):
+        def do_POST(self) -> None:  # noqa: N802
+            nonlocal received
+            self.rfile.read(int(self.headers["Content-Length"]))
+            with lock:
+                received += 1
+                request_index = received
+            if request_index == 1:
+                response = b'{"error":"deliberate test failure"}'
+                self.send_response(500)
+            else:
+                time.sleep(0.2)
+                content = {
+                    "relevance": 4,
+                    "feasibility": 3,
+                    "soundness": 4,
+                    "clarity": 4,
+                    "instruction_compliance": 5,
+                    "fatal_flaw": False,
+                    "brief_rationale": "Valid delayed fixture.",
+                }
+                response = json.dumps(
+                    {
+                        "id": f"mock-request-{request_index}",
+                        "model": "mock/model",
+                        "choices": [{"message": {"content": json.dumps(content)}}],
+                        "usage": {"prompt_tokens": 10, "completion_tokens": 10},
+                    }
+                ).encode()
+                self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(response)))
+            self.end_headers()
+            self.wfile.write(response)
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        completed = subprocess.run(
+            [
+                sys.executable,
+                str(ROOT / "scripts/run_deepinfra_judge_calibration.py"),
+                "--packet",
+                str(packet),
+                "--output-dir",
+                str(tmp_path / "responses"),
+                "--model",
+                "mock/model",
+                "--endpoint",
+                f"http://127.0.0.1:{server.server_port}/v1/chat/completions",
+                "--concurrency",
+                "2",
+                "--attempts",
+                "1",
+            ],
+            cwd=ROOT,
+            env={**os.environ, "DEEPINFRA_API_KEY": "test-only-key"},
+            capture_output=True,
+            text=True,
+        )
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    assert completed.returncode != 0
+    assert received <= 2

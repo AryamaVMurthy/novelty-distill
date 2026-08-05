@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "status": "ready_for_paid_judging",
+  "status": "superseded_after_paid_transport_probe",
   "packet_sha256": "ff11de42f3eb0add2ee374e9f231037ff7079b704aefd78e9c6645ee0b655bc5",
   "protocol_hash": "330505af2d90aae1149e09115f27432e2807b3f9ebfc994cecb058f24c8fe71e",
   "repository_commit": "d4df45e9c83dfbe93efd5c58650fe8c5a99e2acd",
@@ -37,6 +37,24 @@
     "turing_node01_packet": "/scratch/aryama.murthy/novelty-distill/evaluations/independent-judge/deepinfra-calibration-packet-20260805-v3.json"
   },
   "request_model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
-  "paid_requests_sent": 0,
-  "blocker": "Install a rotated credential as DEEPINFRA_API_KEY; the key pasted in chat is exposed and is not reused."
+  "paid_requests_sent": 18,
+  "paid_responses_returned_to_client": 2,
+  "accepted_calibration_records": 0,
+  "transport_probe": {
+    "failure": "DeepInfra accepted json_schema but Llama returned a prose review, reached the 256-token cap, and did not satisfy the schema.",
+    "first_diagnostic_usage": {
+      "prompt_tokens": 981,
+      "completion_tokens": 256,
+      "estimated_cost_usd": 0.00018002
+    },
+    "repaired_probe": "json_object plus an explicit compact seven-key output instruction returned valid JSON with finish_reason=stop.",
+    "repaired_diagnostic_usage": {
+      "prompt_tokens": 1040,
+      "completion_tokens": 68,
+      "estimated_cost_usd": 0.00012576
+    },
+    "unreturned_requests": 16,
+    "unreturned_request_cost": "unknown; consult the provider account ledger because no usage response reached the client"
+  },
+  "superseded_by": "deepinfra-calibration-packet-20260805-v4.json"
 }

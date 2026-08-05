@@ -96,9 +96,9 @@ def test_official_evaluation_serializes_each_isolated_environment() -> None:
 
     # Each worker owns a job-specific environment; concurrent GPU workers do
     # not mutate one shared venv or need a global install lock.
-    assert 'inference-${SLURM_JOB_ID}' in script
-    assert 'noveltybench-${SLURM_JOB_ID}' in script
-    assert 'hypospace-${SLURM_JOB_ID}' in script
+    assert "inference-${SLURM_JOB_ID}" in script
+    assert "noveltybench-${SLURM_JOB_ID}" in script
+    assert "hypospace-${SLURM_JOB_ID}" in script
 
 
 def test_shared_data_environment_mutations_are_serialized() -> None:
@@ -114,17 +114,40 @@ def test_shared_data_environment_mutations_are_serialized() -> None:
 
 
 def test_deepinfra_packet_preparation_imports_from_source() -> None:
-    script = (ROOT / "slurm" / "prepare_deepinfra_calibration.sbatch").read_text(
-        encoding="utf-8"
-    )
+    script = (ROOT / "slurm" / "prepare_deepinfra_calibration.sbatch").read_text(encoding="utf-8")
     export = 'export PYTHONPATH="${repo_dir}/src${PYTHONPATH:+:${PYTHONPATH}}"'
     assert export in script
     assert script.index(export) < script.index("flock -u 8")
 
 
 def test_official_combiner_serializes_inference_environment() -> None:
-    script = (ROOT / "slurm" / "combine_official_results.sbatch").read_text(
+    script = (ROOT / "slurm" / "combine_official_results.sbatch").read_text(encoding="utf-8")
+    assert "inference-${SLURM_JOB_ID}" in script
+    assert 'uv pip sync --python "${venv_dir}/bin/python"' in script
+
+
+def test_final_adapter_stage_releases_only_after_byte_identity_gate() -> None:
+    script = (ROOT / "slurm" / "stage_final_adapter_and_release.sbatch").read_text(encoding="utf-8")
+
+    assert "adapter_config.json" in script
+    assert "adapter_model.safetensors" in script
+    assert script.count("hash_model_artifact.py") == 2
+    assert 'if [[ "${destination_identity}" != "${source_identity}" ]]' in script
+    assert script.rindex('scontrol release "${release_job_id}"') > script.rindex(
+        'if [[ "${destination_identity}" != "${source_identity}" ]]'
+    )
+    assert "#SBATCH --gres=gpu:" not in script
+
+
+def test_evaluation_repatriation_releases_only_after_every_declared_hash_gate() -> None:
+    script = (ROOT / "slurm" / "repatriate_compact_evaluations_and_release.sbatch").read_text(
         encoding="utf-8"
     )
-    assert 'inference-${SLURM_JOB_ID}' in script
-    assert 'uv pip sync --python "${venv_dir}/bin/python"' in script
+
+    loop_start = script.index('for spec in "${specs[@]}"')
+    loop_end = script.index("done", loop_start)
+    release = script.index('scontrol release "${release_job_id}"')
+    assert loop_start < loop_end < release
+    assert 'if [[ "${destination_hash}" != "${source_hash}" ]]' in script
+    assert "temporal-k4-corrected-v2.json" in script
+    assert "#SBATCH --gres=gpu:" not in script

@@ -11,7 +11,7 @@ import time
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from pathlib import Path
 from typing import Any
 
@@ -157,18 +157,50 @@ def main() -> None:
         raise RuntimeError(f"judge failed for {entry.blind_id}: {last_error}")
 
     counts = {"created": 0, "reused": 0}
-    with ThreadPoolExecutor(max_workers=args.concurrency) as executor:
-        futures = {executor.submit(judge, entry): entry.blind_id for entry in entries}
-        for completed, future in enumerate(as_completed(futures), start=1):
-            blind_id, status = future.result()
-            counts[status] += 1
-            print(
-                json.dumps(
-                    {"completed": completed, "total": len(entries), "blind_id": blind_id},
-                    sort_keys=True,
-                ),
-                flush=True,
-            )
+    completed = 0
+    entry_iterator = iter(entries)
+    executor = ThreadPoolExecutor(max_workers=args.concurrency)
+    in_flight: dict[Future[tuple[str, str]], str] = {}
+
+    def submit_next() -> bool:
+        try:
+            entry = next(entry_iterator)
+        except StopIteration:
+            return False
+        in_flight[executor.submit(judge, entry)] = entry.blind_id
+        return True
+
+    try:
+        for _ in range(min(args.concurrency, len(entries))):
+            submit_next()
+        while in_flight:
+            done, _ = wait(in_flight, return_when=FIRST_COMPLETED)
+            batch = [future.result() for future in done]
+            for future in done:
+                del in_flight[future]
+            for blind_id, status in batch:
+                completed += 1
+                counts[status] += 1
+                print(
+                    json.dumps(
+                        {
+                            "completed": completed,
+                            "total": len(entries),
+                            "blind_id": blind_id,
+                        },
+                        sort_keys=True,
+                    ),
+                    flush=True,
+                )
+            for _ in batch:
+                submit_next()
+    except BaseException:
+        for future in in_flight:
+            future.cancel()
+        executor.shutdown(wait=True, cancel_futures=True)
+        raise
+    else:
+        executor.shutdown(wait=True)
 
     manifest = {
         "schema_version": 1,

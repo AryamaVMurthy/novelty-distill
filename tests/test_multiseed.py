@@ -60,10 +60,28 @@ def test_multiseed_contrasts_reject_incomplete_seed_matrix() -> None:
             evaluations={"B2a": {17: _evaluation((2.0, 3.0))}},
             controls={"A0": _evaluation((1.0, 2.0))},
             seeds=(17, 29, 43),
-            contrasts=(
-                {"id": "B2a-vs-A0", "reference": "A0", "treatment": "B2a"},
-            ),
+            contrasts=({"id": "B2a-vs-A0", "reference": "A0", "treatment": "B2a"},),
             metrics=("score",),
             bootstrap_samples=100,
             seed=7,
         )
+
+
+def test_multiseed_contrasts_ignore_unrequested_semantic_partition_metrics() -> None:
+    reference = _evaluation((1.0, 2.0))
+    treatment = _evaluation((2.0, 3.0))
+    for payload, clusters in ((reference, (1, 2)), (treatment, (2, 2))):
+        for prompt_id, cluster_count in zip(("p1", "p2"), clusters, strict=True):
+            payload["prompt_metrics"][prompt_id]["teacher_semantic_clusters"] = cluster_count
+
+    result = analyze_checkpoint_seed_contrasts(
+        evaluations={"B2a": {17: treatment, 29: treatment}},
+        controls={"A0": reference},
+        seeds=(17, 29),
+        contrasts=({"id": "B2a-vs-A0", "reference": "A0", "treatment": "B2a"},),
+        metrics=("score",),
+        bootstrap_samples=100,
+        seed=7,
+    )
+
+    assert result["results"]["score"]["B2a-vs-A0"]["mean_difference"] == 1.0

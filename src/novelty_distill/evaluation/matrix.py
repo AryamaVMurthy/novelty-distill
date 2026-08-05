@@ -114,6 +114,8 @@ def aggregate_seeded_evaluation_metrics(
 
 def collect_prompt_metric_rows(
     evaluations: Mapping[str, Mapping[str, Any]],
+    *,
+    metrics: Sequence[str] | None = None,
 ) -> tuple[dict[str, float | str], ...]:
     """Flatten aligned evaluation artifacts into paired-analysis JSONL rows."""
 
@@ -122,6 +124,15 @@ def collect_prompt_metric_rows(
     methods = sorted(evaluations)
     if any(not method.strip() for method in methods):
         raise ValueError("method names must be non-empty")
+    selected_metrics: set[str] | None = None
+    if metrics is not None:
+        if (
+            not metrics
+            or len(metrics) != len(set(metrics))
+            or any(not isinstance(metric, str) or not metric for metric in metrics)
+        ):
+            raise ValueError("selected metric names must be unique and non-empty")
+        selected_metrics = set(metrics)
 
     prompt_ids: set[str] | None = None
     metric_names: set[str] | None = None
@@ -145,13 +156,23 @@ def collect_prompt_metric_rows(
         for prompt_id, raw_metrics in raw_prompts.items():
             if not isinstance(raw_metrics, Mapping) or not raw_metrics:
                 raise ValueError(f"method {method!r} prompt {prompt_id!r} has no metrics")
-            current_metrics = {str(name) for name in raw_metrics}
+            available_metrics = {str(name) for name in raw_metrics}
+            current_metrics = available_metrics
+            if selected_metrics is not None:
+                missing = selected_metrics - available_metrics
+                if missing:
+                    raise ValueError(
+                        f"method {method!r} prompt {prompt_id!r} is missing selected metrics "
+                        f"{sorted(missing)!r}"
+                    )
+                current_metrics = selected_metrics
             if metric_names is None:
                 metric_names = current_metrics
             elif current_metrics != metric_names:
                 raise ValueError(f"method {method!r} prompt {prompt_id!r} changed the metric names")
             values: dict[str, float] = {}
-            for name, raw_value in raw_metrics.items():
+            for name in sorted(current_metrics):
+                raw_value = raw_metrics[name]
                 if isinstance(raw_value, bool):
                     raise ValueError(f"metric {name!r} must be numeric, not boolean")
                 try:
@@ -160,7 +181,7 @@ def collect_prompt_metric_rows(
                     raise ValueError(f"metric {name!r} is not numeric") from error
                 if not math.isfinite(value):
                     raise ValueError(f"metric {name!r} is not finite")
-                values[str(name)] = value
+                values[name] = value
             method_prompts[str(prompt_id)] = values
         normalized[method] = method_prompts
 

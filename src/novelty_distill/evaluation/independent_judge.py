@@ -6,8 +6,9 @@ import hashlib
 import json
 import math
 import random
+import re
 from collections.abc import Mapping, Sequence
-from statistics import fmean
+from statistics import fmean, pstdev
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -36,6 +37,13 @@ _RUBRIC = (
     "physical, ethical, or experimental impossibility invalidates the plan. The rationale must "
     "name the most important concrete strength or defect. This is not a global novelty search, "
     "so do not claim that the idea is novel in the scientific literature."
+)
+
+_OUTPUT_INSTRUCTION = (
+    "Return only a compact JSON object with exactly these keys: relevance, feasibility, "
+    "soundness, clarity, and instruction_compliance as integers; fatal_flaw as a boolean; "
+    "and brief_rationale as a string of at most 40 words. Do not output Markdown or any text "
+    "outside the JSON object."
 )
 
 
@@ -293,8 +301,7 @@ def build_blinded_calibration_sample(
     common_prompt_count = len({prompt_id for prompt_id, _ in common})
     if common_prompt_count < samples_per_method:
         raise ValueError(
-            f"only {common_prompt_count} unique common prompts exist, "
-            f"needs {samples_per_method}"
+            f"only {common_prompt_count} unique common prompts exist, needs {samples_per_method}"
         )
     methods = sorted(by_method)
     ranked = sorted(
@@ -330,9 +337,7 @@ def build_blinded_calibration_sample(
                 preferred_by_prompt[prompt_id] = identity
         candidates_by_stratum[stratum] = sorted(
             preferred_by_prompt.values(),
-            key=lambda identity: _hash_order(
-                seed + 1, "paired", identity[0], identity[1]
-            ),
+            key=lambda identity: _hash_order(seed + 1, "paired", identity[0], identity[1]),
         )
 
     demands = [
@@ -365,10 +370,7 @@ def build_blinded_calibration_sample(
             raise ValueError(
                 "could not satisfy pooled score-stratum quotas with unique common prompts"
             )
-    selected_slots = [
-        (demand_to_identity[demand], demand[0])
-        for demand in sorted(demands)
-    ]
+    selected_slots = [(demand_to_identity[demand], demand[0]) for demand in sorted(demands)]
 
     selected: list[CalibrationEntry] = []
     for identity, stratum in selected_slots:
@@ -424,8 +426,11 @@ def independent_judge_protocol_hash() -> str:
 
     payload = {
         "rubric": _RUBRIC,
+        "output_instruction": _OUTPUT_INSTRUCTION,
+        "response_parser": "raw-json-or-single-json-code-fence-v1",
+        "response_format": {"type": "json_object"},
         "schema": ExternalJudgeScore.model_json_schema(),
-        "version": 1,
+        "version": 3,
     }
     return hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
@@ -442,7 +447,7 @@ def build_independent_judge_payload(
     return {
         "model": model,
         "messages": [
-            {"role": "system", "content": _RUBRIC},
+            {"role": "system", "content": f"{_RUBRIC} {_OUTPUT_INSTRUCTION}"},
             {
                 "role": "user",
                 "content": f"Task:\n{entry.prompt}\n\nCandidate answer:\n{entry.text}",
@@ -450,14 +455,7 @@ def build_independent_judge_payload(
         ],
         "temperature": 0,
         "max_tokens": max_tokens,
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "independent_scientific_quality",
-                "strict": True,
-                "schema": ExternalJudgeScore.model_json_schema(),
-            },
-        },
+        "response_format": {"type": "json_object"},
     }
 
 
@@ -476,8 +474,12 @@ def parse_independent_judge_response(response: Mapping[str, Any]) -> ExternalJud
     message = choice.get("message")
     if not isinstance(message, Mapping) or not isinstance(message.get("content"), str):
         raise ValueError("independent judge choice has no text content")
+    content = message["content"].strip()
+    fenced = re.fullmatch(r"```(?:json)?[ \t]*\r?\n(.*)\r?\n```", content, flags=re.DOTALL)
+    if fenced is not None:
+        content = fenced.group(1)
     try:
-        score = ExternalJudgeScore.model_validate(json.loads(message["content"]))
+        score = ExternalJudgeScore.model_validate(json.loads(content))
     except (json.JSONDecodeError, TypeError, ValueError) as error:
         raise ValueError("independent judge returned invalid structured scores") from error
     usage = response.get("usage", {})
@@ -523,6 +525,21 @@ def _average_ranks(values: Sequence[float]) -> list[float]:
     return result
 
 
+def _score_distribution(values: Sequence[float]) -> dict[str, Any]:
+    """Summarize ordinal-score saturation without treating the scale as ground truth."""
+
+    if not values:
+        raise ValueError("score-distribution values must be non-empty")
+    return {
+        "histogram": {str(score): sum(value == score for value in values) for score in range(1, 6)},
+        "mean": fmean(values),
+        "population_sd": pstdev(values),
+        "unique_scores": len(set(values)),
+        "floor_rate": fmean(float(value == 1) for value in values),
+        "ceiling_rate": fmean(float(value == 5) for value in values),
+    }
+
+
 def analyze_independent_judgments(
     *, entries: Sequence[CalibrationEntry], ratings: Mapping[str, ExternalJudgeScore]
 ) -> dict[str, Any]:
@@ -539,6 +556,7 @@ def analyze_independent_judgments(
         raise ValueError("repeat points to an absent original")
 
     agreement: dict[str, Any] = {}
+    score_distributions: dict[str, Any] = {}
     for dimension in QUALITY_DIMENSIONS:
         qwen = [float(entry.qwen_dimensions[dimension]) for entry in originals]
         external = [float(getattr(ratings[entry.blind_id], dimension)) for entry in originals]
@@ -557,6 +575,20 @@ def analyze_independent_judgments(
             "pearson": _pearson(qwen, external),
             "spearman": _pearson(_average_ranks(qwen), _average_ranks(external)),
         }
+        score_distributions[dimension] = {
+            "qwen": _score_distribution(qwen),
+            "independent": _score_distribution(external),
+        }
+
+    rationales = [ratings[entry.blind_id].brief_rationale.strip() for entry in originals]
+    rationale_word_counts = [len(rationale.split()) for rationale in rationales]
+    rationale_diagnostics = {
+        "unique_exact_rationales": len(set(rationales)),
+        "exact_duplicate_rate": 1 - len(set(rationales)) / len(rationales),
+        "mean_word_count": fmean(rationale_word_counts),
+        "max_word_count": max(rationale_word_counts),
+        "over_40_word_rate": fmean(float(count > 40) for count in rationale_word_counts),
+    }
 
     repeat_reliability: dict[str, Any] = {}
     for dimension in QUALITY_DIMENSIONS:
@@ -651,6 +683,8 @@ def analyze_independent_judgments(
             "total": len(entries),
         },
         "agreement": agreement,
+        "score_distributions": score_distributions,
+        "rationale_diagnostics": rationale_diagnostics,
         "repeat_reliability": repeat_reliability,
         "method_means": method_means,
         "paired_contrasts": paired_contrasts,

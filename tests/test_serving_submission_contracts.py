@@ -44,9 +44,7 @@ def test_sglang_job_forwards_deterministic_prompt_shard_coordinates() -> None:
 
 
 def test_distillm_matrix_evaluation_forces_bfloat16_serving() -> None:
-    script = Path("slurm/submit_evaluation_matrix.sbatch").read_text(
-        encoding="utf-8"
-    )
+    script = Path("slurm/submit_evaluation_matrix.sbatch").read_text(encoding="utf-8")
 
     assert 'local model_dtype="${5:-auto}"' in script
     assert "MODEL_DTYPE=${model_dtype}" in script
@@ -82,9 +80,9 @@ def test_official_noveltybench_uses_independent_official_sampling_protocol() -> 
     assert '--top-p "${NOVELTY_TOP_P:-1.0}"' in novelty_branch
     assert '--seed "${SEED:-17}"' not in novelty_branch
     assert '--base-seed "${novelty_base_seed}"' in novelty_branch
-    assert "os.path.relpath" in (
-        Path("scripts/summarize_noveltybench.py")
-    ).read_text(encoding="utf-8")
+    assert "os.path.relpath" in (Path("scripts/summarize_noveltybench.py")).read_text(
+        encoding="utf-8"
+    )
 
 
 def test_official_evaluation_does_not_mutate_project_install_between_workers() -> None:
@@ -101,7 +99,7 @@ def test_research_taste_job_is_resumable_and_uses_the_pinned_annotator() -> None
     assert "scripts/annotate_research_taste.py" in script
     assert "configs/evaluation/research_taste.yaml" in script
     assert 'annotator_model="Qwen/Qwen3-32B-FP8"' in script
-    assert 'flock -x 8' in script
+    assert "flock -x 8" in script
     assert 'taste_attempts="${TASTE_ATTEMPTS:-3}"' in script
     assert '--attempts "${taste_attempts}"' in script
     assert 'prompts_name="${PROMPTS_NAME:-}"' in script
@@ -119,6 +117,18 @@ def test_quality_score_job_forwards_deterministic_prompt_shard_coordinates() -> 
     assert script.count('--num-shards "${score_num_shards}"') == 2
     assert script.count('--shard-index "${score_shard_index}"') == 2
     assert 'prompts_name="${PROMPTS_NAME:-}"' in script
+
+
+def test_quality_score_job_has_validated_oom_recovery_controls() -> None:
+    script = Path("slurm/score_teacher.sbatch").read_text(encoding="utf-8")
+
+    assert 'judge_mem_fraction_static="${JUDGE_MEM_FRACTION_STATIC:-0.85}"' in script
+    assert '"${judge_mem_fraction_static}" != "0.80"' in script
+    assert '"${judge_mem_fraction_static}" != "0.90"' in script
+    assert '--mem-fraction-static "${judge_mem_fraction_static}"' in script
+    assert (
+        'PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"' in script
+    )
 
 
 def test_global_generation_gate_ignores_worker_sharding() -> None:
@@ -205,7 +215,7 @@ def test_single_model_temporal_launcher_can_chain_resumable_taste_annotation() -
     assert 'taste_passes="${TASTE_PASSES:-2}"' in script
     assert "slurm/annotate_research_taste.sbatch" in script
     assert '"taste_final":"%s"' in script
-    assert '^[0-9]+(_[0-9]+)?$' in script
+    assert "^[0-9]+(_[0-9]+)?$" in script
 
 
 def test_compact_launcher_uses_four_shards_and_budget_matched_evaluation() -> None:
@@ -220,7 +230,7 @@ def test_compact_launcher_uses_four_shards_and_budget_matched_evaluation() -> No
     assert "SERVED_ARTIFACT_IDENTITY=${artifact_identity}" in launcher
     assert "A0-temporal-k4-from-k16" in launcher
     assert 'teacher_source_samples_per_prompt="${TEACHER_SOURCE_SAMPLES_PER_PROMPT:-' in evaluation
-    assert '--teacher-source-samples-per-prompt' in evaluation
+    assert "--teacher-source-samples-per-prompt" in evaluation
 
 
 def test_compact_downstream_resume_preserves_generation_artifact_identity() -> None:
@@ -299,12 +309,8 @@ def test_promoted_evaluation_dry_run_binds_models_controls_taste_and_analysis(
     assert run["environment"]["LORA_PATH"].endswith("/final")
     assert result["analysis"]["environment"]["PROMOTED_METHODS"] == "B1"
     assert result["analysis"]["environment"]["TRAIN_SEEDS"] == "17"
-    assert result["analysis"]["environment"]["CONTROL_A0_SCORE_ID"] == (
-        "A0-temporal-k16-seed17000"
-    )
-    assert result["analysis"]["environment"]["CONTROL_A1_SCORE_ID"] == (
-        "A1-temporal-k16-seed17000"
-    )
+    assert result["analysis"]["environment"]["CONTROL_A0_SCORE_ID"] == ("A0-temporal-k16-seed17000")
+    assert result["analysis"]["environment"]["CONTROL_A1_SCORE_ID"] == ("A1-temporal-k16-seed17000")
     assert result["analysis"]["environment"]["CONTROL_A3_SCORE_ID"] == "A3-temporal-k1"
     assert json.loads(output.read_text(encoding="utf-8")) == result
 
@@ -419,9 +425,7 @@ def test_compact_replication_launcher_builds_gated_k4_graph(tmp_path: Path) -> N
         assert run["generation"]["command"][2] == "--nodelist=node01"
         assert "--array=0-3%4" in run["generation"]["command"]
         assert run["generation"]["dependency"] == run["training_dependency"]
-        assert run["generation_gate"]["environment"]["SERVED_ARTIFACT_PATH"].endswith(
-            "/final"
-        )
+        assert run["generation_gate"]["environment"]["SERVED_ARTIFACT_PATH"].endswith("/final")
         assert run["score"]["environment"]["SCORE_NUM_SHARDS"] == "4"
         assert run["evaluation"]["environment"]["STUDENT_SAMPLES_PER_PROMPT"] == "4"
         assert run["evaluation"]["environment"]["TEACHER_SAMPLES_PER_PROMPT"] == "4"
@@ -459,9 +463,9 @@ def test_final_controller_submits_research_taste_for_every_generation_family() -
 
     assert "taste_jobs=()" in script
     assert "submit_taste_chain" in script
-    assert 'submit_taste_chain A1-temporal-k16-seed17000' in script
-    assert 'submit_taste_chain A0-temporal-k16-seed17000' in script
-    assert 'submit_taste_chain A3-temporal-k1' in script
+    assert "submit_taste_chain A1-temporal-k16-seed17000" in script
+    assert "submit_taste_chain A0-temporal-k16-seed17000" in script
+    assert "submit_taste_chain A3-temporal-k1" in script
     assert 'taste_jobs+=("${taste_job}")' in script
     assert 'taste_dependency="$(IFS=:; printf \'%s\' "${taste_jobs[*]}")"' in script
 

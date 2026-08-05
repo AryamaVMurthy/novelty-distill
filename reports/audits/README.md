@@ -20,10 +20,16 @@ The consolidated interpretation and ICLR research path are in
 - `deepinfra-calibration-packet-20260805.manifest.json`: immutable identity of the first
   independent-judge packet. It is retained only for provenance and was superseded before paid
   use; see `deepinfra-calibration-packet-20260805.SUPERSEDED.md`.
-- `deepinfra-calibration-packet-20260805-v3.manifest.json`: current paid-judge packet identity.
-  It uses 60 unique paired slots across eight methods and exactly six hidden repeats per method.
-  Packet v2 was also retired before paid use because its repeats were method-imbalanced; see
-  `deepinfra-calibration-packet-20260805-v2.SUPERSEDED.md`.
+- `deepinfra-calibration-packet-20260805-v3.manifest.json`: the failed `json_schema`
+  transport probe and its bounded paid-request accounting. It is superseded.
+- `deepinfra-calibration-packet-20260805-v4.SUPERSEDED.md`: the intermediate
+  `json_object` protocol and its one persisted accepted probe, retired after the
+  provider was observed to intermittently fence JSON.
+- `deepinfra-calibration-packet-20260805-v5.manifest.json`: completed 528-call
+  different-family judge run: 60 unique paired slots across eight methods and
+  exactly six hidden repeats per method, with packet/run/analysis/response
+  hashes, exact usage and cost, and verified node01 archive. Interpretation is
+  in `../DEEPINFRA_INDEPENDENT_JUDGE_FINDINGS_20260805.md`.
 - `semantic-equivalence-calibration-20260805-v2.manifest.json`: redacted provenance for 256
   similarity-stratified clean teacher pairs plus 26 hidden repeats per human rater. The first
   packet was superseded before labeling after its within-bin unique-prompt bug was detected.
@@ -33,6 +39,10 @@ The consolidated interpretation and ICLR research path are in
   for the clean six-method 4B replication at seeds 17/29/43 and 1,000 exposures.
 - `compact-k4-three-seed-evaluation-submission-20260805.json`: exact matched-K=4 generation,
   score-gate, corrected-evaluation, and checkpoint-seed-aware analysis graph for seeds 29/43.
+- `compact-three-seed-scheduling-amendment-20260805.md`: content-bound record of
+  the resource-only training requeue, automated cross-node staging/release
+  gates, judge-cache completion, evaluator OOM diagnosis, lower-memory
+  replacement arrays, and downstream dependency verification.
 
 The corrected K=4 compact summary is generated from the full remote evaluation JSONs and will be
 stored here as `corrected-k4-seed17-v2-summary.json`. It contains aggregates, the complete

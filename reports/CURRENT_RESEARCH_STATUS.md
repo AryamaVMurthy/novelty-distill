@@ -1,5 +1,9 @@
 # Current research status
 
+The consolidated end-to-end baseline, data, prompt, metric, result, judge, and
+paper-path report is
+[`FINAL_BASELINE_AND_VALIDITY_REPORT_20260805.md`](FINAL_BASELINE_AND_VALIDITY_REPORT_20260805.md).
+
 > **Superseded on 2026-08-05 by a post-hoc validity audit.** Do not cite the
 > conclusions below as current evidence. The old NoveltyBench matrix used a
 > repeated generation seed and is invalid; `B1` and all historical-human-target
@@ -12,6 +16,30 @@
 > using any number in this file.
 
 ## Current corrected snapshot
+
+The clean three-seed replication is actively evaluating final checkpoints.
+B2a random-1 and B2b best-1 SeqKD are both complete over training seeds
+17/29/43. Their mean feasibility/soundness are 3.3853/3.1662 and
+3.4068/3.1897; seed-matched best-1 minus random-1 changes are only +0.0216
+feasibility and +0.0235 soundness, with both descriptive df=2 intervals
+crossing zero. Thus best-of-eight target selection does not repair the stable
+hard single-output KD failure. All four D1/D2 seed-29/43 on-policy trainings
+have reached validated step 125, and held-out evaluation is running only from
+their final adapters. C1 and C2 are now complete over all three seeds with
+mean feasibility/soundness 4.2447/4.6625 and 4.2387/4.6546. C1's recovery
+over B2b is +0.8379/+1.4729; C2 minus C1 is only -0.0059/-0.0079, with both
+descriptive df=2 intervals crossing zero. C2's strict-threshold qualified
+yield is 0.4349 lower, but that embedding-defined result remains quarantined
+until two humans calibrate the semantic boundary. Seed-29 D2 is also complete
+at 4.2262/4.6384, only -0.0125/-0.0170 below seed-matched C2; the seed-43
+checkpoint is still needed for the declared contrast. Seed-43 D1 is complete
+at 4.2520/4.6755, only -0.0030/+0.0045 versus seed-matched C1; seed 29 is
+now also complete. Across all three seeds, D1 minus C1 is -0.0056
+feasibility/+0.0031 soundness, with both descriptive intervals crossing zero:
+there is no observed on-policy forward-KL quality advantage. Until the one
+remaining D2 seed-43 evaluation and the preregistered
+aggregate finish, seed-17 values below remain pilot results rather than the
+final replicated matrix.
 
 Jobs 19055--19062 completed the feasibility-inclusive K=4 recomputation for
 A0, A1, B1, B2b, C1, C2, D1, and D2. The content-bound summary is
@@ -27,11 +55,18 @@ quality level (feasibility 3.398; soundness 3.165--3.176), showing that hard
 single-target SeqKD—not best-of-eight selection—is the seed-17 failure mode.
 The complete handoff is
 [`compact-k4-seed17-b2a-extension/README.md`](compact-k4-seed17-b2a-extension/README.md).
-The current different-family DeepInfra v3
-packet is ready: 60 unique paired prompts across eight methods, 480 originals,
-and 48 hidden repeats balanced at six per method. Paid judging awaits a rotated
-key exported through the environment. Its immutable identity is
-[`audits/deepinfra-calibration-packet-20260805-v3.manifest.json`](audits/deepinfra-calibration-packet-20260805-v3.manifest.json).
+The different-family DeepInfra v5 sensitivity analysis is complete: 60 unique
+paired prompt/sample slots across eight methods, 480 originals, and 48 hidden
+repeats balanced at six per method. All 528 Llama-3.3-70B calls returned valid
+records with finish reason `stop`; exact accepted-run cost was USD 0.062097.
+It reproduces the large hard-KD soundness failure and the tie among the KL
+baselines, but its scale is strongly compressed (99.8% clarity-5, 92.9%
+feasibility-4, 76.0% soundness-5), feasibility rank agreement with Qwen is
+only 0.231, and it marks no fatal flaws. It is a robustness check, not human
+validation. See
+[`DEEPINFRA_INDEPENDENT_JUDGE_FINDINGS_20260805.md`](DEEPINFRA_INDEPENDENT_JUDGE_FINDINGS_20260805.md)
+and the immutable
+[`audits/deepinfra-calibration-packet-20260805-v5.manifest.json`](audits/deepinfra-calibration-packet-20260805-v5.manifest.json).
 The separate semantic-equivalence v2 packet is also prepared from 28,000 clean
 teacher-pair candidates: 256 unique-prompt originals, 32 in each of eight
 similarity strata, and 26 hidden repeats per rater. It awaits two blinded human

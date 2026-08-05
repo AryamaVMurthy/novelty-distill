@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "repository_commit": "1b7153c4b3f2d1c5b2c437c18eb6fde4ef54443b",
+  "packet_sha256": "d38539383b8e13070d778a063830cd5ad450ebfa0418e8d1935c9a5cab9eb75f",
+  "protocol_hash": "fd7f23fa99191cf1b2268837fdf8a96d11a8ee482869b3179dbdffe150e49c9d",
+  "frozen_entries_sha256": "88ddca5c6db7d69b7c65f27650ac5ae325bda684eba85822f395996ce42cc263",
+  "request_model": "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+  "sampling": {
+    "design": "paired-unique-prompts-pooled-qwen-core-rank-quartiles-balanced-repeats-v3",
+    "seed": 20260805,
+    "methods": [
+      "A0",
+      "A1",
+      "B2a",
+      "B2b",
+      "C1-best1",
+      "C2-best1",
+      "D1",
+      "D2"
+    ],
+    "unique_prompt_slots": 60,
+    "originals_per_method": 60,
+    "originals": 480,
+    "hidden_repeats_per_method": 6,
+    "hidden_repeats": 48,
+    "total_calls": 528,
+    "max_sample_index_exclusive": 4
+  },
+  "execution": {
+    "provider_created_first": "2026-08-05T06:51:38+05:30",
+    "provider_created_last": "2026-08-05T07:45:35+05:30",
+    "concurrency": 1,
+    "attempts_per_request": 1,
+    "created": 528,
+    "reused": 0,
+    "unique_request_ids": 528,
+    "finish_reason_counts": {
+      "stop": 528
+    },
+    "length_stop_rate": 0.0,
+    "output_wrapper_counts": {
+      "raw_json": 21,
+      "single_json_fence": 507
+    }
+  },
+  "provider_usage": {
+    "responses_with_usage": 528,
+    "prompt_tokens": 499146,
+    "completion_tokens": 38070,
+    "total_tokens": 537216,
+    "responses_with_estimated_cost": 528,
+    "estimated_cost_usd": 0.062097000000000006
+  },
+  "artifacts": {
+    "run_manifest_sha256": "ec7b23d876b5efc91ffd75aaa7ce0598a2c45278d5201626910b74ef97991230",
+    "analysis_sha256": "56f4d35e1741aba0c441e044b537b0d08f23a2346b2e6a57b533d8904aabfc5e",
+    "response_file_count": 528,
+    "response_bytes": 696835,
+    "response_fingerprint_definition": "sha256 over sorted filename, NUL, file sha256 hex, newline",
+    "response_fingerprint": "a429494c667661fb9178c4a628aa24a75fb3a727bc4485418b3fb730258f523a"
+  },
+  "runtime_locations": {
+    "local_ignored_root": "artifacts/deepinfra-calibration-v2",
+    "turing_node01_archive": "/scratch/aryama.murthy/novelty-distill/evaluations/independent-judge/deepinfra-calibration-v5"
+  },
+  "archive_verification": {
+    "packet_sha256_match": true,
+    "run_manifest_sha256_match": true,
+    "analysis_sha256_match": true,
+    "response_file_count_match": true,
+    "response_fingerprint_match": true
+  },
+  "claim_boundary": "The different-family judge is a sensitivity analysis for operational quality, not ground truth and not a measurement of global scientific novelty. Human calibration remains required."
+}

@@ -27,6 +27,7 @@ score_namespace="${SCORE_NAMESPACE:-teacher-scores}"
 score_concurrency="${SCORE_CONCURRENCY:-8}"
 score_num_shards="${SCORE_NUM_SHARDS:-1}"
 score_shard_index="${SCORE_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"
+judge_mem_fraction_static="${JUDGE_MEM_FRACTION_STATIC:-0.85}"
 if [[ -z "${calibration_run_id}" && -z "${generation_job_id}" ]]; then
   echo "set GENERATION_JOB_ID or CALIBRATION_RUN_ID" >&2
   exit 2
@@ -49,6 +50,12 @@ if ! [[ "${score_concurrency}" =~ ^[1-9][0-9]*$ ]]; then
 fi
 if ! [[ "${score_num_shards}" =~ ^[1-9][0-9]*$ ]]; then
   echo "SCORE_NUM_SHARDS must be a positive integer" >&2
+  exit 2
+fi
+if [[ "${judge_mem_fraction_static}" != "0.80" \
+  && "${judge_mem_fraction_static}" != "0.85" \
+  && "${judge_mem_fraction_static}" != "0.90" ]]; then
+  echo "JUDGE_MEM_FRACTION_STATIC must be one of 0.80, 0.85, or 0.90" >&2
   exit 2
 fi
 if ! [[ "${score_shard_index}" =~ ^[0-9]+$ ]] \
@@ -86,6 +93,7 @@ export TORCH_EXTENSIONS_DIR="${scratch_root}/cache/torch-extensions"
 export TRITON_CACHE_DIR="${scratch_root}/cache/triton"
 export CUDA_CACHE_PATH="${scratch_root}/cache/cuda"
 export TMPDIR="${scratch_root}/tmp"
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 
 cleanup() {
   if [[ -n "${server_pid}" ]] && kill -0 "${server_pid}" 2>/dev/null; then
@@ -140,7 +148,7 @@ fi
   --served-model-name "${judge_model}" \
   --host 127.0.0.1 \
   --port "${port}" \
-  --mem-fraction-static 0.90 \
+  --mem-fraction-static "${judge_mem_fraction_static}" \
   --disable-piecewise-cuda-graph \
   --enable-deterministic-inference \
   >"${server_log}" 2>&1 &

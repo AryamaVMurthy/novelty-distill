@@ -65,8 +65,7 @@ def analyze_checkpoint_seed_contrasts(
         len(expected_seeds) < 2
         or len(expected_seeds) != len(set(expected_seeds))
         or any(
-            isinstance(value, bool) or not isinstance(value, int) or value < 0
-            for value in seeds
+            isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in seeds
         )
     ):
         raise ValueError("at least two unique non-negative training seeds are required")
@@ -100,9 +99,7 @@ def analyze_checkpoint_seed_contrasts(
         normalized_contrasts.append((contrast_id, reference, treatment))
 
     results: dict[str, dict[str, Any]] = {metric: {} for metric in metrics}
-    for contrast_index, (contrast_id, reference, treatment) in enumerate(
-        normalized_contrasts
-    ):
+    for contrast_index, (contrast_id, reference, treatment) in enumerate(normalized_contrasts):
         per_metric: dict[str, list[dict[str, Any]]] = {metric: [] for metric in metrics}
         for seed_index, checkpoint_seed in enumerate(expected_seeds):
             reference_payload = (
@@ -116,7 +113,8 @@ def analyze_checkpoint_seed_contrasts(
                 else evaluations[treatment][checkpoint_seed]
             )
             rows = collect_prompt_metric_rows(
-                {"reference": reference_payload, "treatment": treatment_payload}
+                {"reference": reference_payload, "treatment": treatment_payload},
+                metrics=metrics,
             )
             by_method = {
                 method: {str(row["prompt_id"]): row for row in rows if row["method"] == method}
@@ -144,9 +142,7 @@ def analyze_checkpoint_seed_contrasts(
                 payload = asdict(estimate)
                 if not math.isfinite(payload["effect_size"]):
                     payload["effect_size"] = None
-                per_metric[metric].append(
-                    {"checkpoint_seed": checkpoint_seed, **payload}
-                )
+                per_metric[metric].append({"checkpoint_seed": checkpoint_seed, **payload})
         for metric in metrics:
             seed_effects = [float(row["mean_difference"]) for row in per_metric[metric]]
             results[metric][contrast_id] = {

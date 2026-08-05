@@ -68,7 +68,11 @@ def test_calibration_sample_is_balanced_blinded_and_repeatable() -> None:
     assert "score_stratum" not in serialized
     assert "qwen_dimensions" not in serialized
     assert payload["temperature"] == 0
-    assert payload["response_format"]["type"] == "json_schema"
+    assert payload["response_format"] == {"type": "json_object"}
+    system_prompt = payload["messages"][0]["content"]
+    assert "Return only a compact JSON object" in system_prompt
+    assert "brief_rationale" in system_prompt
+    assert "Do not output Markdown" in system_prompt
 
 
 def test_paired_calibration_uses_one_sample_slot_per_prompt() -> None:
@@ -177,9 +181,9 @@ def test_parse_and_analyze_independent_judgments() -> None:
             {
                 "message": {
                     "content": (
-                        '{"relevance":4,"feasibility":3,"soundness":4,"clarity":4,'
+                        '```json\n{"relevance":4,"feasibility":3,"soundness":4,"clarity":4,'
                         '"instruction_compliance":5,"fatal_flaw":false,'
-                        '"brief_rationale":"Actionable but one control is underspecified."}'
+                        '"brief_rationale":"Actionable but one control is underspecified."}\n```'
                     )
                 }
             }
@@ -190,6 +194,10 @@ def test_parse_and_analyze_independent_judgments() -> None:
     assert parsed.request_id == "req-1"
     assert parsed.score.feasibility == 3
     assert parsed.usage == {"prompt_tokens": 100, "completion_tokens": 30}
+
+    body["choices"][0]["message"]["content"] = 'Review:\n```json\n{"relevance":4}\n```'
+    with pytest.raises(ValueError, match="invalid structured scores"):
+        parse_independent_judge_response(body)
 
     ratings = {
         entry.blind_id: ExternalJudgeScore(
@@ -208,6 +216,22 @@ def test_parse_and_analyze_independent_judgments() -> None:
     assert summary["agreement"]["feasibility"]["exact_rate"] == 1
     assert summary["agreement"]["soundness"]["pearson"] == 1
     assert summary["repeat_reliability"]["feasibility"]["mean_absolute_difference"] == 0
+    assert summary["score_distributions"]["feasibility"]["independent"]["histogram"] == {
+        "1": 2,
+        "2": 2,
+        "3": 2,
+        "4": 1,
+        "5": 1,
+    }
+    assert summary["score_distributions"]["feasibility"]["independent"]["ceiling_rate"] == 0.125
+    assert summary["score_distributions"]["clarity"]["independent"]["population_sd"] == 0
+    assert summary["rationale_diagnostics"] == {
+        "unique_exact_rationales": 1,
+        "exact_duplicate_rate": 0.875,
+        "mean_word_count": 1,
+        "max_word_count": 1,
+        "over_40_word_rate": 0,
+    }
     assert summary["method_means"]["A0"]["feasibility"] == pytest.approx(
         sum(entry.qwen_dimensions["feasibility"] for entry in entries if entry.repeat_of is None)
         / 8

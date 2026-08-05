@@ -154,6 +154,24 @@ same-prompt K=4 control shows the expected ordering: A1 scores 4.603
 feasibility and 4.921 soundness versus A0's 4.218 and 4.603. Cross-prompt judge
 means must not be used as model comparisons.
 
+### Different-family sensitivity result
+
+The subsequently completed DeepInfra Llama-3.3-70B analysis blinded 480
+seed-17 outputs (60 paired prompt/sample slots for each of eight methods) and
+48 hidden repeats. It reproduces the large hard-KD soundness failure: C1 is
+0.683 above B2a and 0.700 above B2b on the Llama soundness scale, while B2a
+and B2b remain tied. C1/C2/D1/D2 are also tied on soundness, so the current
+on-policy objectives still show no quality advantage.
+
+This does not rehabilitate automatic absolute scores. Llama is even more
+compressed than Qwen on several dimensions: 479/480 clarity scores are 5,
+446/480 feasibility scores are exactly 4, 365/480 soundness scores are 5, and
+zero outputs receive a fatal flaw. Spearman agreement with Qwen is only 0.231
+for feasibility and 0.583 for soundness. Hidden-repeat exact agreement is high,
+but repeatability is not validity; 54.6% of rationales are exact duplicates.
+The complete result and transport/cost audit are in
+[`DEEPINFRA_INDEPENDENT_JUDGE_FINDINGS_20260805.md`](DEEPINFRA_INDEPENDENT_JUDGE_FINDINGS_20260805.md).
+
 ## Corrected K=4 results
 
 Jobs 19055--19062 reused the complete frozen generations and judge records and

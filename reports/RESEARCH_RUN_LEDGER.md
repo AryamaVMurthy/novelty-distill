@@ -799,3 +799,38 @@ same judge, revision, prompts, rubric, decoding, and deterministic output contra
 job IDs,
 hashes, and interpretation limits are frozen in
 `reports/compact-k4-seed17-d2-extension/RUN_AUDIT.md`.
+
+## 2026-08-05 different-family judge sensitivity completion
+
+The accepted DeepInfra v5 run scored a frozen paired seed-17 sample with
+`meta-llama/Llama-3.3-70B-Instruct-Turbo`: 60 unique prompt/sample slots for
+each of A0, A1, B2a, B2b, C1-best1, C2-best1, D1, and D2 (480 originals), plus
+six blinded repeats per method (48), for 528 calls. Method, Qwen scores, and
+repeat identity were private. The judge saw only the complete task and one
+answer, used temperature zero, and was explicitly instructed not to claim
+literature novelty. All 528 request IDs were unique, all finish reasons were
+`stop`, no retry or cached response was used, and raw provider data reparsed to
+exactly the saved strict-schema scores. Exact accepted-run usage was 499,146
+prompt tokens and 38,070 completion tokens; DeepInfra's summed estimated cost
+was USD 0.062097.
+
+The different-family direction agrees on the large failure: C1 soundness is
+0.683 above B2a and 0.700 above B2b over the paired slots, while B2a/B2b and
+C1/C2/D1/D2 are respectively tied. The scale is not validated. Llama assigned
+479/480 clarity scores as 5, 446/480 feasibility scores as 4, 365/480
+soundness scores as 5, and zero fatal flaws. Feasibility Spearman agreement
+with Qwen is 0.231 and soundness is 0.583; 54.6% of brief rationales are exact
+duplicates. Hidden-repeat exact agreement is high but establishes only
+temperature-zero self-consistency. Qualitative high-disagreement cases show
+that the judge can give 4/4 to a nominal test plan that does not identify its
+claimed mechanism or historical causal question.
+
+The accepted packet hash is
+`d38539383b8e13070d778a063830cd5ad450ebfa0418e8d1935c9a5cab9eb75f`,
+the analysis hash is
+`56f4d35e1741aba0c441e044b537b0d08f23a2346b2e6a57b533d8904aabfc5e`,
+and the 528-file response fingerprint is
+`a429494c667661fb9178c4a628aa24a75fb3a727bc4485418b3fb730258f523a`.
+Local and node01 archived copies match. Complete interpretation is in
+`reports/DEEPINFRA_INDEPENDENT_JUDGE_FINDINGS_20260805.md`; this remains a
+sensitivity analysis, not human validity or global novelty measurement.
