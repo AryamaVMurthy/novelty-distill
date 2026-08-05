@@ -104,6 +104,29 @@ Two release races were closed while every affected job was still pending:
 These holds impose storage-availability gates only. Dependencies, commands,
 seeds, checkpoints, samples, judge, and statistical analysis remain frozen.
 
+### Early release of completed offline-method evaluations
+
+The second-pass training array had an array-wide `afterany` dependency, so its
+already-complete offline tasks could not no-op until the four long on-policy
+tasks also terminated. This left node02 idle despite final, staged adapters.
+Before changing any evaluation dependency, node02 verification allocation
+19249 rechecked all four declared adapter paths, all required immutable inputs,
+and these inference-artifact identities:
+
+| Chain | Reverified adapter identity |
+|---|---|
+| seed 29 B2a | `sha256:cf129f11e7b6e0227832efd26b3b902b3a6dc492ec19ef4bd408c370078907b8` |
+| seed 29 C1-best1 | `sha256:9f7974619596b994ecce0f58517ebe0d9f40215c98b56748966b975c96c0a25f` |
+| seed 43 B2b | `sha256:e76540925b835a62524e5ded1427f3d6196a2088070fef7881e2c8a9bebf0344` |
+| seed 43 C2-best1 | `sha256:4db42299596af95472c43b0c11f0ee7c671f0c2a16bee1c66b8d5793ca4cd551` |
+
+Generation roots 19117, 19127, 19152, and 19162 were then detached from the
+redundant array-wide no-op gate. Job 19117 began its four generation shards on
+node02 at approximately 06:23 IST; the other three roots remained normally
+queued behind the account GPU limit. Their generation gates and every later
+dependency remain unchanged. This overlaps evaluation of completed artifacts
+with on-policy training and changes wall-clock scheduling only.
+
 ## Invariants
 
 The GPU count, node placement, time limits, repository commit, dataset, ordered
