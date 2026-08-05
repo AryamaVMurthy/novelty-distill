@@ -1,0 +1,33 @@
+schema_version: 1
+study: compact-k4-three-seed-descriptive-v1
+seeds: [17, 29, 43]
+trained_methods:
+  B2a: B2a-tomato1k-seed{seed}-temporal-k4-corrected-v2.json
+  B2b: B2b-tomato1k-seed{seed}-temporal-k4-corrected-v2.json
+  C1-best1: C1-best1-tomato1k-seed{seed}-temporal-k4-corrected-v2.json
+  C2-best1: C2-best1-tomato1k-seed{seed}-temporal-k4-corrected-v2.json
+  D1: D1-tomato1k-seed{seed}-temporal-k4-corrected-v2.json
+  D2: D2-tomato1k-seed{seed}-temporal-k4-corrected-v2.json
+fixed_controls:
+  A0: A0-temporal-k4-from-k16-corrected-v2.json
+  A1: A1-temporal-k4-from-k16-corrected-v2.json
+semantic_metrics:
+  quality_qualified_semantic_yield: higher
+  student_semantic_clusters: higher
+  teacher_mode_recall: higher
+  teacher_mode_precision: higher
+  cluster_jsd: lower
+  quality_adjusted_coverage: higher
+contrasts:
+  - {id: B2a-vs-A0, reference: A0, treatment: B2a}
+  - {id: B2b-vs-B2a, reference: B2a, treatment: B2b}
+  - {id: C1-vs-B2b, reference: B2b, treatment: C1-best1}
+  - {id: C2-vs-C1, reference: C1-best1, treatment: C2-best1}
+  - {id: D1-vs-C1, reference: C1-best1, treatment: D1}
+  - {id: D2-vs-C2, reference: C2-best1, treatment: D2}
+  - {id: D2-vs-D1, reference: D1, treatment: D2}
+claim_scope: automatic_descriptive_diagnostics_only
+claim_boundary: >-
+  Judge distributions are automatic rubric diagnostics. Semantic curves are
+  embedding-defined descriptive sensitivity analyses; without human boundary
+  calibration they do not establish semantic equivalence, diversity, or novelty.
