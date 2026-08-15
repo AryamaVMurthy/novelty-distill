@@ -13,6 +13,7 @@ input_seed:
   bins: 5
   scale: 1.0
   salt: semantic-seed-v1
+input_seed_repeats: 2
 response_instruction: >-
   Return only one hypothesis and its test plan in at most 300 words. Be specific about the
   mechanism, how it differs from existing approaches, the intervention or experiment, measurable

@@ -10,7 +10,7 @@ from collections.abc import Callable, Iterable, Mapping
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from novelty_distill.data.semantic_seeds import (
     GaussianSeedSpec,
@@ -55,6 +55,18 @@ class GenerationSpec(BaseModel):
     response_instruction: str | None = Field(default=None, min_length=1)
     lora_path: str | None = Field(default=None, min_length=1)
     input_seed: GaussianSeedSpec | None = None
+    input_seed_repeats: int = Field(default=1, gt=0)
+
+    @model_validator(mode="after")
+    def validate_input_seed_replicates(self) -> "GenerationSpec":
+        if self.input_seed is None and self.input_seed_repeats != 1:
+            raise ValueError("input seed repeats require an input seed")
+        if (
+            self.input_seed is not None
+            and self.samples_per_prompt % self.input_seed_repeats != 0
+        ):
+            raise ValueError("input seed repeats must divide samples_per_prompt")
+        return self
 
 
 class Prompt(BaseModel):
@@ -166,7 +178,7 @@ def render_generation_prompt(
             raise ValueError("seed-conditioned generation requires a stable prompt ID")
         values = gaussian_seed_values(
             prompt_id=prompt_id,
-            sample_index=sample_index,
+            sample_index=sample_index // spec.input_seed_repeats,
             generation_seed=spec.seed,
             spec=spec.input_seed,
         )
@@ -186,6 +198,8 @@ def generation_fingerprint(spec: GenerationSpec) -> str:
         spec_payload.pop("lora_path")
     if spec.input_seed is None:
         spec_payload.pop("input_seed")
+    if spec.input_seed_repeats == 1:
+        spec_payload.pop("input_seed_repeats")
     controls = {
         "sampling_strategy": SAMPLING_STRATEGY,
         "spec": spec_payload,

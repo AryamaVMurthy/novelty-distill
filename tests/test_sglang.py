@@ -147,6 +147,49 @@ def test_seeded_payload_requires_stable_prompt_id() -> None:
         build_chat_completion_payload("Propose a hypothesis.", spec, sample_index=0)
 
 
+def test_gaussian_roll_replicates_hold_input_seed_fixed_but_change_decode_rng() -> None:
+    seed_spec = GaussianSeedSpec(dimensions=4, bins=5, scale=1.0, salt="v1")
+    spec = GenerationSpec(
+        model="Qwen/Qwen3-4B",
+        revision="1cfa9a7208912126459214e8b04321603b3df60c",
+        temperature=0.2,
+        top_p=0.8,
+        max_new_tokens=512,
+        samples_per_prompt=8,
+        seed=17,
+        input_seed=seed_spec,
+        input_seed_repeats=2,
+    )
+
+    first = build_chat_completion_payload("Prompt", spec, sample_index=0, prompt_id="p1")
+    repeat = build_chat_completion_payload("Prompt", spec, sample_index=1, prompt_id="p1")
+    next_roll = build_chat_completion_payload("Prompt", spec, sample_index=2, prompt_id="p1")
+
+    assert first["messages"] == repeat["messages"]
+    assert repeat["messages"] != next_roll["messages"]
+    assert (first["seed"], repeat["seed"], next_roll["seed"]) == (17, 18, 19)
+
+
+def test_gaussian_roll_replicates_require_seed_and_even_groups() -> None:
+    common = {
+        "model": "Qwen/Qwen3-4B",
+        "revision": "1cfa9a7208912126459214e8b04321603b3df60c",
+        "temperature": 0.2,
+        "top_p": 0.8,
+        "max_new_tokens": 512,
+        "samples_per_prompt": 8,
+        "seed": 17,
+    }
+    with pytest.raises(ValueError, match="input seed"):
+        GenerationSpec(**common, input_seed_repeats=2)
+    with pytest.raises(ValueError, match="divide"):
+        GenerationSpec(
+            **(common | {"samples_per_prompt": 7}),
+            input_seed=GaussianSeedSpec(dimensions=4, bins=5, scale=1.0, salt="v1"),
+            input_seed_repeats=2,
+        )
+
+
 def test_lora_adapter_is_routed_explicitly_and_fingerprinted() -> None:
     base = GenerationSpec(
         model="Qwen/Qwen3-4B",
@@ -183,6 +226,7 @@ def test_absent_lora_field_preserves_pre_lora_generation_fingerprint() -> None:
     legacy_spec = spec.model_dump(mode="json")
     legacy_spec.pop("lora_path")
     legacy_spec.pop("input_seed")
+    legacy_spec.pop("input_seed_repeats")
     encoded = json.dumps(
         {"sampling_strategy": "single-request-per-sample-v1", "spec": legacy_spec},
         sort_keys=True,
