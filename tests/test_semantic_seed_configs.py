@@ -126,6 +126,23 @@ def test_short_teacher_generation_uses_four_candidate_minimum() -> None:
     assert teacher.input_seed is None
 
 
+def test_student_coverage_probe_matches_teacher_candidate_count() -> None:
+    import yaml
+
+    student = GenerationSpec.model_validate(
+        yaml.safe_load(
+            Path(
+                "configs/generation/student_coverage_semantic_seed_short.yaml"
+            ).read_text()
+        )
+    )
+
+    assert student.model == "Qwen/Qwen3-4B"
+    assert student.samples_per_prompt == 4
+    assert student.temperature == 0.7
+    assert student.input_seed is None
+
+
 def test_combined_gpu_smoke_exercises_both_new_training_paths() -> None:
     spec = load_trl_run_spec(
         Path("configs/training/semantic_seed_ss4_gsc_tl_smoke.yaml")
