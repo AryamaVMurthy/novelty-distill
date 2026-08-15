@@ -186,3 +186,29 @@ def test_training_launcher_exposes_the_frozen_semantic_seed_matrix() -> None:
     for filename in TRAINING_CONFIGS.values():
         assert f"configs/training/{filename}" in launcher
     assert 'baseline_registry="configs/semantic_seed_baselines.yaml"' in launcher
+
+
+def test_short_matrix_launcher_serializes_each_gpu_phase() -> None:
+    launcher = Path("scripts/submit_semantic_seed_short.sh").read_text(encoding="utf-8")
+
+    assert launcher.count("--array=0-5%1") == 4
+    assert "BASELINE_MATRIX=semantic_seed_short" in launcher
+    for job in (
+        "slurm/train_smoke.sbatch",
+        "slurm/generate_semantic_seed_short.sbatch",
+        "slurm/score_semantic_seed_short.sbatch",
+        "slurm/cluster_semantic_seed_short.sbatch",
+        "slurm/analyze_semantic_seed_short.sbatch",
+    ):
+        assert job in launcher
+
+
+def test_short_matrix_primary_decoding_uses_seeds_only_for_seed_trained_arms() -> None:
+    generation = Path("slurm/generate_semantic_seed_short.sbatch").read_text(
+        encoding="utf-8"
+    )
+
+    assert "SS0-C1 SS0D-DIVERSE SS1-CR SS2-GSC SS3-TL SS4-GSC-TL" in generation
+    assert generation.count("semantic_seed_short_seeded_lora.yaml") == 2
+    assert generation.count("semantic_seed_short_lora.yaml") == 4
+    assert 'LORA_PATH="checkpoints/${run_id}-semantic-seed-short-seed17"' in generation

@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from novelty_distill.evaluation.roll_gate import compare_clustered_roll_runs
+from novelty_distill.evaluation.roll_gate import (
+    compare_clustered_roll_runs,
+    select_validity_first,
+    summarize_clustered_run,
+)
 
 
 def _write_run(path: Path, *, modes: tuple[str, ...], quality: tuple[float, ...]) -> None:
@@ -58,3 +62,33 @@ def test_roll_gate_compares_validity_diversity_and_control(tmp_path: Path) -> No
     assert result["seeded"]["within_roll_mode_agreement_mean"] == 1
     assert result["deltas"]["semantic_clusters_mean"] == 3
     assert result["deltas"]["validity_rate"] == pytest.approx(-0.25)
+    single = summarize_clustered_run(seeded, input_seed_repeats=2)
+    assert single == result["seeded"]
+
+
+def test_short_gate_selects_yield_only_after_validity_noninferiority() -> None:
+    result = select_validity_first(
+        {
+            "control": {
+                "validity_rate": 0.90,
+                "quality_qualified_semantic_yield_mean": 1.2,
+                "quality_mean": 0.8,
+            },
+            "creative-invalid": {
+                "validity_rate": 0.70,
+                "quality_qualified_semantic_yield_mean": 3.0,
+                "quality_mean": 0.7,
+            },
+            "creative-valid": {
+                "validity_rate": 0.86,
+                "quality_qualified_semantic_yield_mean": 2.0,
+                "quality_mean": 0.75,
+            },
+        },
+        reference_id="control",
+        validity_tolerance=0.05,
+    )
+
+    assert result["selected"] == "creative-valid"
+    assert result["eligible"] == ["control", "creative-valid"]
+    assert result["validity_floor"] == pytest.approx(0.85)

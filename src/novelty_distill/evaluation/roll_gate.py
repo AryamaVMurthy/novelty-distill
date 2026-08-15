@@ -4,6 +4,7 @@ import json
 import math
 import statistics
 from collections import Counter, defaultdict
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,7 @@ def compare_clustered_roll_runs(
         "validity_rate",
         "quality_mean",
         "semantic_clusters_mean",
+        "quality_qualified_semantic_yield_mean",
         "mode_entropy_bits_mean",
     )
     return {
@@ -36,6 +38,65 @@ def compare_clustered_roll_runs(
             name: seeded_summary[name] - ordinary_summary[name]
             for name in paired_metrics
         },
+    }
+
+
+def summarize_clustered_run(
+    path: Path, *, input_seed_repeats: int | None = None
+) -> dict[str, float | int]:
+    """Summarize one judged, clustered generation run."""
+
+    return _summarize(_load_run(path), repeats=input_seed_repeats)
+
+
+def select_validity_first(
+    summaries: Mapping[str, Mapping[str, float | int]],
+    *,
+    reference_id: str,
+    validity_tolerance: float,
+) -> dict[str, Any]:
+    """Select maximum valid semantic yield inside a fixed validity margin."""
+
+    if reference_id not in summaries:
+        raise ValueError(f"missing validity reference {reference_id}")
+    if not 0 <= validity_tolerance <= 1:
+        raise ValueError("validity tolerance must be between zero and one")
+    required = (
+        "validity_rate",
+        "quality_qualified_semantic_yield_mean",
+        "quality_mean",
+    )
+    for run_id, summary in summaries.items():
+        if any(name not in summary for name in required):
+            raise ValueError(f"run {run_id} is missing selection metrics")
+    floor = float(summaries[reference_id]["validity_rate"]) - validity_tolerance
+    eligible = [
+        run_id
+        for run_id, summary in summaries.items()
+        if float(summary["validity_rate"]) >= floor
+    ]
+    if not eligible:
+        raise AssertionError("the reference run must satisfy its own validity floor")
+    selected = min(
+        eligible,
+        key=lambda run_id: (
+            -float(summaries[run_id]["quality_qualified_semantic_yield_mean"]),
+            -float(summaries[run_id]["quality_mean"]),
+            -float(summaries[run_id]["validity_rate"]),
+            run_id,
+        ),
+    )
+    return {
+        "reference": reference_id,
+        "validity_tolerance": validity_tolerance,
+        "validity_floor": floor,
+        "eligible": eligible,
+        "selected": selected,
+        "ranking": [
+            "quality_qualified_semantic_yield_mean",
+            "quality_mean",
+            "validity_rate",
+        ],
     }
 
 
@@ -86,6 +147,15 @@ def _summarize(
             "validity_rate": sum(validity) / total,
             "quality_mean": statistics.fmean(record.quality_score for record, _ in entries),
             "semantic_clusters": float(len(counts)),
+            "quality_qualified_semantic_yield": float(
+                len(
+                    {
+                        record.cluster_id
+                        for record, is_valid in entries
+                        if is_valid
+                    }
+                )
+            ),
             "mode_entropy_bits": -sum(
                 (count / total) * math.log2(count / total) for count in counts.values()
             ),
@@ -112,6 +182,9 @@ def _summarize(
         "quality_mean": statistics.fmean(item["quality_mean"] for item in per_prompt),
         "semantic_clusters_mean": statistics.fmean(
             item["semantic_clusters"] for item in per_prompt
+        ),
+        "quality_qualified_semantic_yield_mean": statistics.fmean(
+            item["quality_qualified_semantic_yield"] for item in per_prompt
         ),
         "mode_entropy_bits_mean": statistics.fmean(
             item["mode_entropy_bits"] for item in per_prompt
