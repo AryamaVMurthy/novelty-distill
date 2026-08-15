@@ -58,6 +58,9 @@ def test_short_training_configs_match_models_exposure_and_data() -> None:
         for spec in specs.values()
     } == {512}
     assert all(spec.max_steps == 64 for spec in specs.values())
+    assert {
+        spec.teacher_targets for name, spec in specs.items() if name != "SS1-CR"
+    } == {Path("data/teacher-targets-semantic-seed-128-v1.json")}
 
 
 def test_only_declared_candidates_enable_seed_and_lookahead() -> None:
