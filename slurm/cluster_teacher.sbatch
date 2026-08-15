@@ -21,6 +21,7 @@ calibration_run_id="${CALIBRATION_RUN_ID:-}"
 generation_job_id="${GENERATION_JOB_ID:-}"
 target_name="${TARGET_NAME:-teacher-targets.json}"
 score_namespace="${SCORE_NAMESPACE:-teacher-scores}"
+samples_per_prompt="${SAMPLES_PER_PROMPT:-8}"
 cluster_num_shards="${CLUSTER_NUM_SHARDS:-1}"
 cluster_shard_index="${CLUSTER_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"
 if [[ -z "${calibration_run_id}" && -z "${generation_job_id}" ]]; then
@@ -41,6 +42,10 @@ if [[ -z "${score_namespace}" || "${score_namespace}" == */* || "${score_namespa
 fi
 if ! [[ "${cluster_num_shards}" =~ ^[1-9][0-9]*$ ]]; then
   echo "CLUSTER_NUM_SHARDS must be a positive integer" >&2
+  exit 2
+fi
+if ! [[ "${samples_per_prompt}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "SAMPLES_PER_PROMPT must be a positive integer" >&2
   exit 2
 fi
 if ! [[ "${cluster_shard_index}" =~ ^[0-9]+$ ]] \
@@ -93,6 +98,7 @@ if [[ -n "${calibration_run_id}" ]]; then
     "${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
       --score-dir "${score_dir}" \
       --output "${clustered}" \
+      --samples-per-prompt "${samples_per_prompt}" \
       --embedding-cache-dir "${scratch_root}/cache/embeddings" \
       --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml"
     "${venv_dir}/bin/python" "${repo_dir}/scripts/derive_teacher_targets.py" \
@@ -124,6 +130,7 @@ else
   "${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
     --score-dir "${scratch_root}/${score_namespace}/${generation_job_id}" \
     --output "${clustered_output}" \
+    --samples-per-prompt "${samples_per_prompt}" \
     --embedding-cache-dir "${scratch_root}/cache/embeddings" \
     --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \
     --num-shards "${cluster_num_shards}" \

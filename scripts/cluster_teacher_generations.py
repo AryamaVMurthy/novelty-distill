@@ -24,6 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--annotation-config", type=Path, required=True)
     parser.add_argument("--embedding-cache-dir", type=Path)
+    parser.add_argument("--samples-per-prompt", type=int, default=8)
     parser.add_argument("--num-shards", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
     return parser.parse_args()
@@ -54,7 +55,9 @@ def main() -> None:
     prompt_ids: set[str] = set()
     instruction = str(annotation["embedding_instruction"])
     for score_path in score_paths:
-        payload = load_score_shard(score_path, samples_per_prompt=8)
+        payload = load_score_shard(
+            score_path, samples_per_prompt=args.samples_per_prompt
+        )
         records = payload["records"]
         current_judge = payload["judge"]
         if judge_payload is None:
