@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from novelty_distill.config import load_baseline_registry
+from novelty_distill.data.semantic_seeds import GaussianSeedSpec
 from novelty_distill.data.teacher_views import (
     TeacherGeneration,
     build_teacher_target_artifact,
@@ -42,6 +43,36 @@ def test_gkd_generation_uses_frozen_teacher_sampling_controls() -> None:
     assert Trainer.generation_config.top_p == 0.8
     assert Trainer.generation_config.top_k == 20
     assert Trainer.generation_config.min_p == 0.0
+
+
+def test_seed_conditioned_training_row_uses_target_position_as_sample_index() -> None:
+    registry = load_baseline_registry(Path("configs/baselines.yaml"))
+    baseline = next(item for item in registry.baselines if item.id == "C1-diverse4")
+    example = prepare_tomato_record(
+        {
+            "source_id": "paper-seed",
+            "research_question": "Can a coating improve stability?",
+            "background_survey": "Humidity damages the catalyst.",
+            "fine_grained_hypothesis": "A hydrophobic coating will help.",
+            "inspiration": [],
+        },
+        split="train",
+        task="open",
+    )
+    targets = tuple(f"teacher direction {index}" for index in range(4))
+    seed_spec = GaussianSeedSpec(dimensions=4, bins=5, scale=1.0, salt="v1")
+
+    rows = build_trl_rows(
+        baseline,
+        (example,),
+        teacher_targets={example.id: {"diverse4": targets}},
+        selection_seed=17,
+        input_seed=seed_spec,
+    )
+
+    assert rows[2]["messages"][0]["content"].startswith("Exploration seed:")
+    assert rows[2]["messages"][0]["content"].endswith(example.student_prompt)
+    assert rows[2]["messages"][1]["content"] == targets[2]
 
 
 def test_gkd_collator_preserves_prompt_and_truncates_completion_tail() -> None:
@@ -239,9 +270,7 @@ def test_gkd_smoke_run_pins_both_shared_tokenizer_models() -> None:
 
 
 def test_teacher_seqkd_config_requires_the_versioned_target_artifact() -> None:
-    spec = override_trl_baseline(
-        load_trl_run_spec(Path("configs/training/sft_smoke.yaml")), "B2b"
-    )
+    spec = override_trl_baseline(load_trl_run_spec(Path("configs/training/sft_smoke.yaml")), "B2b")
 
     assert spec.baseline_id == "B2b"
     assert spec.teacher_targets == Path("data/teacher-targets.json")

@@ -10,6 +10,11 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from novelty_distill.config import BaselineConfig
+from novelty_distill.data.semantic_seeds import (
+    GaussianSeedSpec,
+    condition_prompt,
+    gaussian_seed_values,
+)
 from novelty_distill.data.teacher_views import derive_random_k_texts
 from novelty_distill.data.tomato import CanonicalExample
 from novelty_distill.data.training_rows import (
@@ -134,6 +139,7 @@ class TRLRunSpec(BaseModel):
     lora_r: int = Field(gt=0)
     lora_alpha: int = Field(gt=0)
     seed: int = Field(ge=0)
+    input_seed: GaussianSeedSpec | None = None
 
     @model_validator(mode="after")
     def teacher_fields_are_paired(self) -> "TRLRunSpec":
@@ -194,6 +200,7 @@ def build_trl_rows(
     *,
     teacher_targets: TeacherTargets,
     selection_seed: int = 17,
+    input_seed: GaussianSeedSpec | None = None,
 ) -> tuple[TRLTrainingRow, ...]:
     """Build rows for an official TRL backend without changing target semantics."""
 
@@ -207,11 +214,18 @@ def build_trl_rows(
     rows: list[TRLTrainingRow] = []
     for example in examples:
         if baseline.trajectory_source == "student":
+            prompt = _condition_training_prompt(
+                example.student_prompt,
+                prompt_id=example.id,
+                sample_index=0,
+                selection_seed=selection_seed,
+                input_seed=input_seed,
+            )
             rows.append(
                 {
                     "id": example.id,
                     "messages": [
-                        {"role": "user", "content": example.student_prompt},
+                        {"role": "user", "content": prompt},
                         {"role": "assistant", "content": ""},
                     ],
                 }
@@ -247,12 +261,42 @@ def build_trl_rows(
                 raise ValueError(
                     f"{baseline.target_view} requires {expected} targets for {example.id}"
                 )
-        for target in targets:
+        for target_index, target in enumerate(targets):
+            prompt = _condition_training_prompt(
+                example.student_prompt,
+                prompt_id=example.id,
+                sample_index=target_index,
+                selection_seed=selection_seed,
+                input_seed=input_seed,
+            )
             if baseline.backend == "trl_sft":
-                rows.append(to_prompt_completion_row(example, target=target))
+                row = to_prompt_completion_row(example, target=target)
+                row["prompt"][0]["content"] = prompt
+                rows.append(row)
             else:
-                rows.append(to_chat_row(example, target=target))
+                row = to_chat_row(example, target=target)
+                row["messages"][0]["content"] = prompt
+                rows.append(row)
     return tuple(rows)
+
+
+def _condition_training_prompt(
+    prompt: str,
+    *,
+    prompt_id: str,
+    sample_index: int,
+    selection_seed: int,
+    input_seed: GaussianSeedSpec | None,
+) -> str:
+    if input_seed is None:
+        return prompt
+    values = gaussian_seed_values(
+        prompt_id=prompt_id,
+        sample_index=sample_index,
+        generation_seed=selection_seed,
+        spec=input_seed,
+    )
+    return condition_prompt(prompt, values=values)
 
 
 def encode_prompt_preserving_chatml_example(
@@ -439,6 +483,7 @@ def execute_trl_training(
         baseline,
         examples,
         selection_seed=spec.seed,
+        input_seed=spec.input_seed,
         teacher_targets=(
             teacher_targets
             if teacher_targets is not None
@@ -484,6 +529,9 @@ def execute_trl_training(
         "save_total_limit": 2,
         "report_to": "none",
         "seed": spec.seed,
+        "input_seed": (
+            spec.input_seed.model_dump(mode="json") if spec.input_seed is not None else None
+        ),
         "data_seed": spec.seed,
     }
     gkd_context_audit: dict[str, int | float] | None = None

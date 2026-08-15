@@ -4,6 +4,11 @@ from pathlib import Path
 
 import pytest
 
+from novelty_distill.data.semantic_seeds import (
+    GaussianSeedSpec,
+    condition_prompt,
+    gaussian_seed_values,
+)
 from novelty_distill.generation.sglang import (
     GenerationRecord,
     GenerationSpec,
@@ -29,9 +34,7 @@ def test_prompt_shards_are_disjoint_complete_and_deterministic() -> None:
 
     assert [len(shard) for shard in shards] == [3, 3, 3, 2]
     assert tuple(prompt for shard in shards for prompt in shard) != prompts
-    assert {prompt.id for shard in shards for prompt in shard} == {
-        prompt.id for prompt in prompts
-    }
+    assert {prompt.id for shard in shards for prompt in shard} == {prompt.id for prompt in prompts}
     assert sum(len(shard) for shard in shards) == len(prompts)
     assert shard_prompts(prompts, num_shards=4, shard_index=2) == shards[2]
 
@@ -40,9 +43,7 @@ def test_prompt_shards_are_disjoint_complete_and_deterministic() -> None:
     ("num_shards", "shard_index"),
     ((0, 0), (2, -1), (2, 2)),
 )
-def test_prompt_sharding_rejects_invalid_coordinates(
-    num_shards: int, shard_index: int
-) -> None:
+def test_prompt_sharding_rejects_invalid_coordinates(num_shards: int, shard_index: int) -> None:
     with pytest.raises(ValueError, match="shard"):
         shard_prompts(
             (Prompt(id="p0", text="prompt"),),
@@ -101,6 +102,51 @@ def test_generation_response_instruction_is_part_of_the_effective_prompt_and_fin
     assert generation_fingerprint(concise) != generation_fingerprint(base)
 
 
+def test_gaussian_seed_is_rendered_before_response_requirements_and_fingerprinted() -> None:
+    base = GenerationSpec(
+        model="Qwen/Qwen3-4B",
+        revision="1cfa9a7208912126459214e8b04321603b3df60c",
+        temperature=0.2,
+        top_p=0.8,
+        max_new_tokens=512,
+        samples_per_prompt=4,
+        seed=17,
+        response_instruction="Return one concise hypothesis.",
+    )
+    seed_spec = GaussianSeedSpec(dimensions=4, bins=5, scale=1.0, salt="v1")
+    seeded = base.model_copy(update={"input_seed": seed_spec})
+    values = gaussian_seed_values(
+        prompt_id="paper-seed", sample_index=2, generation_seed=17, spec=seed_spec
+    )
+
+    payload = build_chat_completion_payload(
+        "Propose a hypothesis.", seeded, sample_index=2, prompt_id="paper-seed"
+    )
+
+    assert payload["messages"][0]["content"] == (
+        f"{condition_prompt('Propose a hypothesis.', values=values)}\n\n"
+        "Response requirements:\nReturn one concise hypothesis."
+    )
+    assert payload["seed"] == 19
+    assert generation_fingerprint(seeded) != generation_fingerprint(base)
+
+
+def test_seeded_payload_requires_stable_prompt_id() -> None:
+    spec = GenerationSpec(
+        model="Qwen/Qwen3-4B",
+        revision="1cfa9a7208912126459214e8b04321603b3df60c",
+        temperature=0.2,
+        top_p=0.8,
+        max_new_tokens=512,
+        samples_per_prompt=4,
+        seed=17,
+        input_seed=GaussianSeedSpec(dimensions=4, bins=5, scale=1.0, salt="v1"),
+    )
+
+    with pytest.raises(ValueError, match="prompt ID"):
+        build_chat_completion_payload("Propose a hypothesis.", spec, sample_index=0)
+
+
 def test_lora_adapter_is_routed_explicitly_and_fingerprinted() -> None:
     base = GenerationSpec(
         model="Qwen/Qwen3-4B",
@@ -136,6 +182,7 @@ def test_absent_lora_field_preserves_pre_lora_generation_fingerprint() -> None:
     )
     legacy_spec = spec.model_dump(mode="json")
     legacy_spec.pop("lora_path")
+    legacy_spec.pop("input_seed")
     encoded = json.dumps(
         {"sampling_strategy": "single-request-per-sample-v1", "spec": legacy_spec},
         sort_keys=True,
@@ -255,8 +302,7 @@ def test_larger_generation_run_bootstraps_exact_subset_without_regeneration(
     target_input = tmp_path / "target.jsonl"
     source_input.write_text('{"id":"p1","student_prompt":"first"}\n', encoding="utf-8")
     target_input.write_text(
-        '{"id":"p1","student_prompt":"first"}\n'
-        '{"id":"p2","student_prompt":"second"}\n',
+        '{"id":"p1","student_prompt":"first"}\n{"id":"p2","student_prompt":"second"}\n',
         encoding="utf-8",
     )
     source_dir = tmp_path / "source"

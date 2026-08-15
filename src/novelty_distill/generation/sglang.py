@@ -12,6 +12,12 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from novelty_distill.data.semantic_seeds import (
+    GaussianSeedSpec,
+    condition_prompt,
+    gaussian_seed_values,
+)
+
 SAMPLING_STRATEGY = "single-request-per-sample-v1"
 INFERENCE_ARTIFACT_PATTERNS = (
     "config.json",
@@ -48,6 +54,7 @@ class GenerationSpec(BaseModel):
     enable_thinking: bool = False
     response_instruction: str | None = Field(default=None, min_length=1)
     lora_path: str | None = Field(default=None, min_length=1)
+    input_seed: GaussianSeedSpec | None = None
 
 
 class Prompt(BaseModel):
@@ -111,14 +118,23 @@ class GenerationRecord(BaseModel):
 
 
 def build_chat_completion_payload(
-    prompt: str, spec: GenerationSpec, *, sample_index: int
+    prompt: str,
+    spec: GenerationSpec,
+    *,
+    sample_index: int,
+    prompt_id: str | None = None,
 ) -> dict[str, Any]:
     """Build one deterministic single-sample SGLang request."""
 
     if not 0 <= sample_index < spec.samples_per_prompt:
         raise ValueError("sample index is outside the generation specification")
 
-    effective_prompt = render_generation_prompt(prompt, spec)
+    effective_prompt = render_generation_prompt(
+        prompt,
+        spec,
+        sample_index=sample_index,
+        prompt_id=prompt_id,
+    )
     payload = {
         "model": spec.model,
         "messages": [{"role": "user", "content": effective_prompt}],
@@ -136,9 +152,25 @@ def build_chat_completion_payload(
     return payload
 
 
-def render_generation_prompt(prompt: str, spec: GenerationSpec) -> str:
+def render_generation_prompt(
+    prompt: str,
+    spec: GenerationSpec,
+    *,
+    sample_index: int = 0,
+    prompt_id: str | None = None,
+) -> str:
     """Render the exact user message seen by the generation model."""
 
+    if spec.input_seed is not None:
+        if prompt_id is None or not prompt_id.strip():
+            raise ValueError("seed-conditioned generation requires a stable prompt ID")
+        values = gaussian_seed_values(
+            prompt_id=prompt_id,
+            sample_index=sample_index,
+            generation_seed=spec.seed,
+            spec=spec.input_seed,
+        )
+        prompt = condition_prompt(prompt, values=values)
     if not spec.response_instruction:
         return prompt
     return f"{prompt}\n\nResponse requirements:\n{spec.response_instruction}"
@@ -152,6 +184,8 @@ def generation_fingerprint(spec: GenerationSpec) -> str:
         # Added after permanent teacher generation began; preserve fingerprints for
         # base-model shards while still fingerprinting every routed adapter.
         spec_payload.pop("lora_path")
+    if spec.input_seed is None:
+        spec_payload.pop("input_seed")
     controls = {
         "sampling_strategy": SAMPLING_STRATEGY,
         "spec": spec_payload,
@@ -505,7 +539,12 @@ def generate_prompt(
             spec,
             post_json(
                 endpoint,
-                build_chat_completion_payload(prompt.text, spec, sample_index=sample_index),
+                build_chat_completion_payload(
+                    prompt.text,
+                    spec,
+                    sample_index=sample_index,
+                    prompt_id=prompt.id,
+                ),
                 timeout,
             ),
             sample_index=sample_index,
