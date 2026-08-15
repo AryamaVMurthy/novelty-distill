@@ -20,6 +20,7 @@ module load u22/cuda/12.4
 calibration_run_id="${CALIBRATION_RUN_ID:-}"
 generation_job_id="${GENERATION_JOB_ID:-}"
 target_name="${TARGET_NAME:-teacher-targets.json}"
+score_namespace="${SCORE_NAMESPACE:-teacher-scores}"
 cluster_num_shards="${CLUSTER_NUM_SHARDS:-1}"
 cluster_shard_index="${CLUSTER_SHARD_INDEX:-${SLURM_ARRAY_TASK_ID:-0}}"
 if [[ -z "${calibration_run_id}" && -z "${generation_job_id}" ]]; then
@@ -32,6 +33,10 @@ if [[ -n "${calibration_run_id}" && ("${calibration_run_id}" == */* || "${calibr
 fi
 if [[ "${target_name}" == */* || "${target_name}" == *..* ]]; then
   echo "TARGET_NAME must be a filename without '..'" >&2
+  exit 2
+fi
+if [[ -z "${score_namespace}" || "${score_namespace}" == */* || "${score_namespace}" == *..* ]]; then
+  echo "SCORE_NAMESPACE must be a path-safe name" >&2
   exit 2
 fi
 if ! [[ "${cluster_num_shards}" =~ ^[1-9][0-9]*$ ]]; then
@@ -117,7 +122,7 @@ else
       "${cluster_shard_root}" "${cluster_shard_index}" "${cluster_num_shards}")"
   fi
   "${venv_dir}/bin/python" "${repo_dir}/scripts/cluster_teacher_generations.py" \
-    --score-dir "${scratch_root}/teacher-scores/${generation_job_id}" \
+    --score-dir "${scratch_root}/${score_namespace}/${generation_job_id}" \
     --output "${clustered_output}" \
     --embedding-cache-dir "${scratch_root}/cache/embeddings" \
     --annotation-config "${repo_dir}/configs/evaluation/teacher_annotation.yaml" \

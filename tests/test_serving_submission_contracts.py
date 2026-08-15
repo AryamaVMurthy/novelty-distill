@@ -162,6 +162,8 @@ def test_teacher_clustering_supports_gpu_partitions_and_strict_merge() -> None:
 
     assert 'cluster_num_shards="${CLUSTER_NUM_SHARDS:-1}"' in cluster
     assert '--num-shards "${cluster_num_shards}"' in cluster
+    assert 'score_namespace="${SCORE_NAMESPACE:-teacher-scores}"' in cluster
+    assert '"${scratch_root}/${score_namespace}/${generation_job_id}"' in cluster
     assert "scripts/merge_teacher_clusters.py" in merge
     assert '--expected-prompts "${expected_prompts}"' in merge
 
