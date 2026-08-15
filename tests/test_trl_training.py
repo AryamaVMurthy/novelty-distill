@@ -1,5 +1,8 @@
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from novelty_distill.config import load_baseline_registry
 from novelty_distill.data.semantic_seeds import GaussianSeedSpec
 from novelty_distill.data.teacher_views import (
@@ -8,12 +11,14 @@ from novelty_distill.data.teacher_views import (
 )
 from novelty_distill.data.tomato import prepare_tomato_record
 from novelty_distill.training.trl import (
+    TRLRunSpec,
     build_trl_rows,
     configure_gkd_generation,
     encode_prompt_preserving_chatml_example,
     load_canonical_examples,
     load_trl_run_spec,
     override_trl_baseline,
+    validate_teacherless_training_mode,
 )
 
 
@@ -43,6 +48,37 @@ def test_gkd_generation_uses_frozen_teacher_sampling_controls() -> None:
     assert Trainer.generation_config.top_p == 0.8
     assert Trainer.generation_config.top_k == 20
     assert Trainer.generation_config.min_p == 0.0
+
+
+def test_teacherless_run_spec_fields_are_paired_and_bounded() -> None:
+    payload = load_trl_run_spec(Path("configs/training/gkd_tomato1k.yaml")).model_dump(mode="json")
+
+    positive = payload | {"teacherless_weight": 0.25, "teacherless_neutral_token": "!"}
+    assert load_trl_run_spec(Path("configs/training/gkd_tomato1k.yaml")).teacherless_weight == 0
+    assert TRLRunSpec.model_validate(positive).teacherless_neutral_token == "!"
+    with pytest.raises(ValidationError, match="neutral token"):
+        TRLRunSpec.model_validate(payload | {"teacherless_weight": 0.25})
+    with pytest.raises(ValidationError, match="weight is zero"):
+        TRLRunSpec.model_validate(payload | {"teacherless_neutral_token": "!"})
+    with pytest.raises(ValidationError):
+        TRLRunSpec.model_validate(
+            payload | {"teacherless_weight": 1.1, "teacherless_neutral_token": "!"}
+        )
+
+
+def test_teacherless_auxiliary_is_restricted_to_off_policy_forward_kl() -> None:
+    registry = load_baseline_registry(Path("configs/baselines.yaml"))
+    spec = load_trl_run_spec(Path("configs/training/gkd_tomato1k.yaml")).model_copy(
+        update={"teacherless_weight": 0.25, "teacherless_neutral_token": "!"}
+    )
+    c1 = next(item for item in registry.baselines if item.id == "C1-best1")
+
+    validate_teacherless_training_mode(c1, spec)
+
+    for baseline_id in ("C2-best1", "D1", "B2b"):
+        baseline = next(item for item in registry.baselines if item.id == baseline_id)
+        with pytest.raises(ValueError, match="off-policy forward-KL"):
+            validate_teacherless_training_mode(baseline, spec)
 
 
 def test_seed_conditioned_training_row_uses_target_position_as_sample_index() -> None:

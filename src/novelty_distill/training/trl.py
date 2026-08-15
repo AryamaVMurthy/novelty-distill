@@ -23,6 +23,12 @@ from novelty_distill.data.training_rows import (
     to_chat_row,
     to_prompt_completion_row,
 )
+from novelty_distill.training.lookahead import (
+    build_teacherless_inputs,
+    combine_distillation_losses,
+    resolve_neutral_token_id,
+    teacherless_cross_entropy,
+)
 from novelty_distill.training.provenance import atomic_json, file_provenance
 from novelty_distill.training.runtime import invocation_runtime
 
@@ -58,12 +64,8 @@ def diversity_aware_reverse_kl_loss(
     import torch
     import torch.nn.functional as functional
 
-    student_log_probs = functional.log_softmax(
-        student_logits.float() / temperature, dim=-1
-    )
-    teacher_log_probs = functional.log_softmax(
-        teacher_logits.float() / temperature, dim=-1
-    )
+    student_log_probs = functional.log_softmax(student_logits.float() / temperature, dim=-1)
+    teacher_log_probs = functional.log_softmax(teacher_logits.float() / temperature, dim=-1)
     valid = labels != -100
     safe_labels = labels.masked_fill(~valid, 0).unsqueeze(-1)
     log_q_target = student_log_probs.gather(-1, safe_labels).squeeze(-1)
@@ -85,17 +87,11 @@ def diversity_aware_reverse_kl_loss(
     q_non_target = log_q_non_target.exp()
 
     target_rkl = q_target * (log_q_target - log_p_target)
-    full_rkl = (
-        student_log_probs.exp() * (student_log_probs - teacher_log_probs)
-    ).sum(dim=-1)
+    full_rkl = (student_log_probs.exp() * (student_log_probs - teacher_log_probs)).sum(dim=-1)
     normalized_non_target_rkl = (
-        (full_rkl - target_rkl) / q_non_target
-        - log_q_non_target
-        + log_p_non_target
+        (full_rkl - target_rkl) / q_non_target - log_q_non_target + log_p_non_target
     )
-    binary_target_rkl = target_rkl + q_non_target * (
-        log_q_non_target - log_p_non_target
-    )
+    binary_target_rkl = target_rkl + q_non_target * (log_q_non_target - log_p_non_target)
     token_loss = binary_target_rkl + gamma * normalized_non_target_rkl
     token_loss = token_loss[valid]
     if not token_loss.numel():
@@ -140,6 +136,8 @@ class TRLRunSpec(BaseModel):
     lora_alpha: int = Field(gt=0)
     seed: int = Field(ge=0)
     input_seed: GaussianSeedSpec | None = None
+    teacherless_weight: float = Field(default=0, ge=0, le=1)
+    teacherless_neutral_token: str | None = Field(default=None, min_length=1)
 
     @model_validator(mode="after")
     def teacher_fields_are_paired(self) -> "TRLRunSpec":
@@ -147,7 +145,27 @@ class TRLRunSpec(BaseModel):
             raise ValueError("teacher_model and teacher_revision must be set together")
         if self.save_steps is not None and self.save_steps > self.max_steps:
             raise ValueError("save_steps cannot exceed max_steps")
+        if self.teacherless_weight > 0 and self.teacherless_neutral_token is None:
+            raise ValueError("positive teacherless weight requires a neutral token")
+        if self.teacherless_weight == 0 and self.teacherless_neutral_token is not None:
+            raise ValueError("teacherless neutral token is invalid when weight is zero")
         return self
+
+
+def validate_teacherless_training_mode(baseline: BaselineConfig, spec: TRLRunSpec) -> None:
+    """Restrict the first lookahead experiment to its matched C1 loss regime."""
+
+    if spec.teacherless_weight == 0:
+        return
+    if not (
+        baseline.backend == "trl_gkd"
+        and baseline.family == "off_policy"
+        and baseline.trajectory_source == "teacher"
+        and baseline.divergence == "forward_kl"
+        and baseline.lmbda == 0
+        and baseline.beta == 0
+    ):
+        raise ValueError("teacherless auxiliary is initially restricted to off-policy forward-KL")
 
 
 def load_trl_run_spec(path: Path) -> TRLRunSpec:
@@ -364,9 +382,7 @@ def encode_prompt_preserving_chatml_example(
 class PromptPreservingChatMLCollator:
     """Official-GKD tensor schema with an explicit prompt-preserving truncation policy."""
 
-    def __init__(
-        self, tokenizer: Any, *, max_length: int, enable_thinking: bool = False
-    ) -> None:
+    def __init__(self, tokenizer: Any, *, max_length: int, enable_thinking: bool = False) -> None:
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.enable_thinking = enable_thinking
@@ -392,9 +408,7 @@ class PromptPreservingChatMLCollator:
             "attention_mask": _left_pad(
                 tuple(item["attention_mask"] for item in encoded), value=0, torch=torch
             ),
-            "labels": _left_pad(
-                tuple(item["labels"] for item in encoded), value=-100, torch=torch
-            ),
+            "labels": _left_pad(tuple(item["labels"] for item in encoded), value=-100, torch=torch),
             "prompts": _left_pad(
                 tuple(item["prompt_ids"] for item in encoded),
                 value=self.tokenizer.pad_token_id,
@@ -408,9 +422,7 @@ class PromptPreservingChatMLCollator:
         }
 
 
-def configure_gkd_generation(
-    trainer: Any, spec: TRLRunSpec
-) -> dict[str, float | int | bool]:
+def configure_gkd_generation(trainer: Any, spec: TRLRunSpec) -> dict[str, float | int | bool]:
     """Pin official GKD on-policy generation to the frozen sampling contract."""
 
     controls: dict[str, float | int | bool] = {
@@ -467,6 +479,7 @@ def execute_trl_training(
         spec.teacher_model is None or spec.teacher_revision is None
     ):
         raise ValueError(f"baseline {baseline.id} requires a pinned teacher model")
+    validate_teacherless_training_mode(baseline, spec)
 
     input_path = _resolve_under(scratch_root, spec.input)
     output_dir = _resolve_under(scratch_root, spec.output_dir)
@@ -529,9 +542,6 @@ def execute_trl_training(
         "save_total_limit": 2,
         "report_to": "none",
         "seed": spec.seed,
-        "input_seed": (
-            spec.input_seed.model_dump(mode="json") if spec.input_seed is not None else None
-        ),
         "data_seed": spec.seed,
     }
     gkd_context_audit: dict[str, int | float] | None = None
@@ -593,9 +603,7 @@ def execute_trl_training(
             )
             for row in rows
         )
-        truncated_tokens = tuple(
-            int(item["truncated_completion_tokens"]) for item in encoded_audit
-        )
+        truncated_tokens = tuple(int(item["truncated_completion_tokens"]) for item in encoded_audit)
         gkd_context_audit = {
             "rows": len(rows),
             "truncated_rows": sum(value > 0 for value in truncated_tokens),
@@ -629,6 +637,66 @@ def execute_trl_training(
                     )
 
             trainer_type = DiversityAwareGKDTrainer
+
+        teacherless_neutral_token_id: int | None = None
+        if spec.teacherless_weight > 0:
+            assert spec.teacherless_neutral_token is not None
+            teacherless_neutral_token_id = resolve_neutral_token_id(
+                tokenizer, spec.teacherless_neutral_token
+            )
+            teacherless_weight = spec.teacherless_weight
+            neutral_token_id = teacherless_neutral_token_id
+
+            class TeacherlessLookaheadGKDTrainer(GKDTrainer):
+                def __init__(self, *args: Any, **kwargs: Any) -> None:
+                    self.ordinary_loss_history: list[float] = []
+                    self.teacherless_loss_history: list[float] = []
+                    super().__init__(*args, **kwargs)
+
+                def compute_loss(
+                    self,
+                    model: Any,
+                    inputs: Any,
+                    return_outputs: bool = False,
+                    num_items_in_batch: int | None = None,
+                ) -> Any:
+                    ordinary_result = super().compute_loss(
+                        model,
+                        inputs,
+                        return_outputs=return_outputs,
+                        num_items_in_batch=num_items_in_batch,
+                    )
+                    if return_outputs:
+                        ordinary_loss, ordinary_outputs = ordinary_result
+                    else:
+                        ordinary_loss = ordinary_result
+                        ordinary_outputs = None
+                    teacherless_input_ids = build_teacherless_inputs(
+                        inputs["input_ids"],
+                        inputs["labels"],
+                        neutral_token_id=neutral_token_id,
+                    )
+                    teacherless_outputs = model(
+                        input_ids=teacherless_input_ids,
+                        attention_mask=inputs["attention_mask"],
+                    )
+                    auxiliary_loss = teacherless_cross_entropy(
+                        teacherless_outputs.logits, inputs["labels"]
+                    )
+                    combined_loss = combine_distillation_losses(
+                        ordinary_loss,
+                        auxiliary_loss,
+                        weight=teacherless_weight,
+                    )
+                    self.ordinary_loss_history.append(float(ordinary_loss.detach().float().cpu()))
+                    self.teacherless_loss_history.append(
+                        float(auxiliary_loss.detach().float().cpu())
+                    )
+                    if return_outputs:
+                        return combined_loss, ordinary_outputs
+                    return combined_loss
+
+            trainer_type = TeacherlessLookaheadGKDTrainer
 
         trainer = trainer_type(
             model=student_model,
@@ -671,6 +739,23 @@ def execute_trl_training(
     trainer.save_model(str(final_dir))
     tokenizer.save_pretrained(final_dir)
 
+    teacherless_metrics: dict[str, object] | None = None
+    if spec.teacherless_weight > 0:
+        ordinary_history = trainer.ordinary_loss_history
+        auxiliary_history = trainer.teacherless_loss_history
+        if not ordinary_history or len(ordinary_history) != len(auxiliary_history):
+            raise ValueError("teacherless trainer did not record paired component losses")
+        teacherless_metrics = {
+            "weight": spec.teacherless_weight,
+            "neutral_token": spec.teacherless_neutral_token,
+            "neutral_token_id": teacherless_neutral_token_id,
+            "calls": len(auxiliary_history),
+            "ordinary_loss_mean": sum(ordinary_history) / len(ordinary_history),
+            "teacherless_loss_mean": sum(auxiliary_history) / len(auxiliary_history),
+            "ordinary_loss_last": ordinary_history[-1],
+            "teacherless_loss_last": auxiliary_history[-1],
+        }
+
     metadata: dict[str, object] = {
         "baseline_id": baseline.id,
         "backend": baseline.backend,
@@ -691,13 +776,15 @@ def execute_trl_training(
         "training_artifacts": training_artifacts,
         "training_rows": len(rows),
         "optimizer_example_exposures": (
-            spec.max_steps
-            * spec.per_device_train_batch_size
-            * spec.gradient_accumulation_steps
+            spec.max_steps * spec.per_device_train_batch_size * spec.gradient_accumulation_steps
         ),
         "max_steps": spec.max_steps,
         "save_steps": spec.save_steps or spec.max_steps,
         "seed": spec.seed,
+        "input_seed": (
+            spec.input_seed.model_dump(mode="json") if spec.input_seed is not None else None
+        ),
+        "teacherless": teacherless_metrics,
         "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
         "git_commit": os.environ.get("NOVELTY_GIT_COMMIT"),
         "metrics": train_result.metrics,
