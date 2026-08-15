@@ -86,6 +86,31 @@ FPS-FKL is the preferred candidate if it outperforms isotropic seed
 conditioning. CR-FKL can be combined with FPS-FKL by oversampling valid future
 codes that the untouched student undercovers.
 
+### D. Hybrid teacherless lookahead distillation (TL-FKL)
+
+Add a low-weight teacherless auxiliary objective to ordinary forward KL. For
+the auxiliary pass, replace the teacher-response prefix with a repeated neutral
+dummy token while retaining the teacher response as the label sequence. Each
+response position must therefore be predicted from the prompt, seed, position,
+and global hidden computation rather than from the preceding ground-truth
+response tokens:
+
+```
+L = L_forward_KL(ordinary teacher-forced trajectory)
+    + lambda_TL * L_CE(prompt + dummy response positions, teacher response)
+```
+
+This follows the actual multi-token/teacherless mechanism in *Roll the Dice &
+Look Before You Leap* more closely than a shifted-next-token loss. The
+teacherless pass is computed sequentially after the forward-KL pass to avoid
+doubling peak activation memory. It is an auxiliary representation-learning
+signal only; inference remains standard autoregression.
+
+The pilot tests `lambda_TL` in a very small declared set. If optimization is
+non-finite, context construction is ambiguous, or quality falls through the
+safety gate, this branch is rejected rather than replaced with an unprincipled
+future-token surrogate.
+
 ## Successive-halving experiment
 
 ### Gate 0: artifact and geometry audit
@@ -120,7 +145,9 @@ Use a fixed 128-prompt training subset and at most 32 optimizer steps. Compare:
 2. `CR-FKL-short`;
 3. `GSC-FKL-short`;
 4. `FPS-FKL-short`;
-5. `CR-FPS-FKL-short` only if both components independently pass.
+5. `TL-FKL-short`;
+6. `GSC-TL-FKL-short` only if both components independently pass;
+7. `CR-FPS-TL-FKL-short` only if each component independently passes.
 
 Evaluate on a disjoint 128-prompt set with `K=4`. Use the frozen Qwen judge and
 embedding pipeline. Rank methods first by feasibility/soundness safety, then by
