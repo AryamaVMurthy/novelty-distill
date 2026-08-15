@@ -143,6 +143,28 @@ def test_student_coverage_probe_matches_teacher_candidate_count() -> None:
     assert student.input_seed is None
 
 
+def test_short_lora_generation_contracts_route_the_adapter() -> None:
+    import yaml
+
+    ordinary = GenerationSpec.model_validate(
+        yaml.safe_load(
+            Path("configs/generation/semantic_seed_short_lora.yaml").read_text()
+        )
+    )
+    seeded = GenerationSpec.model_validate(
+        yaml.safe_load(
+            Path(
+                "configs/generation/semantic_seed_short_seeded_lora.yaml"
+            ).read_text()
+        )
+    )
+
+    assert ordinary.lora_path == seeded.lora_path == "student-adapter"
+    assert ordinary.input_seed is None
+    assert seeded.input_seed is not None
+    assert seeded.input_seed_repeats == 2
+
+
 def test_combined_gpu_smoke_exercises_both_new_training_paths() -> None:
     spec = load_trl_run_spec(
         Path("configs/training/semantic_seed_ss4_gsc_tl_smoke.yaml")
