@@ -3,8 +3,8 @@ model: Qwen/Qwen3-4B
 revision: 1cfa9a7208912126459214e8b04321603b3df60c
 teacher_model: Qwen/Qwen3-14B
 teacher_revision: 40c069824f4251a91eefaf281ebe4c544efd3e18
-teacher_targets: data/teacher-targets-tomato1k-v1.json
-input: data/tomato-open-train-1000.jsonl
+teacher_targets: repo/tests/fixtures/semantic_seed_smoke_targets.json
+input: repo/tests/fixtures/semantic_seed_smoke.jsonl
 output_dir: checkpoints/SS4-GSC-TL-semantic-seed-smoke-seed17
 max_examples: 1
 max_steps: 1

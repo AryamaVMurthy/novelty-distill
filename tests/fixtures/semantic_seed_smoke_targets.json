@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "targets": {
+    "semantic-seed-smoke-001": {
+      "diverse4": [
+        "Increasing crystalline-domain connectivity will preserve tensile strength while slowing hydrolysis; test matched polymers by SAXS, tensile testing, and mass-loss kinetics.",
+        "A broader pore-size distribution will accelerate degradation without an equivalent early loss of strength; test micro-CT structure against longitudinal mechanics and mass loss.",
+        "Oriented amorphous tie chains will delay crack propagation during enzymatic degradation; compare aligned and isotropic films under cyclic loading with enzyme exposure.",
+        "Nanoscale phase separation will produce switch-like mechanical failure after a predictable degradation threshold; measure AFM phase maps and time-resolved fracture behavior."
+      ]
+    }
+  }
+}
