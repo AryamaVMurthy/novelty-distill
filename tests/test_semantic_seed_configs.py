@@ -137,3 +137,13 @@ def test_combined_gpu_smoke_exercises_both_new_training_paths() -> None:
     assert spec.input_seed is not None
     assert spec.teacherless_weight == 0.1
     assert spec.teacherless_neutral_token == "!"
+
+
+def test_training_launcher_exposes_the_frozen_semantic_seed_matrix() -> None:
+    launcher = Path("slurm/train_smoke.sbatch").read_text(encoding="utf-8")
+
+    assert '"${matrix_mode}" == "semantic_seed_short"' in launcher
+    assert "SS0-C1 SS0D-DIVERSE SS1-CR SS2-GSC SS3-TL SS4-GSC-TL" in launcher
+    for filename in TRAINING_CONFIGS.values():
+        assert f"configs/training/{filename}" in launcher
+    assert 'baseline_registry="configs/semantic_seed_baselines.yaml"' in launcher

@@ -62,6 +62,8 @@ elif [[ "${matrix_mode}" == "tomato_scale" ]]; then
   run_suffix="${RUN_SUFFIX:-${default_run_suffix}}"
 elif [[ "${matrix_mode}" == "ultrafeedback1k" ]]; then
   run_suffix="${RUN_SUFFIX:-ultrafeedback1k-seed17}"
+elif [[ "${matrix_mode}" == "semantic_seed_short" ]]; then
+  run_suffix="${RUN_SUFFIX:-semantic-seed-short-seed17}"
 else
   run_suffix="${RUN_SUFFIX:-smoke}"
 fi
@@ -69,7 +71,28 @@ if [[ -z "${run_suffix}" || "${run_suffix}" == */* || "${run_suffix}" == *..* ]]
   echo "RUN_SUFFIX must be a path-safe non-empty name" >&2
   exit 2
 fi
-if [[ "${matrix_mode}" == "exposure1k" ]]; then
+if [[ "${matrix_mode}" == "semantic_seed_short" ]]; then
+  matrix_ids=(SS0-C1 SS0D-DIVERSE SS1-CR SS2-GSC SS3-TL SS4-GSC-TL)
+  matrix_backends=(trl trl trl trl trl trl)
+  matrix_configs=(
+    configs/training/semantic_seed_ss0_c1.yaml
+    configs/training/semantic_seed_ss0d_diverse.yaml
+    configs/training/semantic_seed_ss1_cr.yaml
+    configs/training/semantic_seed_ss2_gsc.yaml
+    configs/training/semantic_seed_ss3_tl.yaml
+    configs/training/semantic_seed_ss4_gsc_tl.yaml
+  )
+  baseline_registry="configs/semantic_seed_baselines.yaml"
+  matrix_index="${SLURM_ARRAY_TASK_ID:?semantic_seed_short matrix requires an array task}"
+  if ((matrix_index < 0 || matrix_index >= ${#matrix_ids[@]})); then
+    echo "SLURM_ARRAY_TASK_ID must be between 0 and $((${#matrix_ids[@]} - 1))" >&2
+    exit 1
+  fi
+  BASELINE_ID="${matrix_ids[$matrix_index]}"
+  training_backend="${matrix_backends[$matrix_index]}"
+  RUN_CONFIG="${matrix_configs[$matrix_index]}"
+  echo "matrix=semantic_seed_short index=${matrix_index} baseline_id=${BASELINE_ID}"
+elif [[ "${matrix_mode}" == "exposure1k" ]]; then
   matrix_ids=(B2a-4x B2b-4x B2c-4x B3-4x B4-4x)
   matrix_backends=(trl trl trl trl gem)
   matrix_configs=(
