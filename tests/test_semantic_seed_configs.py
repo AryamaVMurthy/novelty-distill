@@ -105,3 +105,16 @@ def test_short_generation_configs_isolate_ordinary_and_seeded_decoding() -> None
     assert ordinary.input_seed is None
     assert seeded.input_seed is not None
     assert seeded.input_seed.dimensions == 8
+
+
+def test_combined_gpu_smoke_exercises_both_new_training_paths() -> None:
+    spec = load_trl_run_spec(
+        Path("configs/training/semantic_seed_ss4_gsc_tl_smoke.yaml")
+    )
+
+    assert spec.baseline_id == "SS4-GSC-TL"
+    assert spec.max_examples == spec.max_steps == 1
+    assert spec.per_device_train_batch_size == spec.gradient_accumulation_steps == 1
+    assert spec.input_seed is not None
+    assert spec.teacherless_weight == 0.1
+    assert spec.teacherless_neutral_token == "!"
